@@ -1,3 +1,22 @@
+# Caswell County Yacht Club
+
+Hunting club management system for tracking hunts, maintenance, and camp activities.
+
+## Quick Start
+See DEVELOPMENT.md for setup instructions.
+
+## Project Context
+See PROJECT_CONTEXT.md for full requirements and scope.
+
+## Current Status
+- [x] Initial Next.js setup
+- [x] Supabase integration ready
+- [ ] Authentication system
+- [ ] Hunt logging
+
+'''
+
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
