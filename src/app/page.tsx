@@ -1,3 +1,4 @@
+// src/app/page.tsx (updated with auth integration)
 "use client";
 
 import { 
@@ -23,12 +24,16 @@ import {
   ClipboardList
 } from "lucide-react";
 import { useState } from "react";
+import { AuthGuard } from "@/components/AuthGuard";
+import { useAuth } from "@/hooks/useAuth";
+import { CalendarView } from "@/components/CalendarView";
 
-export default function Home() {
+function MainApp() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('dashboard');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [showWipBanner, setShowWipBanner] = useState(true);
+  const { user, signOut } = useAuth();
 
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -61,6 +66,11 @@ export default function Home() {
     { task: 'Clear shooting lanes', priority: 'Medium', assignee: 'Mike Johnson', status: 'in-progress' },
     { task: 'Check trail cameras', priority: 'Low', assignee: 'John Smith', status: 'completed' },
   ];
+
+  const handleSignOut = async () => {
+    await signOut();
+    setUserMenuOpen(false);
+  };
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -126,7 +136,9 @@ export default function Home() {
                     <div className="w-6 h-6 bg-amber-700 rounded-full flex items-center justify-center">
                       <User size={14} className="text-white" />
                     </div>
-                    <span className="hidden sm:block text-sm font-medium">Club Manager</span>
+                    <span className="hidden sm:block text-sm font-medium">
+                      {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Club Manager'}
+                    </span>
                     <ChevronDown size={14} />
                   </button>
 
@@ -134,15 +146,20 @@ export default function Home() {
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 border">
                       <div className="px-4 py-2 border-b">
-                        <p className="text-sm font-medium text-gray-900">Club Manager</p>
-                        <p className="text-xs text-gray-500">manager@caswellcounty.com</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Club Manager'}
+                        </p>
+                        <p className="text-xs text-gray-500">{user?.email}</p>
                         <p className="text-xs text-amber-600 font-medium mt-1">🚧 Beta Version</p>
                       </div>
                       <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <Settings size={16} className="mr-2" />
                         Account Settings
                       </button>
-                      <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      <button 
+                        onClick={handleSignOut}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
                         <LogOut size={16} className="mr-2" />
                         Sign Out
                       </button>
@@ -211,14 +228,6 @@ export default function Home() {
                   </button>
                 );
               })}
-            </div>
-
-            {/* Footer Status */}
-            <div className="mt-12 text-center">
-              <div className="inline-flex items-center px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs">
-                <div className="w-2 h-2 bg-amber-600 rounded-full mr-2 animate-pulse"></div>
-                Development Version - Some features may be incomplete
-              </div>
             </div>
           </div>
         )}
@@ -341,8 +350,13 @@ export default function Home() {
           </div>
         )}
 
+        {/* Calendar Content */}
+        {activeSection === 'calendar' && (
+          <CalendarView />
+        )}
+
         {/* Placeholder content for other sections */}
-        {activeSection !== 'dashboard' && (
+        {activeSection !== 'dashboard' && activeSection !== 'calendar' && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="bg-white rounded-lg shadow p-8 text-center">
               <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -359,75 +373,9 @@ export default function Home() {
               <p className="text-gray-600 mb-6">
                 This section is coming soon! We're building amazing features for your hunt club management.
               </p>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-500">
-                  Features planned for this section:
-                </p>
-                <ul className="text-sm text-gray-600 mt-2 space-y-1">
-                  {activeSection === 'calendar' && (
-                    <>
-                      <li>• Important hunting season dates</li>
-                      <li>• Club events and meetings</li>
-                      <li>• Past hunt success tracking</li>
-                      <li>• License and permit renewals</li>
-                      <li>• Equipment maintenance schedules</li>
-                    </>
-                  )}
-                  {activeSection === 'hunts' && (
-                    <>
-                      <li>• Log hunt details and harvest data</li>
-                      <li>• Upload photos and GPS coordinates</li>
-                      <li>• Track hunting statistics</li>
-                    </>
-                  )}
-                  {activeSection === 'season' && (
-                    <>
-                      <li>• Season countdown timers</li>
-                      <li>• Preparation checklists</li>
-                      <li>• License and permit tracking</li>
-                    </>
-                  )}
-                  {activeSection === 'maintenance' && (
-                    <>
-                      <li>• Task assignment and tracking</li>
-                      <li>• Equipment maintenance schedules</li>
-                      <li>• Work order management</li>
-                    </>
-                  )}
-                  {activeSection === 'cameras' && (
-                    <>
-                      <li>• Trail camera photo gallery</li>
-                      <li>• Email integration for photos</li>
-                      <li>• Wildlife activity tracking</li>
-                    </>
-                  )}
-                  {activeSection === 'property' && (
-                    <>
-                      <li>• Interactive property mapping</li>
-                      <li>• Stand and feeder locations</li>
-                      <li>• Trail and boundary marking</li>
-                    </>
-                  )}
-                  {activeSection === 'members' && (
-                    <>
-                      <li>• Member profile management</li>
-                      <li>• Permission and access control</li>
-                      <li>• Communication tools</li>
-                    </>
-                  )}
-                </ul>
-              </div>
             </div>
           </div>
         )}
-
-        {/* Footer Status */}
-        <div className="mt-12 text-center">
-          <div className="inline-flex items-center px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs">
-            <div className="w-2 h-2 bg-amber-600 rounded-full mr-2 animate-pulse"></div>
-            Development Version - Some features may be incomplete
-          </div>
-        </div>
       </main>
 
       {/* Click outside handler for dropdowns */}
@@ -441,5 +389,13 @@ export default function Home() {
         />
       )}
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <AuthGuard>
+      <MainApp />
+    </AuthGuard>
   );
 }
