@@ -184,12 +184,12 @@ export default function MainPage() {
                   <div key={index} className="flex items-center space-x-4">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                       task.status === 'completed' ? 'bg-green-100' : 
-                      task.status === 'in-progress' ? 'bg-amber-100' : 'bg-red-100'
+                      task.status === 'in-progress' ? 'bg-yellow-100' : 'bg-red-100'
                     }`}>
                       {task.status === 'completed' ? 
                         <CheckCircle size={20} className="text-green-600" /> :
                         task.status === 'in-progress' ? 
-                        <Clock size={20} className="text-amber-600" /> :
+                        <Clock size={20} className="text-yellow-600" /> :
                         <AlertTriangle size={20} className="text-red-600" />
                       }
                     </div>
@@ -292,17 +292,17 @@ export default function MainPage() {
     <div className="min-h-screen bg-stone-50">
       {/* WIP Banner */}
       {showWipBanner && (
-        <div className="bg-amber-100 border-b border-amber-200 px-4 py-3">
+        <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-3">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
             <div className="flex items-center space-x-2">
-              <Bell size={16} className="text-amber-600" />
-              <span className="text-amber-800 text-sm font-medium">
+              <Bell size={16} className="text-yellow-700" />
+              <span className="text-yellow-800 text-sm font-medium">
                 🚧 Under Development: This hunting club management system is actively being built. Some features may be incomplete.
               </span>
             </div>
             <button
               onClick={() => setShowWipBanner(false)}
-              className="text-amber-600 hover:text-amber-800"
+              className="text-yellow-700 hover:text-yellow-900"
             >
               <X size={16} />
             </button>
@@ -312,43 +312,21 @@ export default function MainPage() {
 
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
+        {/* Top row: Logo/Title and User Menu */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo and Title */}
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-green-800 rounded-lg flex items-center justify-center">
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className="w-10 h-10 bg-green-800 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Target size={20} className="text-white" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Caswell County Yacht Club</h1>
-                <p className="text-sm text-gray-500 hidden sm:block">Hunting Club Management</p>
+              <div className="min-w-0 flex-shrink-0">
+                <h1 className="text-lg font-bold text-gray-900 whitespace-nowrap">Caswell County Yacht Club</h1>
               </div>
             </div>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-1">
-              {navigationItems.slice(0, 6).map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleNavClick(item.id)}
-                  className={`
-                    flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
-                    ${activeSection === item.id
-                      ? 'bg-green-100 text-green-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                    }
-                    ${item.requiresAuth && !user ? 'opacity-60' : ''}
-                  `}
-                >
-                  <item.icon size={16} className="mr-2" />
-                  {item.label}
-                  {item.requiresAuth && !user && <Lock size={12} className="ml-1" />}
-                </button>
-              ))}
-            </nav>
-
-            {/* User Menu */}
-            <div className="flex items-center space-x-3">
+            {/* Desktop User Menu */}
+            <div className="hidden lg:flex items-center space-x-3 flex-shrink-0">
               {user ? (
                 <div className="relative">
                   <button
@@ -356,7 +334,7 @@ export default function MainPage() {
                     className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                   >
                     <User size={16} />
-                    <span className="hidden sm:block">{user.email}</span>
+                    <span className="hidden sm:block max-w-32 truncate">{user.email}</span>
                     <ChevronDown size={16} />
                   </button>
 
@@ -381,15 +359,41 @@ export default function MainPage() {
                   <span className="hidden sm:block">Sign In</span>
                 </Link>
               )}
-
-              {/* Mobile menu button */}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-              >
-                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-              </button>
             </div>
+
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom row: Desktop Navigation */}
+        <div className="hidden lg:block border-t border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <nav className="flex items-center space-x-1 h-12">
+              {navigationItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavClick(item.id)}
+                  className={`
+                    flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
+                    ${activeSection === item.id
+                      ? 'bg-green-100 text-green-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }
+                    ${item.requiresAuth && !user ? 'opacity-60' : ''}
+                  `}
+                >
+                  <item.icon size={16} className="mr-2" />
+                  {item.label}
+                  {item.requiresAuth && !user && <Lock size={12} className="ml-1" />}
+                </button>
+              ))}
+            </nav>
           </div>
         </div>
 

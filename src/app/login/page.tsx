@@ -96,7 +96,7 @@ export default function LoginPage() {
             }
           </p>
           {redirectTo !== '/' && (
-            <p className="mt-1 text-center text-xs text-amber-600">
+            <p className="mt-1 text-center text-xs text-yellow-600">
               You need to sign in to access that feature
             </p>
           )}
