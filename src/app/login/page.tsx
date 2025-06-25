@@ -1,10 +1,11 @@
 // src/app/login/page.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
-import { Target, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Target, Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -14,7 +15,10 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+
+  const redirectTo = searchParams.get('redirectTo') || '/'
 
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault()
@@ -52,7 +56,8 @@ export default function LoginPage() {
         if (error) throw error
       }
       
-      router.push('/')
+      // Redirect to the intended page or home
+      router.push(redirectTo)
       router.refresh()
     } catch (error: any) {
       setError(error.message)
@@ -64,6 +69,17 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-stone-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
+        {/* Back to Home Link */}
+        <div className="text-center">
+          <Link 
+            href="/"
+            className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-4"
+          >
+            <ArrowLeft size={16} className="mr-1" />
+            Back to site
+          </Link>
+        </div>
+
         <div>
           <div className="flex justify-center">
             <div className="w-12 h-12 bg-green-800 rounded-lg flex items-center justify-center">
@@ -74,55 +90,65 @@ export default function LoginPage() {
             {isSignUp ? 'Join the Club' : 'Welcome Back'}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Caswell County Yacht Club
+            {isSignUp 
+              ? 'Create your account to access member features'
+              : 'Sign in to your Caswell County Yacht Club account'
+            }
           </p>
+          {redirectTo !== '/' && (
+            <p className="mt-1 text-center text-xs text-amber-600">
+              You need to sign in to access that feature
+            </p>
+          )}
         </div>
         
         <form className="mt-8 space-y-6" onSubmit={handleAuth}>
-          <div className="space-y-4">
+          <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email-address" className="sr-only">
                 Email address
               </label>
               <input
-                id="email"
+                id="email-address"
                 name="email"
                 type="email"
+                autoComplete="email"
                 required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-800 focus:border-green-800"
-                placeholder="Enter your email"
+                disabled={loading}
               />
             </div>
-            
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <div className="relative">
+              <label htmlFor="password" className="sr-only">
                 Password
               </label>
-              <div className="mt-1 relative">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-800 focus:border-green-800"
-                  placeholder="Enter your password"
-                />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff size={16} className="text-gray-400" />
-                  ) : (
-                    <Eye size={16} className="text-gray-400" />
-                  )}
-                </button>
-              </div>
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={loading}
+              >
+                {showPassword ? (
+                  <EyeOff size={16} className="text-gray-400" />
+                ) : (
+                  <Eye size={16} className="text-gray-400" />
+                )}
+              </button>
             </div>
           </div>
 
@@ -136,33 +162,43 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-800 hover:bg-green-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-800 hover:bg-green-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
-                <Loader2 size={16} className="animate-spin mr-2" />
-              ) : null}
-              {loading ? 'Please wait...' : isSignUp ? 'Create Account' : 'Sign In'}
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                isSignUp ? 'Create Account' : 'Sign In'
+              )}
             </button>
           </div>
 
           <div className="text-center">
             <button
               type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-green-800 hover:text-green-900 text-sm font-medium"
+              onClick={() => {
+                setIsSignUp(!isSignUp)
+                setError('')
+              }}
+              className="text-sm text-green-800 hover:text-green-900"
+              disabled={loading}
             >
-              {isSignUp ? 'Already have an account? Sign in' : 'Need an account? Sign up'}
+              {isSignUp 
+                ? 'Already have an account? Sign in'
+                : "Don't have an account? Sign up"
+              }
             </button>
           </div>
-          
-          {/* Development Note */}
-          <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-md">
-            <p className="text-xs text-amber-800">
-              <strong>Development Mode:</strong> This is a prototype for a 3-member hunting club. 
-              In production, member registration would be invitation-only.
-            </p>
-          </div>
         </form>
+
+        {/* Public Access Note */}
+        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+          <div className="flex items-center">
+            <Eye size={16} className="text-blue-600 mr-2" />
+            <span className="text-sm text-blue-800">
+              You can browse public information without signing in
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   )

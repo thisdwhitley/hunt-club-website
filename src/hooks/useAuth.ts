@@ -27,7 +27,12 @@ export function useAuth() {
         setLoading(false)
         
         if (event === 'SIGNED_OUT') {
-          router.push('/login')
+          // Instead of redirecting to login, just refresh the current page
+          // This allows the user to stay on the same page but see the public view
+          router.refresh()
+        } else if (event === 'SIGNED_IN') {
+          // Refresh the page when user signs in to update the view
+          router.refresh()
         }
       }
     )
@@ -36,7 +41,15 @@ export function useAuth() {
   }, [supabase, router])
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('Error signing out:', error)
+      }
+      // Don't redirect here - let the auth state change handler deal with it
+    } catch (error) {
+      console.error('Error during sign out:', error)
+    }
   }
 
   return {
