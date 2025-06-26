@@ -1,11 +1,12 @@
-// src/components/CalendarView.tsx
+// src/components/CalendarView.tsx (Fixed - only client-side imports)
 'use client'
 
 import React, { useState, useEffect } from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns'
-import { ChevronLeft, ChevronRight, Plus, Target, Wrench, Calendar as CalendarIcon, Users, Filter, Lock, Eye } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Target, Wrench, Calendar as CalendarIcon, Users, Filter, Lock, Eye, Globe } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
+import { clientGoogleCalendarService } from '@/lib/services/clientGoogleCalendar'
 import Link from 'next/link'
 import type { Database } from '@/lib/types/database'
 
@@ -26,30 +27,34 @@ interface CalendarEvent {
   id: string
   title: string
   date: string
-  type: 'hunt' | 'maintenance' | 'event'
+  type: 'hunt' | 'maintenance' | 'event' | 'google'
   status?: string
   member?: string
   location?: string
   priority?: string
   isPublic?: boolean
+  source?: 'supabase' | 'google'
+  isAllDay?: boolean
 }
 
 export function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [googleEvents, setGoogleEvents] = useState<CalendarEvent[]>([])
   const [filter, setFilter] = useState('all')
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [showEventModal, setShowEventModal] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [showGoogleEvents, setShowGoogleEvents] = useState(true)
+  const [googleCalendarLoading, setGoogleCalendarLoading] = useState(false)
   const { user } = useAuth()
   const supabase = createClient()
 
   useEffect(() => {
-    fetchEvents()
+    fetchAllEvents()
   }, [currentDate, user])
 
-  async function fetchEvents() {
-    setLoading(true)
+  async function fetchSupabaseEvents(): Promise<CalendarEvent[]> {
     try {
       const startDate = format(startOfMonth(currentDate), 'yyyy-MM-dd')
       const endDate = format(endOfMonth(currentDate), 'yyyy-MM-dd')
@@ -63,31 +68,29 @@ export function CalendarView() {
         `)
         .gte('event_date', startDate)
         .lte('event_date', endDate)
-        .eq('is_public', true) // Only fetch public events for non-authenticated users
+        .eq('is_public', true)
         .order('event_date')
 
       let allEvents: CalendarEvent[] = []
 
       // Add public club events
       if (clubEvents) {
-        allEvents = [
-          ...allEvents,
-          ...clubEvents.map(event => ({
-            id: `event-${event.id}`,
-            title: event.title,
-            date: event.event_date,
-            type: 'event' as const,
-            member: event.members?.full_name || 'Club',
-            location: event.location || undefined,
-            isPublic: true
-          }))
-        ]
+        allEvents.push(...clubEvents.map(event => ({
+          id: `club-${event.id}`,
+          title: event.title,
+          date: event.event_date,
+          type: 'event' as const,
+          member: event.members?.full_name || 'Unknown',
+          location: event.location || undefined,
+          isPublic: event.is_public,
+          source: 'supabase' as const
+        })))
       }
 
-      // If user is authenticated, fetch additional private data
+      // If user is authenticated, fetch member-only events
       if (user) {
         // Fetch private club events
-        const { data: privateEvents } = await supabase
+        const { data: privateClubEvents } = await supabase
           .from('club_events')
           .select(`
             *,
@@ -121,55 +124,97 @@ export function CalendarView() {
           .lte('due_date', endDate)
           .order('due_date')
 
-        // Add private events
-        if (privateEvents) {
-          allEvents = [
-            ...allEvents,
-            ...privateEvents.map(event => ({
-              id: `event-${event.id}`,
-              title: event.title,
-              date: event.event_date,
-              type: 'event' as const,
-              member: event.members?.full_name || 'Club',
-              location: event.location || undefined,
-              isPublic: false
-            }))
-          ]
+        // Add private club events
+        if (privateClubEvents) {
+          allEvents.push(...privateClubEvents.map(event => ({
+            id: `club-private-${event.id}`,
+            title: event.title,
+            date: event.event_date,
+            type: 'event' as const,
+            member: event.members?.full_name || 'Unknown',
+            location: event.location || undefined,
+            isPublic: event.is_public,
+            source: 'supabase' as const
+          })))
         }
 
         // Add hunt logs
         if (huntLogs) {
-          allEvents = [
-            ...allEvents,
-            ...huntLogs.map(hunt => ({
-              id: `hunt-${hunt.id}`,
-              title: `${hunt.game_harvested ? 'Harvest' : 'Hunt'} - ${hunt.stands?.name || 'Unknown Stand'}`,
-              date: hunt.hunt_date,
-              type: 'hunt' as const,
-              member: hunt.members?.full_name || 'Unknown',
-              location: hunt.stands?.name || undefined
-            }))
-          ]
+          allEvents.push(...huntLogs.map(hunt => ({
+            id: `hunt-${hunt.id}`,
+            title: `Hunt - ${hunt.stands?.name || 'Unknown Stand'}`,
+            date: hunt.hunt_date,
+            type: 'hunt' as const,
+            member: hunt.members?.full_name || 'Unknown',
+            location: hunt.stands?.name || undefined,
+            isPublic: false,
+            source: 'supabase' as const
+          })))
         }
 
         // Add maintenance tasks
         if (maintenanceTasks) {
-          allEvents = [
-            ...allEvents,
-            ...maintenanceTasks.map(task => ({
-              id: `maintenance-${task.id}`,
-              title: task.title,
-              date: task.due_date,
-              type: 'maintenance' as const,
-              status: task.status,
-              member: task.members?.full_name || 'Unassigned',
-              priority: task.priority
-            }))
-          ]
+          allEvents.push(...maintenanceTasks.map(task => ({
+            id: `maintenance-${task.id}`,
+            title: task.task,
+            date: task.due_date,
+            type: 'maintenance' as const,
+            status: task.status,
+            member: task.members?.full_name || 'Unassigned',
+            priority: task.priority,
+            isPublic: false,
+            source: 'supabase' as const
+          })))
         }
       }
 
-      setEvents(allEvents)
+      return allEvents
+    } catch (error) {
+      console.error('Error fetching Supabase events:', error)
+      return []
+    }
+  }
+
+  async function fetchGoogleEvents(): Promise<CalendarEvent[]> {
+    if (!showGoogleEvents) return []
+    
+    setGoogleCalendarLoading(true)
+    try {
+      const startDate = format(startOfMonth(currentDate), 'yyyy-MM-dd')
+      const endDate = format(endOfMonth(currentDate), 'yyyy-MM-dd')
+
+      console.log('Fetching Google Calendar events...')
+      const googleEvents = await clientGoogleCalendarService.getEvents(startDate, endDate)
+      console.log(`Retrieved ${googleEvents.length} Google Calendar events`)
+      
+      return googleEvents.map(event => ({
+        id: `google-${event.id}`,
+        title: event.title,
+        date: event.start.split('T')[0], // Extract date part
+        type: 'google' as const,
+        location: event.location || undefined,
+        isPublic: event.isPublic,
+        source: 'google' as const,
+        isAllDay: event.isAllDay
+      }))
+    } catch (error) {
+      console.error('Error fetching Google Calendar events:', error)
+      return []
+    } finally {
+      setGoogleCalendarLoading(false)
+    }
+  }
+
+  async function fetchAllEvents() {
+    setLoading(true)
+    try {
+      const [supabaseEvents, googleCalendarEvents] = await Promise.all([
+        fetchSupabaseEvents(),
+        fetchGoogleEvents()
+      ])
+
+      setEvents(supabaseEvents)
+      setGoogleEvents(googleCalendarEvents)
     } catch (error) {
       console.error('Error fetching events:', error)
     } finally {
@@ -177,67 +222,91 @@ export function CalendarView() {
     }
   }
 
-  const filteredEvents = events.filter(event => {
+  // Handle Google Calendar toggle
+  const handleGoogleCalendarToggle = async (enabled: boolean) => {
+    setShowGoogleEvents(enabled)
+    if (enabled) {
+      // Fetch Google events if enabling
+      const googleCalendarEvents = await fetchGoogleEvents()
+      setGoogleEvents(googleCalendarEvents)
+    } else {
+      // Clear Google events if disabling
+      setGoogleEvents([])
+    }
+  }
+
+  // Combine all events for display
+  const allEvents = [...events, ...googleEvents]
+
+  // Filter events based on current filter
+  const filteredEvents = allEvents.filter(event => {
     if (filter === 'all') return true
     return event.type === filter
   })
 
-  const calendarDays = eachDayOfInterval({
-    start: startOfWeek(startOfMonth(currentDate)),
-    end: endOfWeek(endOfMonth(currentDate))
-  })
+  const prevMonth = () => setCurrentDate(subMonths(currentDate, 1))
+  const nextMonth = () => setCurrentDate(addMonths(currentDate, 1))
 
-  function getEventsForDate(date: Date) {
-    const dateStr = format(date, 'yyyy-MM-dd')
-    return filteredEvents.filter(event => event.date === dateStr)
-  }
-
-  function getEventColor(type: string) {
-    switch (type) {
-      case 'hunt': return 'bg-green-100 text-green-800 border-green-200'
-      case 'maintenance': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-      case 'event': return 'bg-blue-100 text-blue-800 border-blue-200'
-      default: return 'bg-gray-100 text-gray-800 border-gray-200'
-    }
-  }
-
-  function getEventIcon(type: string) {
-    switch (type) {
-      case 'hunt': return Target
-      case 'maintenance': return Wrench
-      case 'event': return CalendarIcon
-      default: return CalendarIcon
-    }
-  }
-
-  function nextMonth() {
-    setCurrentDate(addMonths(currentDate, 1))
-  }
-
-  function prevMonth() {
-    setCurrentDate(subMonths(currentDate, 1))
-  }
-
-  function handleDateClick(date: Date) {
+  const handleDateClick = (date: Date) => {
     setSelectedDate(date)
     setShowEventModal(true)
   }
 
+  // Generate calendar days
+  const monthStart = startOfMonth(currentDate)
+  const monthEnd = endOfMonth(currentDate)
+  const calendarStart = startOfWeek(monthStart)
+  const calendarEnd = endOfWeek(monthEnd)
+  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
+
+  const getEventsForDate = (date: Date) => {
+    return filteredEvents.filter(event => isSameDay(new Date(event.date), date))
+  }
+
+  const getEventColor = (type: string) => {
+    switch (type) {
+      case 'hunt':
+        return 'bg-green-100 border-green-300 text-green-800'
+      case 'maintenance':
+        return 'bg-yellow-100 border-yellow-300 text-yellow-800'
+      case 'event':
+        return 'bg-blue-100 border-blue-300 text-blue-800'
+      case 'google':
+        return 'bg-purple-100 border-purple-300 text-purple-800'
+      default:
+        return 'bg-gray-100 border-gray-300 text-gray-800'
+    }
+  }
+
+  const getEventIcon = (type: string) => {
+    switch (type) {
+      case 'hunt':
+        return Target
+      case 'maintenance':
+        return Wrench
+      case 'event':
+        return CalendarIcon
+      case 'google':
+        return Globe
+      default:
+        return CalendarIcon
+    }
+  }
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Auth Status Banner */}
+    <div className="max-w-7xl mx-auto p-4">
+      {/* Public notice for non-authenticated users */}
       {!user && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Eye size={20} className="text-blue-600" />
-              <span className="text-blue-800 font-medium">Public View</span>
-            </div>
-            <div className="text-sm text-blue-700">
-              Showing public events only. 
-              <Link href="/login" className="ml-1 underline hover:text-blue-900">
-                Sign in
-              </Link> to view all club activities.
+        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+          <div className="flex items-center">
+            <Eye className="w-5 h-5 text-blue-400 mr-2" />
+            <div>
+              <p className="text-sm text-blue-700">
+                <strong>Public View:</strong> You're seeing public events only.{' '}
+                <Link href="/login" className="ml-1 underline hover:text-blue-900">
+                  Sign in
+                </Link> to view all club activities.
+              </p>
             </div>
           </div>
         </div>
@@ -268,6 +337,22 @@ export function CalendarView() {
             </div>
             
             <div className="flex items-center space-x-3">
+              {/* Google Calendar Toggle */}
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={showGoogleEvents}
+                  onChange={(e) => handleGoogleCalendarToggle(e.target.checked)}
+                  className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                />
+                <span className="text-sm text-gray-700 flex items-center">
+                  Show Google Calendar
+                  {googleCalendarLoading && (
+                    <div className="ml-2 animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                  )}
+                </span>
+              </label>
+
               {/* Filter Dropdown */}
               <select
                 value={filter}
@@ -278,6 +363,7 @@ export function CalendarView() {
                 <option value="hunt">Hunts</option>
                 <option value="maintenance">Maintenance</option>
                 <option value="event">Club Events</option>
+                <option value="google">Google Calendar</option>
               </select>
 
               {/* Add Event Button - Only for authenticated users */}
@@ -307,6 +393,12 @@ export function CalendarView() {
               <div className="w-3 h-3 bg-blue-200 rounded border border-blue-300"></div>
               <span>Club Events</span>
             </div>
+            {showGoogleEvents && (
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-purple-200 rounded border border-purple-300"></div>
+                <span>Google Calendar</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -353,7 +445,7 @@ export function CalendarView() {
                       </div>
                       
                       <div className="space-y-1">
-                        {dayEvents.slice(0, 2).map(event => {
+                        {dayEvents.slice(0, 3).map(event => {
                           const Icon = getEventIcon(event.type)
                           return (
                             <div
@@ -371,9 +463,9 @@ export function CalendarView() {
                             </div>
                           )
                         })}
-                        {dayEvents.length > 2 && (
+                        {dayEvents.length > 3 && (
                           <div className="text-xs text-gray-500 px-2">
-                            +{dayEvents.length - 2} more
+                            +{dayEvents.length - 3} more
                           </div>
                         )}
                       </div>
@@ -401,7 +493,7 @@ export function CalendarView() {
                   </span>
                 </div>
                 <span className="font-medium">
-                  {user ? events.filter(e => e.type === 'hunt').length : '?'}
+                  {user ? allEvents.filter(e => e.type === 'hunt').length : '?'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -412,7 +504,7 @@ export function CalendarView() {
                   </span>
                 </div>
                 <span className="font-medium">
-                  {user ? events.filter(e => e.type === 'maintenance').length : '?'}
+                  {user ? allEvents.filter(e => e.type === 'maintenance').length : '?'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -420,40 +512,32 @@ export function CalendarView() {
                   <CalendarIcon size={16} className="text-blue-600" />
                   <span className="text-sm text-gray-600">Club Events</span>
                 </div>
-                <span className="font-medium">{events.filter(e => e.type === 'event').length}</span>
+                <span className="font-medium">
+                  {allEvents.filter(e => e.type === 'event').length}
+                </span>
               </div>
+              {showGoogleEvents && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Globe size={16} className="text-purple-600" />
+                    <span className="text-sm text-gray-600">Google Calendar</span>
+                  </div>
+                  <span className="font-medium">
+                    {googleEvents.length}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Quick Actions - Only for authenticated users */}
-          {user && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-              <div className="space-y-2">
-                <button className="w-full flex items-center px-3 py-2 text-left text-sm bg-green-50 hover:bg-green-100 rounded-md transition-colors">
-                  <Target size={16} className="mr-2 text-green-600" />
-                  Log a Hunt
-                </button>
-                <button className="w-full flex items-center px-3 py-2 text-left text-sm bg-yellow-50 hover:bg-yellow-100 rounded-md transition-colors">
-                  <Wrench size={16} className="mr-2 text-yellow-600" />
-                  Add Maintenance Task
-                </button>
-                <button className="w-full flex items-center px-3 py-2 text-left text-sm bg-blue-50 hover:bg-blue-100 rounded-md transition-colors">
-                  <Users size={16} className="mr-2 text-blue-600" />
-                  Schedule Club Event
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
       {/* Event Modal */}
       {showEventModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 {selectedDate ? `Events for ${format(selectedDate, 'MMMM d, yyyy')}` : 'Add Event'}
               </h3>
               {selectedDate && (
@@ -464,6 +548,7 @@ export function CalendarView() {
                         {React.createElement(getEventIcon(event.type), { size: 16 })}
                         <span className="font-medium">{event.title}</span>
                         {!user && !event.isPublic && <Lock size={12} />}
+                        {event.source === 'google' && <Globe size={12} />}
                       </div>
                       {event.member && (
                         <p className="text-sm mt-1">By: {event.member}</p>
