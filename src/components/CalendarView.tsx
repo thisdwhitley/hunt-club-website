@@ -1,9 +1,9 @@
-// src/components/CalendarView.tsx (Fixed - only client-side imports)
+// src/components/CalendarView.tsx (Enhanced with multiple calendar support)
 'use client'
 
 import React, { useState, useEffect } from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns'
-import { ChevronLeft, ChevronRight, Plus, Target, Wrench, Calendar as CalendarIcon, Users, Filter, Lock, Eye, Globe } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Target, Wrench, Calendar, Users, Eye, Lock, Globe, Star } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { clientGoogleCalendarService } from '@/lib/services/clientGoogleCalendar'
@@ -35,6 +35,7 @@ interface CalendarEvent {
   isPublic?: boolean
   source?: 'supabase' | 'google'
   isAllDay?: boolean
+  calendarName?: string
 }
 
 export function CalendarView() {
@@ -183,9 +184,7 @@ export function CalendarView() {
       const startDate = format(startOfMonth(currentDate), 'yyyy-MM-dd')
       const endDate = format(endOfMonth(currentDate), 'yyyy-MM-dd')
 
-      console.log('Fetching Google Calendar events...')
       const googleEvents = await clientGoogleCalendarService.getEvents(startDate, endDate)
-      console.log(`Retrieved ${googleEvents.length} Google Calendar events`)
       
       return googleEvents.map(event => ({
         id: `google-${event.id}`,
@@ -195,7 +194,8 @@ export function CalendarView() {
         location: event.location || undefined,
         isPublic: event.isPublic,
         source: 'google' as const,
-        isAllDay: event.isAllDay
+        isAllDay: event.isAllDay,
+        calendarName: event.calendarName
       }))
     } catch (error) {
       console.error('Error fetching Google Calendar events:', error)
@@ -226,11 +226,9 @@ export function CalendarView() {
   const handleGoogleCalendarToggle = async (enabled: boolean) => {
     setShowGoogleEvents(enabled)
     if (enabled) {
-      // Fetch Google events if enabling
       const googleCalendarEvents = await fetchGoogleEvents()
       setGoogleEvents(googleCalendarEvents)
     } else {
-      // Clear Google events if disabling
       setGoogleEvents([])
     }
   }
@@ -263,7 +261,7 @@ export function CalendarView() {
     return filteredEvents.filter(event => isSameDay(new Date(event.date), date))
   }
 
-  const getEventColor = (type: string) => {
+  const getEventColor = (type: string, calendarName?: string) => {
     switch (type) {
       case 'hunt':
         return 'bg-green-100 border-green-300 text-green-800'
@@ -272,26 +270,36 @@ export function CalendarView() {
       case 'event':
         return 'bg-blue-100 border-blue-300 text-blue-800'
       case 'google':
+        // Different colors for different Google calendars
+        if (calendarName === 'Holidays') {
+          return 'bg-red-100 border-red-300 text-red-800'
+        }
         return 'bg-purple-100 border-purple-300 text-purple-800'
       default:
         return 'bg-gray-100 border-gray-300 text-gray-800'
     }
   }
 
-  const getEventIcon = (type: string) => {
+  const getEventIcon = (type: string, calendarName?: string) => {
     switch (type) {
       case 'hunt':
         return Target
       case 'maintenance':
         return Wrench
       case 'event':
-        return CalendarIcon
+        return Calendar
       case 'google':
+        if (calendarName === 'Holidays') {
+          return Star
+        }
         return Globe
       default:
-        return CalendarIcon
+        return Calendar
     }
   }
+
+  // Group Google events by calendar for the legend
+  const googleCalendarTypes = [...new Set(googleEvents.map(e => e.calendarName))].filter(Boolean)
 
   return (
     <div className="max-w-7xl mx-auto p-4">
@@ -393,7 +401,17 @@ export function CalendarView() {
               <div className="w-3 h-3 bg-blue-200 rounded border border-blue-300"></div>
               <span>Club Events</span>
             </div>
-            {showGoogleEvents && (
+            {showGoogleEvents && googleCalendarTypes.map(calendarName => (
+              <div key={calendarName} className="flex items-center space-x-2">
+                <div className={`w-3 h-3 rounded border ${
+                  calendarName === 'Holidays' 
+                    ? 'bg-red-200 border-red-300' 
+                    : 'bg-purple-200 border-purple-300'
+                }`}></div>
+                <span>{calendarName}</span>
+              </div>
+            ))}
+            {showGoogleEvents && googleCalendarTypes.length === 0 && (
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-purple-200 rounded border border-purple-300"></div>
                 <span>Google Calendar</span>
@@ -446,14 +464,15 @@ export function CalendarView() {
                       
                       <div className="space-y-1">
                         {dayEvents.slice(0, 3).map(event => {
-                          const Icon = getEventIcon(event.type)
+                          const Icon = getEventIcon(event.type, event.calendarName)
                           return (
                             <div
                               key={event.id}
                               className={`
                                 text-xs px-2 py-1 rounded border truncate flex items-center space-x-1
-                                ${getEventColor(event.type)}
+                                ${getEventColor(event.type, event.calendarName)}
                               `}
+                              title={`${event.title}${event.calendarName ? ` (${event.calendarName})` : ''}`}
                             >
                               <Icon size={10} />
                               <span className="truncate">
@@ -509,7 +528,7 @@ export function CalendarView() {
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <CalendarIcon size={16} className="text-blue-600" />
+                  <Calendar size={16} className="text-blue-600" />
                   <span className="text-sm text-gray-600">Club Events</span>
                 </div>
                 <span className="font-medium">
@@ -520,7 +539,7 @@ export function CalendarView() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Globe size={16} className="text-purple-600" />
-                    <span className="text-sm text-gray-600">Google Calendar</span>
+                    <span className="text-sm text-gray-600">External Calendars</span>
                   </div>
                   <span className="font-medium">
                     {googleEvents.length}
@@ -541,23 +560,29 @@ export function CalendarView() {
                 {selectedDate ? `Events for ${format(selectedDate, 'MMMM d, yyyy')}` : 'Add Event'}
               </h3>
               {selectedDate && (
-                <div className="mb-4">
-                  {getEventsForDate(selectedDate).map(event => (
-                    <div key={event.id} className={`p-3 rounded-lg border mb-2 ${getEventColor(event.type)}`}>
-                      <div className="flex items-center space-x-2">
-                        {React.createElement(getEventIcon(event.type), { size: 16 })}
-                        <span className="font-medium">{event.title}</span>
-                        {!user && !event.isPublic && <Lock size={12} />}
-                        {event.source === 'google' && <Globe size={12} />}
+                <div className="mb-4 max-h-64 overflow-y-auto">
+                  {getEventsForDate(selectedDate).map(event => {
+                    const Icon = getEventIcon(event.type, event.calendarName)
+                    return (
+                      <div key={event.id} className={`p-3 rounded-lg border mb-2 ${getEventColor(event.type, event.calendarName)}`}>
+                        <div className="flex items-center space-x-2">
+                          <Icon size={16} />
+                          <span className="font-medium">{event.title}</span>
+                          {!user && !event.isPublic && <Lock size={12} />}
+                          {event.source === 'google' && <Globe size={12} />}
+                        </div>
+                        {event.member && (
+                          <p className="text-sm mt-1">By: {event.member}</p>
+                        )}
+                        {event.location && (
+                          <p className="text-sm mt-1">Location: {event.location}</p>
+                        )}
+                        {event.calendarName && (
+                          <p className="text-sm mt-1">Calendar: {event.calendarName}</p>
+                        )}
                       </div>
-                      {event.member && (
-                        <p className="text-sm mt-1">By: {event.member}</p>
-                      )}
-                      {event.location && (
-                        <p className="text-sm mt-1">Location: {event.location}</p>
-                      )}
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
               <p className="text-gray-600 mb-6">

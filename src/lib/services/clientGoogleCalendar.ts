@@ -1,4 +1,4 @@
-// src/lib/services/clientGoogleCalendar.ts (Client-side only)
+// src/lib/services/clientGoogleCalendar.ts (Updated to match server interface)
 // This service makes HTTP requests to your API routes - safe for React components
 
 export interface GoogleCalendarEvent {
@@ -11,6 +11,7 @@ export interface GoogleCalendarEvent {
     isAllDay: boolean;
     isPublic: boolean;
     source: 'google';
+    calendarName?: string;
   }
   
   // CLIENT-SIDE ONLY - Safe to import in React components
