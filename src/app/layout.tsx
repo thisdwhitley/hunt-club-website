@@ -1,9 +1,10 @@
-// src/app/layout.tsx (updated)
+// src/app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "../styles/leaflet.css"; // Import Leaflet styles
 
-const geistSans = Geist({
+const geist = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
@@ -14,9 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Caswell County Yacht Club - Professional Hunt Club Management",
-  description: "Complete hunting club management system with hunt logging, member management, property mapping, and maintenance tracking.",
-  keywords: "hunting club, hunt management, wildlife tracking, hunting software, club management, Caswell County",
+  title: "Caswell County Yacht Club",
+  description: "Hunting club management system for tracking hunts, maintenance, and camp activities.",
 };
 
 export default function RootLayout({
@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geist.variable} ${geistMono.variable} antialiased`}
       >
         {children}
       </body>

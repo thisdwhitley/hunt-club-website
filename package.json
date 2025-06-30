@@ -11,13 +11,16 @@
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.50.0",
+    "@types/leaflet": "^1.9.19",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "googleapis": "^143.0.0",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.522.0",
     "next": "15.3.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-leaflet": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

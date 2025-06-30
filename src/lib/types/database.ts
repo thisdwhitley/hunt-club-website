@@ -77,6 +77,198 @@ export interface Database {
           updated_at?: string
         }
       }
+      // NEW MAP TABLES
+      trail_cameras: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          latitude: number
+          longitude: number
+          type: string
+          brand: string | null
+          model: string | null
+          installation_date: string | null
+          last_check_date: string | null
+          battery_level: number | null
+          active: boolean
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          latitude: number
+          longitude: number
+          type?: string
+          brand?: string | null
+          model?: string | null
+          installation_date?: string | null
+          last_check_date?: string | null
+          battery_level?: number | null
+          active?: boolean
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          latitude?: number
+          longitude?: number
+          type?: string
+          brand?: string | null
+          model?: string | null
+          installation_date?: string | null
+          last_check_date?: string | null
+          battery_level?: number | null
+          active?: boolean
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      food_plots: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          latitude: number
+          longitude: number
+          plot_type: string
+          size_acres: number | null
+          crop_type: string | null
+          planting_date: string | null
+          last_maintained: string | null
+          soil_type: string | null
+          active: boolean
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          latitude: number
+          longitude: number
+          plot_type?: string
+          size_acres?: number | null
+          crop_type?: string | null
+          planting_date?: string | null
+          last_maintained?: string | null
+          soil_type?: string | null
+          active?: boolean
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          latitude?: number
+          longitude?: number
+          plot_type?: string
+          size_acres?: number | null
+          crop_type?: string | null
+          planting_date?: string | null
+          last_maintained?: string | null
+          soil_type?: string | null
+          active?: boolean
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      trails: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          path_coordinates: Json // Array of [lat, lng] points
+          trail_type: string
+          difficulty: string | null
+          length_miles: number | null
+          surface_type: string | null
+          active: boolean
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          path_coordinates: Json
+          trail_type?: string
+          difficulty?: string | null
+          length_miles?: number | null
+          surface_type?: string | null
+          active?: boolean
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          path_coordinates?: Json
+          trail_type?: string
+          difficulty?: string | null
+          length_miles?: number | null
+          surface_type?: string | null
+          active?: boolean
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      property_boundaries: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          boundary_coordinates: Json // Array of [lat, lng] points defining polygon
+          boundary_type: string
+          area_acres: number | null
+          legal_description: string | null
+          active: boolean
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          boundary_coordinates: Json
+          boundary_type?: string
+          area_acres?: number | null
+          legal_description?: string | null
+          active?: boolean
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          boundary_coordinates?: Json
+          boundary_type?: string
+          area_acres?: number | null
+          legal_description?: string | null
+          active?: boolean
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
       hunt_logs: {
         Row: {
           id: string
@@ -206,6 +398,7 @@ export interface Database {
           event_type: string
           location: string | null
           all_day: boolean
+          is_public: boolean
           created_by: string
           created_at: string
           updated_at: string
@@ -220,6 +413,7 @@ export interface Database {
           event_type?: string
           location?: string | null
           all_day?: boolean
+          is_public?: boolean
           created_by: string
           created_at?: string
           updated_at?: string
@@ -234,6 +428,7 @@ export interface Database {
           event_type?: string
           location?: string | null
           all_day?: boolean
+          is_public?: boolean
           created_by?: string
           created_at?: string
           updated_at?: string
@@ -280,18 +475,6 @@ export interface Database {
           updated_at?: string
         }
       }
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      [_ in never]: never
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
     }
   }
 }
