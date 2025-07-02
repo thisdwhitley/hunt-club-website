@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "../styles/leaflet.css"; // Import Leaflet styles
+import "../styles/hunting-map.css"; // Import Map styles 
 
 const geist = Geist({
   variable: "--font-geist-sans",

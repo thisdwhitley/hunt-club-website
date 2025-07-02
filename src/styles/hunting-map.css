@@ -1,0 +1,565 @@
+/* src/styles/hunting-map.css */
+/* Hunting Club Map Styles for Caswell County Yacht Club */
+
+/* Hunting Club Color Palette Variables */
+:root {
+  /* Primary Colors */
+  --hunting-burnt-orange: #FA7921;
+  --hunting-bright-orange: #FE9920;
+  --hunting-muted-gold: #B9A44C;
+  --hunting-olive-green: #566E3D;
+  --hunting-dark-teal: #0C4767;
+  
+  /* Secondary Colors */
+  --hunting-forest-shadow: #2D3E1F;
+  --hunting-weathered-wood: #8B7355;
+  --hunting-morning-mist: #E8E6E0;
+  --hunting-clay-earth: #A0653A;
+  --hunting-pine-needle: #4A5D32;
+  --hunting-sunset-amber: #D4A574;
+}
+
+/* Main hunting club container */
+.hunting-club-container {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  background: linear-gradient(135deg, var(--hunting-morning-mist) 0%, #f5f4f0 100%);
+  min-height: 100vh;
+}
+
+/* Custom hunting club clubhouse marker */
+.hunting-club-clubhouse-marker {
+  filter: drop-shadow(0 2px 4px rgba(45, 62, 31, 0.4));
+  transition: transform 0.2s ease;
+}
+
+.hunting-club-clubhouse-marker:hover {
+  transform: scale(1.1);
+}
+
+/* Simple hunting stand markers */
+.hunting-stand-marker {
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.hunting-stand-marker:hover {
+  transform: scale(1.2);
+  filter: drop-shadow(0 2px 6px rgba(250, 121, 33, 0.5));
+}
+
+/* Enhanced Leaflet popup styling for hunting club */
+.leaflet-popup-content-wrapper {
+  background: var(--hunting-morning-mist) !important;
+  border: 2px solid var(--hunting-olive-green) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(45, 62, 31, 0.3) !important;
+}
+
+.leaflet-popup-tip {
+  background: var(--hunting-morning-mist) !important;
+  border: 2px solid var(--hunting-olive-green) !important;
+}
+
+/* Hunting club map controls styling */
+.leaflet-control-zoom {
+  border: 2px solid var(--hunting-olive-green) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(45, 62, 31, 0.2) !important;
+}
+
+.leaflet-control-zoom a {
+  background: var(--hunting-morning-mist) !important;
+  color: var(--hunting-olive-green) !important;
+  border: none !important;
+  font-weight: bold !important;
+  transition: all 0.2s ease !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: var(--hunting-sunset-amber) !important;
+  color: var(--hunting-forest-shadow) !important;
+  transform: scale(1.05);
+}
+
+/* Attribution control styling */
+.leaflet-control-attribution {
+  background: rgba(232, 230, 224, 0.9) !important;
+  border: 1px solid var(--hunting-weathered-wood) !important;
+  border-radius: 6px !important;
+  font-size: 10px !important;
+  color: var(--hunting-forest-shadow) !important;
+}
+
+.leaflet-control-attribution a {
+  color: var(--hunting-olive-green) !important;
+  text-decoration: none !important;
+}
+
+.leaflet-control-attribution a:hover {
+  color: var(--hunting-burnt-orange) !important;
+  text-decoration: underline !important;
+}
+
+/* Custom hunting stand marker animations */
+.leaflet-marker-icon {
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.leaflet-marker-icon:hover {
+  transform: scale(1.1);
+  filter: drop-shadow(0 4px 8px rgba(250, 121, 33, 0.4));
+}
+
+/* Map container enhancements */
+.leaflet-container {
+  background: var(--hunting-forest-shadow) !important;
+  border-radius: 0 0 8px 8px !important;
+}
+
+/* Loading animation for tiles */
+.leaflet-tile-container .leaflet-tile {
+  transition: opacity 0.3s ease;
+}
+
+/* Custom hunting club button styles */
+.hunting-club-btn-primary {
+  background: var(--hunting-burnt-orange);
+  color: white;
+  border: 2px solid var(--hunting-forest-shadow);
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hunting-club-btn-primary:hover {
+  background: var(--hunting-bright-orange);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(250, 121, 33, 0.3);
+}
+
+.hunting-club-btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(250, 121, 33, 0.2);
+}
+
+.hunting-club-btn-secondary {
+  background: var(--hunting-muted-gold);
+  color: var(--hunting-forest-shadow);
+  border: 2px solid var(--hunting-forest-shadow);
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hunting-club-btn-secondary:hover {
+  background: var(--hunting-sunset-amber);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(185, 164, 76, 0.3);
+}
+
+.hunting-club-btn-danger {
+  background: var(--hunting-clay-earth);
+  color: white;
+  border: 2px solid var(--hunting-forest-shadow);
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hunting-club-btn-danger:hover {
+  background: #b8724a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(160, 101, 58, 0.3);
+}
+
+/* Hunting club status indicators */
+.hunting-club-status-success {
+  background: var(--hunting-bright-orange);
+  color: white;
+  border-radius: 8px;
+  padding: 0.75rem;
+  border: 2px solid var(--hunting-forest-shadow);
+}
+
+.hunting-club-status-error {
+  background: var(--hunting-clay-earth);
+  color: white;
+  border-radius: 8px;
+  padding: 0.75rem;
+  border: 2px solid var(--hunting-forest-shadow);
+}
+
+.hunting-club-status-warning {
+  background: var(--hunting-muted-gold);
+  color: var(--hunting-forest-shadow);
+  border-radius: 8px;
+  padding: 0.75rem;
+  border: 2px solid var(--hunting-forest-shadow);
+}
+
+/* Debug panel styling */
+.hunting-club-debug-panel {
+  background: var(--hunting-morning-mist);
+  border: 2px solid var(--hunting-weathered-wood);
+  border-radius: 12px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+}
+
+.hunting-club-debug-panel .debug-header {
+  background: var(--hunting-weathered-wood);
+  color: white;
+  padding: 0.75rem;
+  border-radius: 8px 8px 0 0;
+  font-weight: 600;
+  border-bottom: 2px solid var(--hunting-forest-shadow);
+}
+
+.hunting-club-debug-panel .debug-content {
+  padding: 1rem;
+  max-height: 200px;
+  overflow-y: auto;
+  background: white;
+  border-radius: 0 0 8px 8px;
+}
+
+.hunting-club-debug-panel .debug-log-entry {
+  color: var(--hunting-forest-shadow);
+  font-size: 11px;
+  line-height: 1.4;
+  margin-bottom: 2px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.hunting-club-debug-panel .debug-log-entry:hover {
+  background: var(--hunting-morning-mist);
+}
+
+/* Hunting club card styling */
+.hunting-club-card {
+  background: var(--hunting-morning-mist);
+  border: 2px solid var(--hunting-forest-shadow);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(45, 62, 31, 0.1);
+  transition: all 0.2s ease;
+}
+
+.hunting-club-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(45, 62, 31, 0.15);
+}
+
+.hunting-club-card-header {
+  color: var(--hunting-olive-green);
+  font-weight: 700;
+  font-size: 1.125rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 2px solid var(--hunting-sunset-amber);
+  padding-bottom: 0.5rem;
+}
+
+/* Statistics grid styling */
+.hunting-club-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.hunting-club-stat-card {
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  color: white;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.hunting-club-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.hunting-club-stat-card .stat-label {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+}
+
+.hunting-club-stat-card .stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* Responsive design for hunting club interface */
+@media (max-width: 768px) {
+  .hunting-club-card {
+    padding: 1rem;
+  }
+  
+  .hunting-club-btn-primary,
+  .hunting-club-btn-secondary,
+  .hunting-club-btn-danger {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+  }
+  
+  .hunting-club-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+  
+  .hunting-club-stat-card {
+    padding: 0.75rem;
+  }
+  
+  .hunting-club-stat-card .stat-value {
+    font-size: 1.25rem;
+  }
+}
+
+/* Custom scrollbar for hunting club theme */
+.hunting-club-debug-panel .debug-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.hunting-club-debug-panel .debug-content::-webkit-scrollbar-track {
+  background: var(--hunting-morning-mist);
+  border-radius: 3px;
+}
+
+.hunting-club-debug-panel .debug-content::-webkit-scrollbar-thumb {
+  background: var(--hunting-weathered-wood);
+  border-radius: 3px;
+}
+
+.hunting-club-debug-panel .debug-content::-webkit-scrollbar-thumb:hover {
+  background: var(--hunting-olive-green);
+}
+
+/* Enhanced map header styling */
+.hunting-club-map-header {
+  background: linear-gradient(135deg, var(--hunting-olive-green) 0%, var(--hunting-forest-shadow) 100%);
+  color: white;
+  padding: 1rem;
+  border-bottom: 3px solid var(--hunting-burnt-orange);
+  box-shadow: 0 2px 8px rgba(45, 62, 31, 0.2);
+}
+
+/* Map overlay controls */
+.hunting-club-map-overlay {
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+}
+
+.hunting-club-map-overlay:hover {
+  background: rgba(232, 230, 224, 0.98) !important;
+}
+
+.hunting-club-overlay-button {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.hunting-club-overlay-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.hunting-club-overlay-button:active {
+  transform: translateY(0);
+}
+
+/* Enhanced map overlay styling */
+.hunting-club-layer-overlay {
+  animation: slideInLeft 0.3s ease;
+  backdrop-filter: blur(8px);
+}
+
+.hunting-club-component-overlay {
+  animation: slideInRight 0.3s ease;
+  backdrop-filter: blur(8px);
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Responsive overlay positioning */
+@media (max-width: 768px) {
+  .hunting-club-layer-overlay,
+  .hunting-club-component-overlay {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    margin: 8px;
+    display: inline-block;
+  }
+  
+  /* Make overlays stack vertically on mobile */
+  .hunting-club-layer-overlay {
+    margin-bottom: 4px;
+  }
+}
+
+.hunting-club-map-header h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hunting-club-map-header p {
+  font-size: 0.875rem;
+  margin: 0.25rem 0 0 0;
+  opacity: 0.9;
+}
+
+/* Loading animation */
+@keyframes hunting-club-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.hunting-club-loading {
+  animation: hunting-club-pulse 2s infinite;
+}
+
+/* Success animation */
+@keyframes hunting-club-success {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.hunting-club-success-animation {
+  animation: hunting-club-success 0.5s ease;
+}
+
+/* Map container border enhancement */
+.hunting-club-map-container {
+  background: var(--hunting-forest-shadow);
+  border: 3px solid var(--hunting-olive-green);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 
+    0 8px 24px rgba(45, 62, 31, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.hunting-club-map-title {
+  background: var(--hunting-olive-green);
+  color: white;
+  padding: 0.75rem;
+  font-weight: 600;
+  border-bottom: 2px solid var(--hunting-burnt-orange);
+}
+
+/* Enhanced button group styling */
+.hunting-club-button-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.hunting-club-button-group button {
+  flex: 1;
+  min-width: 120px;
+}
+
+@media (max-width: 640px) {
+  .hunting-club-button-group {
+    flex-direction: column;
+  }
+  
+  .hunting-club-button-group button {
+    width: 100%;
+    min-width: unset;
+  }
+}
+
+/* Toggle button styling */
+.hunting-club-toggle-active {
+  background: var(--hunting-pine-needle) !important;
+  color: white !important;
+  border-color: var(--hunting-forest-shadow) !important;
+}
+
+.hunting-club-toggle-inactive {
+  background: var(--hunting-weathered-wood) !important;
+  color: white !important;
+  border-color: var(--hunting-forest-shadow) !important;
+}
+
+/* Enhanced hover effects */
+.hunting-club-hover-lift {
+  transition: all 0.2s ease;
+}
+
+.hunting-club-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Property boundary line styling (for future use) */
+.hunting-club-property-boundary {
+  stroke: var(--hunting-burnt-orange) !important;
+  stroke-width: 3px !important;
+  stroke-opacity: 0.8 !important;
+  fill: rgba(250, 121, 33, 0.1) !important;
+}
+
+/* Trail path styling (for future use) */
+.hunting-club-trail-path {
+  stroke: var(--hunting-muted-gold) !important;
+  stroke-width: 4px !important;
+  stroke-opacity: 0.7 !important;
+  stroke-dasharray: 10, 5 !important;
+}
