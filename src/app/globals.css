@@ -1,21 +1,125 @@
 @import "tailwindcss";
 
 :root {
+  /* Hunting Club Primary Color Palette */
+  --burnt-orange: #fa7921;
+  --bright-orange: #fe9920;
+  --muted-gold: #b9a44c;
+  --olive-green: #566e3d;
+  --dark-teal: #0c4767;
+  
+  /* Hunting Club Secondary Color Palette */
+  --forest-shadow: #2d3e1f;
+  --weathered-wood: #8b7355;
+  --morning-mist: #e8e6e0;
+  --clay-earth: #a0653a;
+  --pine-needle: #4a5d32;
+  --sunset-amber: #d4a574;
+  
+  /* Light mode semantic variables */
   --background: #ffffff;
   --foreground: #171717;
+  --card: #ffffff;
+  --card-foreground: #171717;
+  --popover: #ffffff;
+  --popover-foreground: #171717;
+  --primary: var(--olive-green);
+  --primary-foreground: #ffffff;
+  --secondary: var(--muted-gold);
+  --secondary-foreground: var(--forest-shadow);
+  --muted: var(--morning-mist);
+  --muted-foreground: var(--weathered-wood);
+  --accent: var(--burnt-orange);
+  --accent-foreground: #ffffff;
+  --destructive: var(--clay-earth);
+  --destructive-foreground: #ffffff;
+  --border: #d4d4d8;
+  --input: var(--morning-mist);
+  --ring: var(--olive-green);
+  --success: var(--bright-orange);
+  --success-foreground: #ffffff;
+  --warning: var(--muted-gold);
+  --warning-foreground: var(--forest-shadow);
+  --info: var(--dark-teal);
+  --info-foreground: #ffffff;
 }
 
 @theme inline {
+  /* Base colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  
+  /* Primary hunting club colors */
+  --color-burnt-orange: var(--burnt-orange);
+  --color-bright-orange: var(--bright-orange);
+  --color-muted-gold: var(--muted-gold);
+  --color-olive-green: var(--olive-green);
+  --color-dark-teal: var(--dark-teal);
+  
+  /* Secondary hunting club colors */
+  --color-forest-shadow: var(--forest-shadow);
+  --color-weathered-wood: var(--weathered-wood);
+  --color-morning-mist: var(--morning-mist);
+  --color-clay-earth: var(--clay-earth);
+  --color-pine-needle: var(--pine-needle);
+  --color-sunset-amber: var(--sunset-amber);
+  
+  /* Semantic color mappings */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  
+  /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Dark mode hunting club colors */
+    --background: #0f0f0f;
+    --foreground: #f5f5f4;
+    --card: #1a1a1a;
+    --card-foreground: #f5f5f4;
+    --popover: #1a1a1a;
+    --popover-foreground: #f5f5f4;
+    --primary: var(--muted-gold); /* Lighter primary for dark mode */
+    --primary-foreground: var(--forest-shadow);
+    --secondary: var(--pine-needle);
+    --secondary-foreground: #f5f5f4;
+    --muted: #262626;
+    --muted-foreground: var(--sunset-amber);
+    --accent: var(--bright-orange); /* Brighter accent for dark mode */
+    --accent-foreground: #0f0f0f;
+    --border: #404040;
+    --input: #404040;
+    --ring: var(--muted-gold);
+    --success: var(--bright-orange);
+    --success-foreground: #0f0f0f;
+    --warning: var(--sunset-amber);
+    --warning-foreground: #0f0f0f;
+    --info: var(--dark-teal);
+    --info-foreground: #f5f5f4;
   }
 }
 
@@ -23,4 +127,25 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Custom utility classes for hunting club theme */
+.hunt-gradient {
+  background: linear-gradient(135deg, var(--olive-green), var(--pine-needle));
+}
+
+.autumn-gradient {
+  background: linear-gradient(135deg, var(--burnt-orange), var(--bright-orange));
+}
+
+.earth-gradient {
+  background: linear-gradient(135deg, var(--weathered-wood), var(--clay-earth));
+}
+
+.club-shadow {
+  box-shadow: 0 4px 6px -1px rgba(86, 110, 61, 0.1), 0 2px 4px -1px rgba(86, 110, 61, 0.06);
+}
+
+.club-shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(86, 110, 61, 0.1), 0 4px 6px -2px rgba(86, 110, 61, 0.05);
 }
