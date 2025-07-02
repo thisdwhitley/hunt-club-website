@@ -1,4 +1,4 @@
-// src/app/map-test2/page.tsx
+// src/app/map-test/page.tsx
 // Hunting club themed version with Caswell County Yacht Club design system
 'use client'
 
@@ -21,6 +21,14 @@ interface Stand {
   updated_at: string
 }
 
+interface PropertyBoundary {
+  id: string
+  name: string
+  boundary_data: [number, number][]
+  total_acres: number | null
+  description: string | null
+}
+
 // Global reference to loaded Leaflet library
 let L: any = null
 
@@ -28,6 +36,7 @@ export default function MapTest2Page() {
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletMapRef = useRef<any>(null)
   const [stands, setStands] = useState<Stand[]>([])
+  const [propertyBoundaries, setPropertyBoundaries] = useState<PropertyBoundary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   // Component visibility states
@@ -43,36 +52,105 @@ export default function MapTest2Page() {
   const [debugInfo, setDebugInfo] = useState<string[]>([])
   const [cssLoaded, setCssLoaded] = useState(false)
   const [jsLoaded, setJsLoaded] = useState(false)
+  const [currentTileLayer, setCurrentTileLayer] = useState<any>(null)
   const [tilesLoaded, setTilesLoaded] = useState(0)
   const [tilesErrored, setTilesErrored] = useState(0)
-  const [currentTileLayer, setCurrentTileLayer] = useState<any>(null)
 
   const addDebugInfo = (message: string) => {
-    console.log(`[HuntingMapDebug] ${message}`)
     setDebugInfo(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`])
   }
 
-  // Load Leaflet from CDN with detailed debugging
-  useEffect(() => {
-    const loadLeafletFromCDN = async () => {
-      if (typeof window === 'undefined') {
-        addDebugInfo('❌ Window is undefined (SSR)')
+  const fetchPropertyBoundaries = async () => {
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('property_boundaries')
+        .select('id, name, boundary_data, total_acres, description')
+      
+      if (error) {
+        addDebugInfo('⚠️ Could not load property boundaries')
+        console.warn('Property boundaries error:', error)
         return
       }
+      
+      if (data && data.length > 0) {
+        setPropertyBoundaries(data)
+        addDebugInfo(`✅ Loaded ${data.length} property boundaries`)
+      } else {
+        addDebugInfo('ℹ️ No property boundaries found')
+      }
+    } catch (err) {
+      addDebugInfo('⚠️ Error fetching property boundaries')
+      console.warn('Error fetching boundaries:', err)
+    }
+  }
 
-      addDebugInfo('🏹 Starting Leaflet CDN load for hunting club map')
+  const displayPropertyBoundaries = () => {
+    if (!leafletMapRef.current || !L || propertyBoundaries.length === 0) return
 
+    propertyBoundaries.forEach(boundary => {
+      if (boundary.boundary_data && Array.isArray(boundary.boundary_data)) {
+        // Create polyline for boundary
+        const polyline = L.polyline(boundary.boundary_data, {
+          color: '#FA7921',
+          weight: 2,
+          opacity: 0.8,
+          dashArray: '2,3'
+        }).addTo(leafletMapRef.current)
+        
+        // Add popup
+        polyline.bindPopup(`
+          <div style="min-width: 180px;">
+            <h3 style="color: #566E3D; margin: 0 0 8px 0;">🗺️ ${boundary.name}</h3>
+            <p style="margin: 0 0 4px 0; font-size: 14px;">${boundary.description || 'Property boundary'}</p>
+            ${boundary.total_acres ? `<p style="margin: 0; font-size: 14px;"><strong>Area:</strong> ${boundary.total_acres} acres</p>` : ''}
+          </div>
+        `)
+        
+        // Center map on boundary
+        const boundaryBounds = L.latLngBounds(boundary.boundary_data)
+        leafletMapRef.current.fitBounds(boundaryBounds, { padding: [20, 20] })
+        
+        addDebugInfo(`🗺️ Added boundary: ${boundary.name}`)
+      }
+    })
+  }
+
+  // Load stands from database
+  const loadStands = async () => {
+    try {
+      const supabase = createClient()
+      
+      const { data, error } = await supabase
+        .from('stands')
+        .select('*')
+        .eq('active', true)
+
+      if (error) {
+        addDebugInfo(`❌ Club database error: ${error.message}`)
+        console.error('Error loading stands:', error)
+        setError('Could not load hunting stands from club database')
+      } else {
+        setStands(data || [])
+        addDebugInfo(`✅ Loaded ${data?.length || 0} hunting stands from club database`)
+        console.log('Loaded stands:', data)
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error'
+      addDebugInfo(`❌ Exception loading stands: ${errorMsg}`)
+      console.error('Error loading stands:', err)
+      setError(`Error loading hunting stands: ${errorMsg}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Load Leaflet from CDN
+  useEffect(() => {
+    const loadLeafletFromCDN = () => {
       try {
-        // Check if Leaflet is already loaded
-        if ((window as any).L) {
-          L = (window as any).L
-          setLeafletLoaded(true)
-          setCssLoaded(true)
-          setJsLoaded(true)
-          addDebugInfo('✅ Leaflet already loaded from window.L')
-          return
-        }
-
+        addDebugInfo('🌐 Starting hunting club map CDN load process...')
+        
         // Load CSS first
         addDebugInfo('🎨 Loading hunting club map styles from CDN...')
         const cssLink = document.createElement('link')
@@ -83,12 +161,12 @@ export default function MapTest2Page() {
         
         cssLink.onload = () => {
           setCssLoaded(true)
-          addDebugInfo('✅ Hunting club map styles loaded successfully')
+          addDebugInfo('✅ Hunting club map styles loaded from CDN')
         }
         
-        cssLink.onerror = (err) => {
-          addDebugInfo('❌ Hunting club map styles failed to load')
-          console.error('CSS load error:', err)
+        cssLink.onerror = () => {
+          setCssLoaded(false)
+          addDebugInfo('❌ Hunting club map styles failed to load from CDN')
         }
         
         document.head.appendChild(cssLink)
@@ -228,19 +306,21 @@ export default function MapTest2Page() {
 
       setMapReady(true)
       addDebugInfo('✅ Hunting club property map ready for field testing!')
+      fetchPropertyBoundaries()
 
     } catch (err) {
-      addDebugInfo('❌ Error during hunting club map initialization')
+      addDebugInfo('❌ Exception during hunting club map initialization')
       console.error('Error initializing map:', err)
-      setError('Failed to initialize hunting club map: ' + (err as Error).message)
+      setError('Failed to initialize hunting club property map')
     }
   }, [leafletLoaded])
 
+  // Load stands when component mounts - ORIGINAL TIMING RESTORED
   useEffect(() => {
     loadStands()
   }, [])
 
-  // Update stands on map when data changes
+  // Display stands on map when data changes - ORIGINAL LOGIC RESTORED
   useEffect(() => {
     if (!mapReady || !leafletMapRef.current || !L) return
 
@@ -255,7 +335,7 @@ export default function MapTest2Page() {
 
     if (!showStands) return
 
-    // Create simple hunting stand icon with color coding
+    // Create simple hunting stand icon with original color coding
     const huntingStandIcon = L.divIcon({
       html: `
         <div style="
@@ -285,74 +365,46 @@ export default function MapTest2Page() {
             <div style="min-width: 220px; font-family: sans-serif;">
               <h3 style="color: #566E3D; font-weight: 700; margin: 0 0 10px 0; display: flex; align-items: center; font-size: 15px;">
                 <svg style="margin-right: 8px; color: #FA7921;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                  <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
-                  <line x1="12" y1="22.08" x2="12" y2="12"/>
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="m21 12-3-3-3 3-3-3-3 3"/>
                 </svg>
                 ${stand.name}
               </h3>
-              <p style="color: #2D3E1F; font-size: 13px; margin: 0 0 10px 0; line-height: 1.4;">${stand.description || 'Hunting stand on club property'}</p>
-              <div style="background: #E8E6E0; padding: 8px; border-radius: 6px; margin-top: 8px; font-size: 11px; color: #566E3D;">
-                <p style="margin: 0 0 3px 0;"><strong>Stand Type:</strong> ${stand.type.replace('_', ' ').toUpperCase()}</p>
-                <p style="margin: 0 0 3px 0;"><strong>Coordinates:</strong> ${stand.latitude.toFixed(6)}, ${stand.longitude.toFixed(6)}</p>
-                <p style="margin: 0;"><strong>Added:</strong> ${new Date(stand.created_at).toLocaleDateString()}</p>
+              <p style="color: #2D3E1F; font-size: 14px; margin: 0 0 10px 0; line-height: 1.4;">
+                <strong>Type:</strong> ${stand.type}<br>
+                ${stand.description || 'Hunting stand'}
+              </p>
+              <div style="background: #E8E6E0; padding: 8px; border-radius: 6px; margin-top: 8px; font-size: 12px; color: #566E3D;">
+                <p style="margin: 0;"><strong>Coordinates:</strong> ${stand.latitude.toFixed(6)}, ${stand.longitude.toFixed(6)}</p>
               </div>
             </div>
           `)
         standsAdded++
-      } else {
-        addDebugInfo(`⚠️ Hunting stand ${stand.name} has no coordinates`)
       }
     })
 
-    addDebugInfo(`✅ Added ${standsAdded} hunting stand markers to club property map`)
+    addDebugInfo(`✅ Added ${standsAdded} hunting stand markers to map`)
   }, [stands, showStands, mapReady])
 
-  const loadStands = async () => {
-    addDebugInfo('🔄 Loading hunting stands from club database...')
-    try {
-      const supabase = createClient()
-      
-      const { data: standsData, error: standsError } = await supabase
-        .from('stands')
-        .select('*')
-        .eq('active', true)
-
-      if (standsError) {
-        addDebugInfo('❌ Club database error loading hunting stands')
-        console.error('Error loading stands:', standsError)
-        setError('Could not load hunting stands from club database')
-      } else {
-        setStands(standsData || [])
-        addDebugInfo(`✅ Loaded ${standsData?.length || 0} hunting stands from club database`)
-        
-        // Log each stand's coordinates for field testing
-        standsData?.forEach(stand => {
-          if (stand.latitude && stand.longitude) {
-            addDebugInfo(`📋 Hunting Stand: ${stand.name} at ${stand.latitude}, ${stand.longitude}`)
-          } else {
-            addDebugInfo(`📋 Hunting Stand: ${stand.name} - NO COORDINATES`)
-          }
-        })
-      }
-    } catch (err) {
-      addDebugInfo('❌ Exception loading hunting stands')
-      console.error('Error in loadStands:', err)
-      setError('Club database connection error')
-    } finally {
-      setLoading(false)
+  // Display property boundaries when data is loaded
+  useEffect(() => {
+    if (mapReady && propertyBoundaries.length > 0) {
+      displayPropertyBoundaries()
     }
-  }
+  }, [mapReady, propertyBoundaries])
 
-  const switchLayer = (layerType: 'esri' | 'google' | 'street' | 'terrain' | 'bing') => {
+  const switchLayer = (layerType: 'esri' | 'google' | 'street' | 'terrain') => {
     if (!leafletMapRef.current || !L) return
 
-    addDebugInfo(`🌐 Switching to ${layerType} view for hunting club property`)
-
-    // Remove current layer
+    // Remove current tile layer
     if (currentTileLayer) {
       leafletMapRef.current.removeLayer(currentTileLayer)
+      addDebugInfo(`🗑️ Removed ${currentLayer} layer from hunting club map`)
     }
+
+    // Reset tile counters
+    setTilesLoaded(0)
+    setTilesErrored(0)
 
     let tileUrl = ''
     let attribution = ''
@@ -360,15 +412,11 @@ export default function MapTest2Page() {
     switch (layerType) {
       case 'esri':
         tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-        attribution = '&copy; <a href="https://www.esri.com/">Esri</a>'
+        attribution = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
         break
       case 'google':
         tileUrl = 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
-        attribution = '&copy; <a href="https://www.google.com/maps">Google</a>'
-        break
-      case 'bing':
-        tileUrl = 'https://ecn.t3.tiles.virtualearth.net/tiles/a{q}.jpeg?g=587&mkt=en-gb&n=z'
-        attribution = '&copy; <a href="https://www.bing.com/maps">Bing Maps</a>'
+        attribution = '&copy; Google'
         break
       case 'street':
         tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
@@ -447,9 +495,8 @@ export default function MapTest2Page() {
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Unknown error'
-      addDebugInfo(`❌ Exception: ${errorMsg}`)
-      console.error('Error adding test stand:', err)
-      setError(`Error adding test hunting stand: ${errorMsg}`)
+      addDebugInfo(`❌ Club database exception: ${errorMsg}`)
+      setError(`Club database error: ${errorMsg}`)
     }
   }
 
@@ -532,8 +579,9 @@ export default function MapTest2Page() {
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Unknown error'
-      addDebugInfo(`❌ Club database exception: ${errorMsg}`)
-      setError(`Club database error: ${errorMsg}`)
+      addDebugInfo(`❌ Exception: ${errorMsg}`)
+      console.error('Error testing database connection:', err)
+      setError(`Error testing club database connection: ${errorMsg}`)
     }
   }
 
@@ -589,10 +637,9 @@ export default function MapTest2Page() {
                     onClick={() => switchLayer(layer.key as any)}
                     style={{
                       background: currentLayer === layer.key ? '#566E3D' : '#B9A44C',
-                      color: currentLayer === layer.key ? 'white' : '#2D3E1F',
-                      transition: 'all 0.2s'
+                      color: currentLayer === layer.key ? 'white' : '#2D3E1F'
                     }}
-                    className="px-3 py-2 rounded-lg text-sm font-medium hover:opacity-80"
+                    className="px-3 py-2 rounded-lg text-xs font-medium hover:opacity-80 transition-opacity"
                   >
                     {layer.label}
                   </button>
@@ -600,84 +647,82 @@ export default function MapTest2Page() {
               </div>
             </div>
 
-            {/* Navigation Controls */}
+            {/* Stand Controls */}
             <div>
-              <h3 style={{ color: '#2D3E1F' }} className="font-semibold mb-2">Navigation</h3>
-              <div className="space-y-2">
-                <button
-                  onClick={zoomToProperty}
-                  style={{ background: '#FA7921', color: 'white' }}
-                  className="w-full px-3 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity"
-                >
-                  🏠 Clubhouse
-                </button>
-                <button
-                  onClick={zoomToStands}
-                  style={{ background: '#B9A44C', color: '#2D3E1F' }}
-                  className="w-full px-3 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity"
-                >
-                  🎯 Hunting Stands
-                </button>
-              </div>
-            </div>
-
-            {/* Stand Management */}
-            <div>
-              <h3 style={{ color: '#2D3E1F' }} className="font-semibold mb-2">Stand Management</h3>
-              <div className="space-y-2">
+              <h3 style={{ color: '#2D3E1F' }} className="font-semibold mb-2">Hunting Stands ({stands.length})</h3>
+              <div className="flex flex-col gap-2">
                 <button
                   onClick={addTestStand}
-                  style={{ background: '#FA7921', color: 'white' }}
-                  className="w-full px-3 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity"
+                  style={{ background: '#4A5D32', color: 'white' }}
+                  className="px-3 py-2 rounded-lg text-xs font-medium hover:opacity-80 transition-opacity"
                 >
                   ➕ Add Test Stand
                 </button>
                 <button
                   onClick={clearTestStands}
                   style={{ background: '#A0653A', color: 'white' }}
-                  className="w-full px-3 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity"
+                  className="px-3 py-2 rounded-lg text-xs font-medium hover:opacity-80 transition-opacity"
                 >
                   🧹 Clear Test Stands
                 </button>
               </div>
             </div>
+
+            {/* Navigation Controls */}
+            <div>
+              <h3 style={{ color: '#2D3E1F' }} className="font-semibold mb-2">Navigation</h3>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={zoomToProperty}
+                  style={{ background: '#566E3D', color: 'white' }}
+                  className="px-3 py-2 rounded-lg text-xs font-medium hover:opacity-80 transition-opacity"
+                >
+                  🏕️ Clubhouse
+                </button>
+                <button
+                  onClick={zoomToStands}
+                  style={{ background: '#566E3D', color: 'white' }}
+                  className="px-3 py-2 rounded-lg text-xs font-medium hover:opacity-80 transition-opacity"
+                >
+                  🎯 View Stands
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Secondary Controls */}
-          <div className="mt-4 pt-4 border-t-2 border-gray-300">
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setShowStands(!showStands)}
-                style={{
-                  background: showStands ? '#4A5D32' : '#8B7355',
-                  color: 'white'
-                }}
-                className="px-4 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity"
-              >
-                {showStands ? '👁️ Stands Visible' : '🔒 Stands Hidden'}
-              </button>
-              <button
-                onClick={zoomOut}
-                style={{ background: '#B9A44C', color: '#2D3E1F' }}
-                className="px-4 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity"
-              >
-                🔍 Zoom Out
-              </button>
-              <button
-                onClick={testTileUrl}
-                style={{ background: '#8B7355', color: 'white' }}
-                className="px-4 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity"
-              >
-                🧪 Test Network
-              </button>
-              <button
-                onClick={testDatabaseConnection}
-                style={{ background: '#8B7355', color: 'white' }}
-                className="px-4 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity"
-              >
-                🔄 Test Database
-              </button>
-            </div>
+          {/* Additional Controls */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              onClick={() => setShowStands(!showStands)}
+              style={{
+                background: showStands ? '#4A5D32' : '#8B7355',
+                color: 'white'
+              }}
+              className="px-4 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity"
+            >
+              {showStands ? '👁️ Stands Visible' : '🔒 Stands Hidden'}
+            </button>
+            <button
+              onClick={zoomOut}
+              style={{ background: '#B9A44C', color: '#2D3E1F' }}
+              className="px-4 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity"
+            >
+              🔍 Zoom Out
+            </button>
+            <button
+              onClick={testTileUrl}
+              style={{ background: '#8B7355', color: 'white' }}
+              className="px-4 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity"
+            >
+              🧪 Test Network
+            </button>
+            <button
+              onClick={testDatabaseConnection}
+              style={{ background: '#8B7355', color: 'white' }}
+              className="px-4 py-2 rounded-lg text-sm font-medium hover:opacity-80 transition-opacity"
+            >
+              🔄 Test Database
+            </button>
           </div>
         </div>
 
@@ -731,17 +776,18 @@ export default function MapTest2Page() {
                     fontSize: '10px',
                     fontWeight: '600',
                     transition: 'all 0.2s',
-                    minWidth: '60px'
+                    minWidth: '70px',
+                    opacity: currentLayer === layer.key ? 1 : 0.6
                   }}
                   className="hover:opacity-80"
                 >
-                  {layer.label}
+                  {currentLayer === layer.key ? '👁️' : '🔒'} {layer.label}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Component Visibility Toggle Overlay */}
+          {/* Component Visibility Overlay */}
           <div style={{
             position: 'absolute',
             top: '60px',
@@ -758,14 +804,14 @@ export default function MapTest2Page() {
             </div>
             <div className="flex flex-col gap-1">
               {[
-                { key: 'stands', label: 'Stands', visible: showStands, setter: setShowStands, color: '#FA7921' },
-                { key: 'cameras', label: 'Cameras', visible: showCameras, setter: setShowCameras, color: '#0C4767' },
-                { key: 'plots', label: 'Food Plots', visible: showFoodPlots, setter: setShowFoodPlots, color: '#B9A44C' },
-                { key: 'trails', label: 'Trails', visible: showTrails, setter: setShowTrails, color: '#4A5D32' }
+                { key: 'stands', label: 'Stands', visible: showStands, toggle: () => setShowStands(!showStands), color: '#566E3D' },
+                { key: 'cameras', label: 'Cameras', visible: showCameras, toggle: () => setShowCameras(!showCameras), color: '#A0653A' },
+                { key: 'plots', label: 'Food Plots', visible: showFoodPlots, toggle: () => setShowFoodPlots(!showFoodPlots), color: '#B9A44C' },
+                { key: 'trails', label: 'Trails', visible: showTrails, toggle: () => setShowTrails(!showTrails), color: '#8B7355' }
               ].map((component) => (
                 <button
                   key={component.key}
-                  onClick={() => component.setter(!component.visible)}
+                  onClick={component.toggle}
                   style={{
                     background: component.visible ? component.color : 'white',
                     color: component.visible ? 'white' : '#2D3E1F',
