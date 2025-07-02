@@ -14,6 +14,7 @@ podman run -it --rm --name hunt-club-dev -p 3000:3000 -v $(pwd):/app:Z -v /app/n
 
 # After database changes
 npm run db:export && git add supabase/ && git commit -m "db: your changes" && git push
+```
 
 ## Current Status
 - [x] Initial Next.js setup
