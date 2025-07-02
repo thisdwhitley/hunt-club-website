@@ -7,7 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:setup": "tsx src/scripts/setup-database.ts"
+    
+    "_comment": "=== Secure Database Management ===",
+    "db:sync": "npm run db:export && echo '✅ Schema synced! Manual type generation needed if schema changed.'",
+    "db:export": "./scripts/db-export.sh",
+    "db:commit": "git add supabase/ src/types/ docs/ && git commit -m 'db: schema update' && git push",
+    "db:test": "./scripts/db-test.sh",
+    "db:commit": "git add supabase/ src/types/ docs/ && git commit -m 'db: schema update' && git push"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
@@ -28,6 +34,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
+    "supabase": "^2.30.4",
     "tailwindcss": "^4",
     "tsx": "^4.7.0",
     "typescript": "^5"
