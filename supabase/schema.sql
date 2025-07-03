@@ -95,72 +95,39 @@ COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UU
 
 
 --
--- Name: difficulty_level; Type: TYPE; Schema: public; Owner: postgres
+-- Name: food_source_type; Type: TYPE; Schema: public; Owner: postgres
 --
 
-CREATE TYPE "public"."difficulty_level" AS ENUM (
-    'easy',
-    'moderate',
-    'difficult'
+CREATE TYPE "public"."food_source_type" AS ENUM (
+    'field',
+    'feeder'
 );
 
 
-ALTER TYPE "public"."difficulty_level" OWNER TO "postgres";
+ALTER TYPE "public"."food_source_type" OWNER TO "postgres";
 
 --
--- Name: hunting_season; Type: TYPE; Schema: public; Owner: postgres
+-- Name: stand_type; Type: TYPE; Schema: public; Owner: postgres
 --
 
-CREATE TYPE "public"."hunting_season" AS ENUM (
-    'early_season',
-    'mid_season',
-    'late_season',
-    'all_season'
-);
-
-
-ALTER TYPE "public"."hunting_season" OWNER TO "postgres";
-
---
--- Name: stand_condition; Type: TYPE; Schema: public; Owner: postgres
---
-
-CREATE TYPE "public"."stand_condition" AS ENUM (
-    'excellent',
-    'good',
-    'fair',
-    'needs_repair',
-    'unsafe'
-);
-
-
-ALTER TYPE "public"."stand_condition" OWNER TO "postgres";
-
---
--- Name: stand_style; Type: TYPE; Schema: public; Owner: postgres
---
-
-CREATE TYPE "public"."stand_style" AS ENUM (
-    'tree_stand',
-    'ground_blind',
-    'elevated_box',
+CREATE TYPE "public"."stand_type" AS ENUM (
     'ladder_stand',
-    'climbing_stand',
-    'popup_blind',
-    'permanent_blind'
+    'bale_blind',
+    'box_stand',
+    'tripod'
 );
 
 
-ALTER TYPE "public"."stand_style" OWNER TO "postgres";
+ALTER TYPE "public"."stand_type" OWNER TO "postgres";
 
 --
 -- Name: time_of_day; Type: TYPE; Schema: public; Owner: postgres
 --
 
 CREATE TYPE "public"."time_of_day" AS ENUM (
-    'morning',
-    'evening',
-    'all_day'
+    'AM',
+    'PM',
+    'ALL'
 );
 
 
@@ -534,40 +501,27 @@ CREATE TABLE "public"."stands" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "name" character varying(100) NOT NULL,
     "description" "text",
-    "type" character varying(50) DEFAULT 'tree_stand'::character varying,
     "active" boolean DEFAULT true,
     "latitude" numeric(10,8),
     "longitude" numeric(11,8),
     "trail_name" character varying(100),
     "walking_time_minutes" integer,
-    "difficulty_level" "public"."difficulty_level" DEFAULT 'moderate'::"public"."difficulty_level",
     "access_notes" "text",
     "height_feet" integer,
     "capacity" integer DEFAULT 1,
-    "construction_material" character varying(50),
-    "stand_style" "public"."stand_style" DEFAULT 'tree_stand'::"public"."stand_style",
-    "weight_limit_lbs" integer,
-    "primary_wind_directions" "public"."wind_direction"[],
-    "game_trails_nearby" boolean DEFAULT false,
-    "best_time_of_day" "public"."time_of_day" DEFAULT 'all_day'::"public"."time_of_day",
-    "best_season" "public"."hunting_season" DEFAULT 'all_season'::"public"."hunting_season",
-    "cover_rating" integer,
+    "type" "public"."stand_type" DEFAULT 'ladder_stand'::"public"."stand_type",
+    "time_of_day" "public"."time_of_day" DEFAULT 'ALL'::"public"."time_of_day",
     "view_distance_yards" integer,
-    "last_inspection_date" "date",
-    "condition" "public"."stand_condition" DEFAULT 'good'::"public"."stand_condition",
-    "maintenance_notes" "text",
-    "safety_equipment_required" "text"[],
     "nearby_water_source" boolean DEFAULT false,
-    "food_plot_proximity_yards" integer,
-    "bedding_area_distance_yards" integer,
-    "trail_camera_coverage" boolean DEFAULT false,
     "total_hunts" integer DEFAULT 0,
     "total_harvests" integer DEFAULT 0,
     "last_used_date" "date",
-    "success_rate" numeric(5,2) DEFAULT 0.00,
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
-    CONSTRAINT "stands_cover_rating_check" CHECK ((("cover_rating" >= 1) AND ("cover_rating" <= 5)))
+    "season_hunts" integer DEFAULT 0,
+    "food_source" "public"."food_source_type",
+    "archery_season" boolean DEFAULT false,
+    "trail_camera_name" character varying(100)
 );
 
 
@@ -770,13 +724,6 @@ CREATE INDEX "idx_stands_active" ON "public"."stands" USING "btree" ("active");
 
 
 --
--- Name: idx_stands_condition; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX "idx_stands_condition" ON "public"."stands" USING "btree" ("condition");
-
-
---
 -- Name: idx_stands_last_used; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -788,13 +735,6 @@ CREATE INDEX "idx_stands_last_used" ON "public"."stands" USING "btree" ("last_us
 --
 
 CREATE INDEX "idx_stands_location" ON "public"."stands" USING "btree" ("latitude", "longitude");
-
-
---
--- Name: idx_stands_success_rate; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX "idx_stands_success_rate" ON "public"."stands" USING "btree" ("success_rate");
 
 
 --
