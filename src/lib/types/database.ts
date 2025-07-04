@@ -1,4 +1,4 @@
-// src/lib/types/database.ts
+// src/lib/types/database.ts - UPDATED to extend existing structure
 export type Json =
   | string
   | number
@@ -6,6 +6,14 @@ export type Json =
   | null
   | { [key: string]: Json | undefined }
   | Json[]
+
+// Updated enum types for enhanced stand management
+export type HuntingSeason = 'archery' | 'blackpowder' | 'gun' | 'all_seasons';
+export type StandStyle = 'tree_stand' | 'ground_blind' | 'elevated_box' | 'ladder_stand' | 'climbing_stand' | 'popup_blind' | 'permanent_blind';
+export type StandCondition = 'excellent' | 'good' | 'fair' | 'needs_repair' | 'unsafe';
+export type DifficultyLevel = 'easy' | 'moderate' | 'difficult';
+export type TimeOfDay = 'morning' | 'evening' | 'all_day';
+export type WindDirection = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW';
 
 export interface Database {
   public: {
@@ -42,6 +50,7 @@ export interface Database {
           updated_at?: string
         }
       }
+      // ENHANCED STANDS TABLE with all hunting stand management fields
       stands: {
         Row: {
           id: string
@@ -51,6 +60,34 @@ export interface Database {
           longitude: number | null
           type: string
           active: boolean
+          // Enhanced fields for hunting stand management
+          trail_name: string | null
+          walking_time_minutes: number | null
+          difficulty_level: DifficultyLevel | null
+          access_notes: string | null
+          height_feet: number | null
+          capacity: number | null
+          construction_material: string | null
+          stand_style: StandStyle | null
+          weight_limit_lbs: number | null
+          primary_wind_directions: WindDirection[] | null
+          game_trails_nearby: boolean | null
+          best_time_of_day: TimeOfDay | null
+          best_season: HuntingSeason | null
+          cover_rating: number | null
+          view_distance_yards: number | null
+          last_inspection_date: string | null
+          condition: StandCondition | null
+          maintenance_notes: string | null
+          safety_equipment_required: string[] | null
+          nearby_water_source: boolean | null
+          food_plot_proximity_yards: number | null
+          bedding_area_distance_yards: number | null
+          trail_camera_coverage: boolean | null
+          total_hunts: number | null
+          total_harvests: number | null
+          last_used_date: string | null
+          success_rate: number | null
           created_at: string
           updated_at: string
         }
@@ -62,6 +99,33 @@ export interface Database {
           longitude?: number | null
           type?: string
           active?: boolean
+          trail_name?: string | null
+          walking_time_minutes?: number | null
+          difficulty_level?: DifficultyLevel | null
+          access_notes?: string | null
+          height_feet?: number | null
+          capacity?: number | null
+          construction_material?: string | null
+          stand_style?: StandStyle | null
+          weight_limit_lbs?: number | null
+          primary_wind_directions?: WindDirection[] | null
+          game_trails_nearby?: boolean | null
+          best_time_of_day?: TimeOfDay | null
+          best_season?: HuntingSeason | null
+          cover_rating?: number | null
+          view_distance_yards?: number | null
+          last_inspection_date?: string | null
+          condition?: StandCondition | null
+          maintenance_notes?: string | null
+          safety_equipment_required?: string[] | null
+          nearby_water_source?: boolean | null
+          food_plot_proximity_yards?: number | null
+          bedding_area_distance_yards?: number | null
+          trail_camera_coverage?: boolean | null
+          total_hunts?: number | null
+          total_harvests?: number | null
+          last_used_date?: string | null
+          success_rate?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -73,11 +137,37 @@ export interface Database {
           longitude?: number | null
           type?: string
           active?: boolean
+          trail_name?: string | null
+          walking_time_minutes?: number | null
+          difficulty_level?: DifficultyLevel | null
+          access_notes?: string | null
+          height_feet?: number | null
+          capacity?: number | null
+          construction_material?: string | null
+          stand_style?: StandStyle | null
+          weight_limit_lbs?: number | null
+          primary_wind_directions?: WindDirection[] | null
+          game_trails_nearby?: boolean | null
+          best_time_of_day?: TimeOfDay | null
+          best_season?: HuntingSeason | null
+          cover_rating?: number | null
+          view_distance_yards?: number | null
+          last_inspection_date?: string | null
+          condition?: StandCondition | null
+          maintenance_notes?: string | null
+          safety_equipment_required?: string[] | null
+          nearby_water_source?: boolean | null
+          food_plot_proximity_yards?: number | null
+          bedding_area_distance_yards?: number | null
+          trail_camera_coverage?: boolean | null
+          total_hunts?: number | null
+          total_harvests?: number | null
+          last_used_date?: string | null
+          success_rate?: number | null
           created_at?: string
           updated_at?: string
         }
       }
-      // NEW MAP TABLES
       trail_cameras: {
         Row: {
           id: string
@@ -228,166 +318,7 @@ export interface Database {
           updated_at?: string
         }
       }
-      property_boundaries: {
-        Row: {
-          id: string
-          name: string
-          description: string | null
-          boundary_coordinates: Json // Array of [lat, lng] points defining polygon
-          boundary_type: string
-          area_acres: number | null
-          legal_description: string | null
-          active: boolean
-          notes: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          description?: string | null
-          boundary_coordinates: Json
-          boundary_type?: string
-          area_acres?: number | null
-          legal_description?: string | null
-          active?: boolean
-          notes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          description?: string | null
-          boundary_coordinates?: Json
-          boundary_type?: string
-          area_acres?: number | null
-          legal_description?: string | null
-          active?: boolean
-          notes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      hunt_logs: {
-        Row: {
-          id: string
-          member_id: string
-          stand_id: string | null
-          hunt_date: string
-          start_time: string | null
-          end_time: string | null
-          weather_conditions: Json | null
-          temperature_high: number | null
-          temperature_low: number | null
-          wind_speed: number | null
-          wind_direction: string | null
-          precipitation: number | null
-          moon_phase: string | null
-          harvest_count: number
-          game_type: string | null
-          notes: string | null
-          photos: string[] | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          member_id: string
-          stand_id?: string | null
-          hunt_date: string
-          start_time?: string | null
-          end_time?: string | null
-          weather_conditions?: Json | null
-          temperature_high?: number | null
-          temperature_low?: number | null
-          wind_speed?: number | null
-          wind_direction?: string | null
-          precipitation?: number | null
-          moon_phase?: string | null
-          harvest_count?: number
-          game_type?: string | null
-          notes?: string | null
-          photos?: string[] | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          member_id?: string
-          stand_id?: string | null
-          hunt_date?: string
-          start_time?: string | null
-          end_time?: string | null
-          weather_conditions?: Json | null
-          temperature_high?: number | null
-          temperature_low?: number | null
-          wind_speed?: number | null
-          wind_direction?: string | null
-          precipitation?: number | null
-          moon_phase?: string | null
-          harvest_count?: number
-          game_type?: string | null
-          notes?: string | null
-          photos?: string[] | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      maintenance_tasks: {
-        Row: {
-          id: string
-          title: string
-          description: string | null
-          assigned_to: string | null
-          priority: string
-          status: string
-          due_date: string | null
-          category: string
-          location: string | null
-          estimated_hours: number | null
-          actual_hours: number | null
-          notes: string | null
-          created_at: string
-          updated_at: string
-          completed_at: string | null
-        }
-        Insert: {
-          id?: string
-          title: string
-          description?: string | null
-          assigned_to?: string | null
-          priority?: string
-          status?: string
-          due_date?: string | null
-          category?: string
-          location?: string | null
-          estimated_hours?: number | null
-          actual_hours?: number | null
-          notes?: string | null
-          created_at?: string
-          updated_at?: string
-          completed_at?: string | null
-        }
-        Update: {
-          id?: string
-          title?: string
-          description?: string | null
-          assigned_to?: string | null
-          priority?: string
-          status?: string
-          due_date?: string | null
-          category?: string
-          location?: string | null
-          estimated_hours?: number | null
-          actual_hours?: number | null
-          notes?: string | null
-          created_at?: string
-          updated_at?: string
-          completed_at?: string | null
-        }
-      }
-      club_events: {
+      events: {
         Row: {
           id: string
           title: string
@@ -475,6 +406,20 @@ export interface Database {
           updated_at?: string
         }
       }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      difficulty_level: 'easy' | 'moderate' | 'difficult'
+      hunting_season: 'archery' | 'blackpowder' | 'gun' | 'all_seasons'
+      stand_condition: 'excellent' | 'good' | 'fair' | 'needs_repair' | 'unsafe'
+      stand_style: 'tree_stand' | 'ground_blind' | 'elevated_box' | 'ladder_stand' | 'climbing_stand' | 'popup_blind' | 'permanent_blind'
+      time_of_day: 'morning' | 'evening' | 'all_day'
+      wind_direction: 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW'
     }
   }
 }
