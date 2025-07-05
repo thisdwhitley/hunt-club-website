@@ -7,17 +7,18 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    
     "_comment": "=== Secure Database Management ===",
     "db:sync": "npm run db:export && echo '✅ Schema synced! Manual type generation needed if schema changed.'",
     "db:export": "./scripts/db-export.sh",
     "db:commit": "git add supabase/ src/types/ docs/ && git commit -m 'db: schema update' && git push",
-    "db:test": "./scripts/db-test.sh",
-    "db:commit": "git add supabase/ src/types/ docs/ && git commit -m 'db: schema update' && git push"
+    "db:test": "./scripts/db-test.sh"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.1.1",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.50.0",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.16",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "googleapis": "^143.0.0",
@@ -25,8 +26,8 @@
     "next": "15.3.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-hook-form": "^7.59.0",
-    "zod": "^3.25.71"
+    "react-hook-form": "^7.60.0",
+    "zod": "^3.25.74"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

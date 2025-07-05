@@ -2,9 +2,8 @@
 
 // src/components/stands/StandCard.tsx
 // Enhanced stand display component with hunting club styling
-// Fixed version of your superior design
 
-import React, { useState } from 'react'
+import React from 'react'
 import { 
   MapPin, 
   Eye, 
@@ -33,35 +32,23 @@ import {
   BowArrow as ArcheryIcon
 } from 'lucide-react'
 
-// Import your Stand type from database service
-import type { Stand } from '@/lib/database/stands'
-
-// Fallback helper functions if @/lib/stands doesn't exist
-const formatWalkingTime = (minutes: number | null): string => {
-  if (!minutes) return 'Unknown'
-  if (minutes < 60) return `${minutes} min`
-  const hours = Math.floor(minutes / 60)
-  const remainingMinutes = minutes % 60
-  if (remainingMinutes === 0) return `${hours}h`
-  return `${hours}h ${remainingMinutes}m`
-}
-
-const formatDistance = (yards: number | null): string => {
-  if (!yards) return 'Unknown'
-  if (yards >= 1000) return `${(yards / 1000).toFixed(1)}k yards`
-  return `${yards} yards`
-}
-
-const formatHeight = (feet: number | null): string => {
-  if (!feet) return 'Ground level'
-  return `${feet} ft`
-}
-
-const formatDate = (dateString: string | null): string => {
-  if (!dateString) return 'Never'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
+import {
+  Stand,
+  STAND_TYPES,
+  TIME_OF_DAY_OPTIONS,
+  FOOD_SOURCE_OPTIONS,
+  FEATURE_ICONS,
+  COLORS,
+  formatStandForCard,
+  calculateSuccessRate,
+  getPerformanceRating,
+  getUsageLevel,
+  formatDistance,
+  formatWalkingTime,
+  formatHeight,
+  formatCapacity,
+  formatDate
+} from '@/lib/stands'
 
 interface StandCardProps {
   stand: Stand
@@ -115,19 +102,6 @@ const HUNTING_CLUB_STAND_TYPES = {
   }
 }
 
-// Time of day options
-const TIME_OF_DAY_OPTIONS = {
-  AM: { label: 'Morning', icon: AMIcon, color: '#FE9920' },
-  PM: { label: 'Evening', icon: PMIcon, color: '#B9A44C' },
-  ALL: { label: 'All Day', icon: AllDayIcon, color: '#566E3D' }
-}
-
-// Food source options
-const FOOD_SOURCE_OPTIONS = {
-  field: { label: 'Field', icon: FieldIcon, color: '#B9A44C' },
-  feeder: { label: 'Feeder', icon: FeederIcon, color: '#FA7921' }
-}
-
 // Hunting club color palette
 const HUNTING_COLORS = {
   forestGreen: '#566E3D',
@@ -153,10 +127,11 @@ export default function StandCard({
   className = '',
   popupWidth = 300
 }: StandCardProps) {
-  // FIXED: Renamed state variable to avoid conflict with prop
-  const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
-  
+  const cardData = formatStandForCard(stand)
   const standType = HUNTING_CLUB_STAND_TYPES[stand.type]
+  const successRate = calculateSuccessRate(stand)
+  const performance = getPerformanceRating(successRate)
+  const usage = getUsageLevel(stand.season_hunts || 0)
   
   // Icon components
   const StandTypeIcon = standType.icon
@@ -178,6 +153,11 @@ export default function StandCard({
       default: // full
         return `${baseStyles} p-4 hover:border-gray-300`
     }
+  }
+
+  // Touch target size based on mode
+  const getTouchTargetSize = () => {
+    return mode === 'popup' ? 'min-h-[44px]' : 'min-h-[56px]'
   }
 
   // Handle card click
@@ -208,6 +188,7 @@ export default function StandCard({
               background: HUNTING_COLORS.huntingOrange,
               color: 'white',
               border: `2px solid ${HUNTING_COLORS.forestShadow}`,
+            //   minHeight: '44px', // Good touch target
               boxShadow: '0 2px 4px rgba(250, 121, 33, 0.2)'
             }}
             onMouseEnter={(e) => {
@@ -234,6 +215,7 @@ export default function StandCard({
                 background: HUNTING_COLORS.forestGreen,
                 color: 'white',
                 border: `2px solid ${HUNTING_COLORS.forestShadow}`,
+                // minHeight: '44px'
               }}
               title="Edit stand details"
             >
@@ -250,6 +232,7 @@ export default function StandCard({
                 background: HUNTING_COLORS.weatheredWood,
                 color: 'white',
                 border: `2px solid ${HUNTING_COLORS.forestShadow}`,
+                // minHeight: '44px'
               }}
               title="Delete stand"
             >
@@ -261,6 +244,24 @@ export default function StandCard({
       </div>
     </div>
   )
+  }
+
+  // Render performance badge
+  const renderPerformanceBadge = () => {
+    if (!showStats || mode === 'compact') return null
+    if ((stand.total_hunts || 0) === 0) return null
+
+    return (
+      <div 
+        className="px-2 py-1 rounded-full text-xs font-medium"
+        style={{ 
+          backgroundColor: `${performance.color}20`,
+          color: performance.color 
+        }}
+      >
+        {successRate.toFixed(1)}%
+      </div>
+    )
   }
 
   // Render key details section (hunting club styled)
@@ -451,11 +452,9 @@ export default function StandCard({
     const features = []
 
     if (stand.time_of_day) {
-      const timeOption = TIME_OF_DAY_OPTIONS[stand.time_of_day]
-      const TimeIcon = timeOption.icon
       features.push(
-        <div key="time" className="flex items-center gap-1" title={`Best time: ${timeOption.label}`}>
-          <TimeIcon size={14} style={{ color: timeOption.color }} />
+        <div key="time" className="flex items-center gap-1" title={`Best time: ${TIME_OF_DAY_OPTIONS[stand.time_of_day].label}`}>
+          <TimeIcon size={14} style={{ color: TIME_OF_DAY_OPTIONS[stand.time_of_day].color }} />
         </div>
       )
     }
@@ -469,10 +468,9 @@ export default function StandCard({
     }
 
     if (stand.food_source && FoodIcon) {
-      const foodOption = FOOD_SOURCE_OPTIONS[stand.food_source]
       features.push(
-        <div key="food" className="flex items-center gap-1" title={`Food source: ${foodOption.label}`}>
-          <FoodIcon size={14} style={{ color: foodOption.color }} />
+        <div key="food" className="flex items-center gap-1" title={`Food source: ${FOOD_SOURCE_OPTIONS[stand.food_source].label}`}>
+          <FoodIcon size={14} style={{ color: FOOD_SOURCE_OPTIONS[stand.food_source].color }} />
         </div>
       )
     }
@@ -501,13 +499,11 @@ export default function StandCard({
     const features = []
 
     if (stand.time_of_day) {
-      const timeOption = TIME_OF_DAY_OPTIONS[stand.time_of_day]
-      const TimeIcon = timeOption.icon
       features.push(
         <div key="time" className="flex items-center gap-2">
-          <TimeIcon size={14} style={{ color: timeOption.color }} />
+          <TimeIcon size={14} style={{ color: TIME_OF_DAY_OPTIONS[stand.time_of_day].color }} />
           <span style={{ color: HUNTING_COLORS.forestShadow }}>
-            <strong>Ideal time:</strong> {timeOption.label}
+            <strong>Ideal time:</strong> {TIME_OF_DAY_OPTIONS[stand.time_of_day].label}
           </span>
         </div>
       )
@@ -525,12 +521,11 @@ export default function StandCard({
     }
 
     if (stand.food_source && FoodIcon) {
-      const foodOption = FOOD_SOURCE_OPTIONS[stand.food_source]
       features.push(
         <div key="food" className="flex items-center gap-2">
-          <FoodIcon size={14} style={{ color: foodOption.color }} />
+          <FoodIcon size={14} style={{ color: FOOD_SOURCE_OPTIONS[stand.food_source].color }} />
           <span style={{ color: HUNTING_COLORS.forestShadow }}>
-            <strong>Food source:</strong> {foodOption.label}
+            <strong>Food source:</strong> {FOOD_SOURCE_OPTIONS[stand.food_source].label}
           </span>
         </div>
       )
@@ -578,14 +573,48 @@ export default function StandCard({
     )
   }
 
+//   // Render compact mode (for tight spaces)
+//   if (mode === 'compact') {
+//     return (
+//       <div 
+//         className={`${getCardStyles()} ${className} ${onClick ? 'cursor-pointer' : ''}`}
+//         onClick={handleCardClick}
+//         style={{
+//           background: HUNTING_COLORS.morningMist,
+//           ...(popupWidth && mode === 'popup' ? { width: popupWidth } : {})
+//         }}
+//       >
+//         <div className="flex items-center justify-between">
+//           <div className="flex items-center gap-2 min-w-0 flex-1">
+//             <StandTypeIcon 
+//               size={16} 
+//               style={{ color: standType.color }}
+//               className="flex-shrink-0"
+//             />
+//             <div className="min-w-0">
+//               <h3 
+//                 className="font-medium text-sm truncate"
+//                 style={{ color: HUNTING_COLORS.forestGreen }}
+//               >
+//                 {stand.name} {renderFeatures()}
+//               </h3>
+//             </div>
+//           </div>
+          
+//           {renderPerformanceBadge()}
+//           {renderActions()}
+//         </div>
+//       </div>
+//     )
+//   }
+
   // Render full or popup mode with enhanced hunting club styling
   return (
     <div 
       className={`${getCardStyles()} ${className} ${onClick ? 'cursor-pointer' : ''}`}
       onClick={handleCardClick}
       style={{
-        // background: HUNTING_COLORS.morningMist,
-        background: '#FFFFFF',
+        background: HUNTING_COLORS.morningMist,
         ...(popupWidth && mode === 'popup' ? { width: popupWidth } : {})
       }}
     >
@@ -616,6 +645,7 @@ export default function StandCard({
           </div>
         </div>
       </div>
+
     
       {/* Description */}
       {stand.description && mode === 'full' && (
@@ -637,6 +667,7 @@ export default function StandCard({
       {renderLocationInfo()}
 
       {renderActions()}
+
     </div>
   )
 }
