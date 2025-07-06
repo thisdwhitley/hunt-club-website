@@ -5,6 +5,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { MapPin, Target, AlertCircle, CheckCircle, Clock, Crosshair, TreePine, Compass } from 'lucide-react'
+import { createRoot } from 'react-dom/client'
+import StandCard from '@/components/stands/StandCard'
 
 // Property coordinates for Caswell County Yacht Club clubhouse
 const PROPERTY_CENTER: [number, number] = [36.42712517693617, -79.51073582842501]
@@ -74,294 +76,318 @@ const createLucideIcon = (iconName: string, color = '#FA7921', size = 16) => {
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icons[iconName] || icons['tree-pine']}</svg>`
 }
 
+// Create temporary/test handler 
+const handleViewStandDetails = (stand: Stand) => {
+  console.log('View details for stand:', stand.name)
+  alert(`View details for ${stand.name}`)
+}
+
 // Create new condensed stand popup content
 const createStandPopupContent = (stand: Stand) => {
-  const standTypeIcon = getStandTypeIcon(stand.type)
+  const popupDiv = document.createElement('div')
+  const root = createRoot(popupDiv)
   
-  // Mock data for fields not yet in database - replace with actual data when available
-  const mockData = {
-    seats: 2,
-    walkTime: '5 min',
-    trailCamCoverage: 'No coverage',
-    totalHarvests: 3,
-    huntsThisSeason: 8,
-    totalHunts: 24,
-    lastHuntDate: null,
-    bestTime: 'AM', // 'AM', 'PM', 'ALL'
-    bestSeason: 'archery', // 'archery', 'blackpowder', 'gun'
-    nearbyWater: true,
-    overFoodPlot: false,
-    feederNearby: true,
-    height: '15 ft',
-    material: 'Steel',
-    difficulty: 'Easy',
-    coverRating: 4,
-    viewDistance: '75 yards',
-    maintenanceStatus: 'Good'
-  }
-
-  // Make toggle function globally available
-  if (typeof window !== 'undefined') {
-    (window as any).toggleStandDetails = (standId: string) => {
-      const details = document.getElementById('stand-details-' + standId);
-      const button = document.querySelector(`[onclick*="${standId}"]`) as HTMLButtonElement;
-      if (details && button) {
-        if (details.style.display === 'none') {
-          details.style.display = 'block';
-          button.innerHTML = `${createLucideIcon('chevron-up', '#566E3D', 12)} Hide Details`;
-        } else {
-          details.style.display = 'none';
-          button.innerHTML = `${createLucideIcon('chevron-down', '#566E3D', 12)} Show More Details`;
-        }
-      }
-    }
-  }
-
-  // Condition icons for header (only show if data exists)
-  let conditionIcons = ''
-  if (mockData.bestTime) {
-    const timeIcon = mockData.bestTime === 'AM' ? 'sun' : mockData.bestTime === 'PM' ? 'moon' : 'clock'
-    conditionIcons += createLucideIcon(timeIcon, '#FA7921', 14)
-  }
-  if (mockData.bestSeason) {
-    const seasonIcon = mockData.bestSeason === 'archery' ? 'bow' : mockData.bestSeason === 'blackpowder' ? 'zap' : 'crosshair'
-    conditionIcons += createLucideIcon(seasonIcon, '#FA7921', 14)
-  }
-  if (mockData.nearbyWater) {
-    conditionIcons += createLucideIcon('droplet', '#0C4767', 14)
-  }
-  if (mockData.overFoodPlot || mockData.feederNearby) {
-    const feedIcon = mockData.overFoodPlot ? 'wheat' : 'hand-platter'
-    conditionIcons += createLucideIcon(feedIcon, '#B9A44C', 14)
-  }
-
-  return `
-    <div style="min-width: 280px; max-width: 320px; font-family: system-ui, sans-serif;">
-      <!-- Header Section -->
-      <div style="
-        display: flex; 
-        align-items: center; 
-        justify-content: space-between; 
-        padding: 12px 0 8px 0; 
-        border-bottom: 2px solid #E8E6E0;
-        margin-bottom: 12px;
-      ">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          ${createLucideIcon(standTypeIcon, '#FA7921', 18)}
-          <h3 style="
-            color: #566E3D; 
-            font-weight: 700; 
-            margin: 0; 
-            font-size: 16px;
-            line-height: 1.2;
-          ">${stand.name}</h3>
-        </div>
-        <div style="display: flex; gap: 4px; align-items: center;">
-          ${conditionIcons}
-        </div>
-      </div>
-
-      <!-- Info Grid -->
-      <div style="
-        display: grid; 
-        grid-template-columns: 1fr 1fr; 
-        gap: 8px 16px; 
-        margin-bottom: 12px;
-        font-size: 13px;
-      ">
-        <div style="display: flex; align-items: center; gap: 6px; color: #2D3E1F;">
-          ${createLucideIcon('user', '#566E3D', 14)}
-          <span><strong>Seats:</strong> ${mockData.seats}</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 6px; color: #2D3E1F;">
-          ${createLucideIcon('footprints', '#566E3D', 14)}
-          <span><strong>Walk:</strong> ${mockData.walkTime}</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 6px; color: #2D3E1F; grid-column: 1 / -1;">
-          ${createLucideIcon('camera', '#566E3D', 14)}
-          <span><strong>Camera:</strong> ${mockData.trailCamCoverage}</span>
-        </div>
-      </div>
-
-      <!-- Performance Section -->
-      <div style="
-        background: #F5F4F0; 
-        border: 1px solid #E8E6E0; 
-        border-radius: 6px; 
-        padding: 10px; 
-        margin-bottom: 12px;
-      ">
-        <div style="
-          display: flex; 
-          align-items: center; 
-          gap: 6px; 
-          margin-bottom: 8px; 
-          color: #566E3D; 
-          font-weight: 600; 
-          font-size: 12px;
-        ">
-          ${createLucideIcon('bar-chart-3', '#566E3D', 14)}
-          PERFORMANCE
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; font-size: 11px;">
-          <div>
-            <div style="font-weight: 700; color: #FA7921; font-size: 16px;">${mockData.totalHarvests}</div>
-            <div style="color: #2D3E1F;">Total Harvested</div>
-          </div>
-          <div>
-            <div style="font-weight: 700; color: #B9A44C; font-size: 16px;">${mockData.huntsThisSeason}</div>
-            <div style="color: #2D3E1F;">Hunts This Season</div>
-          </div>
-          <div>
-            <div style="font-weight: 700; color: #566E3D; font-size: 16px;">${mockData.totalHunts}</div>
-            <div style="color: #2D3E1F;">All-Time Hunts</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Last Used -->
-      ${mockData.lastHuntDate ? `
-        <div style="
-          background: #566E3D; 
-          color: white; 
-          padding: 8px 10px; 
-          border-radius: 6px; 
-          margin-bottom: 12px; 
-          font-size: 12px;
-          text-align: center;
-        ">
-          <strong>Last Used:</strong> ${new Date(mockData.lastHuntDate).toLocaleDateString()} PM
-        </div>
-      ` : ''}
-
-      <!-- Coordinates Footer -->
-      <div style="
-        display: flex; 
-        align-items: center; 
-        gap: 6px; 
-        padding-top: 8px; 
-        border-top: 1px solid #E8E6E0; 
-        font-size: 11px; 
-        color: #8B7355;
-      ">
-        ${createLucideIcon('map-pin', '#8B7355', 12)}
-        <span>${stand.latitude?.toFixed(6)}, ${stand.longitude?.toFixed(6)}</span>
-      </div>
-
-      <!-- Expandable Details Button -->
-      <div style="margin-top: 10px;">
-        <button 
-          onclick="toggleStandDetails('${stand.id}')" 
-          style="
-            width: 100%; 
-            background: #E8E6E0; 
-            border: 1px solid #B9A44C; 
-            color: #566E3D; 
-            padding: 6px 10px; 
-            border-radius: 4px; 
-            font-size: 11px; 
-            font-weight: 600; 
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-          "
-        >
-          ${createLucideIcon('chevron-down', '#566E3D', 12)}
-          Show More Details
-        </button>
-      </div>
-
-      <!-- Expandable Details (Initially Hidden) -->
-      <div id="stand-details-${stand.id}" style="display: none; margin-top: 10px;">
-        <!-- Physical Details -->
-        ${mockData.height || mockData.material ? `
-          <div style="margin-bottom: 10px;">
-            <div style="
-              display: flex; 
-              align-items: center; 
-              gap: 6px; 
-              margin-bottom: 6px; 
-              color: #566E3D; 
-              font-weight: 600; 
-              font-size: 11px;
-            ">
-              ${createLucideIcon('box', '#566E3D', 12)}
-              PHYSICAL DETAILS
-            </div>
-            <div style="font-size: 11px; color: #2D3E1F; line-height: 1.4;">
-              ${mockData.height ? `<div><strong>Height:</strong> ${mockData.height}</div>` : ''}
-              ${mockData.material ? `<div><strong>Material:</strong> ${mockData.material}</div>` : ''}
-            </div>
-          </div>
-        ` : ''}
-
-        <!-- Access Details -->
-        ${mockData.difficulty ? `
-          <div style="margin-bottom: 10px;">
-            <div style="
-              display: flex; 
-              align-items: center; 
-              gap: 6px; 
-              margin-bottom: 6px; 
-              color: #566E3D; 
-              font-weight: 600; 
-              font-size: 11px;
-            ">
-              ${createLucideIcon('footprints', '#566E3D', 12)}
-              ACCESS
-            </div>
-            <div style="font-size: 11px; color: #2D3E1F;">
-              <strong>Difficulty:</strong> ${mockData.difficulty}
-            </div>
-          </div>
-        ` : ''}
-
-        <!-- Hunting Details -->
-        ${mockData.coverRating || mockData.viewDistance ? `
-          <div style="margin-bottom: 10px;">
-            <div style="
-              display: flex; 
-              align-items: center; 
-              gap: 6px; 
-              margin-bottom: 6px; 
-              color: #566E3D; 
-              font-weight: 600; 
-              font-size: 11px;
-            ">
-              ${createLucideIcon('crosshair', '#566E3D', 12)}
-              HUNTING DETAILS
-            </div>
-            <div style="font-size: 11px; color: #2D3E1F; line-height: 1.4;">
-              ${mockData.coverRating ? `<div><strong>Cover Rating:</strong> ${mockData.coverRating}/5</div>` : ''}
-              ${mockData.viewDistance ? `<div><strong>View Distance:</strong> ${mockData.viewDistance}</div>` : ''}
-            </div>
-          </div>
-        ` : ''}
-
-        <!-- Condition -->
-        <div style="margin-bottom: 10px;">
-          <div style="
-            display: flex; 
-            align-items: center; 
-            gap: 6px; 
-            margin-bottom: 6px; 
-            color: #566E3D; 
-            font-weight: 600; 
-            font-size: 11px;
-          ">
-            ${createLucideIcon('wrench', '#566E3D', 12)}
-            CONDITION
-          </div>
-          <div style="font-size: 11px; color: #2D3E1F;">
-            <strong>Status:</strong> ${mockData.maintenanceStatus}
-          </div>
-        </div>
-      </div>
-    </div>
-  `
+  root.render(
+    <StandCard
+      stand={stand}
+      mode="popup"
+      popupWidth={330}
+      onClick={handleViewStandDetails}
+      showLocation={true}
+      showStats={true}
+      showActions={true}  // This is fine - no actions will render in popup mode anyway
+    />
+  )
+  
+  return popupDiv
 }
+// const createStandPopupContent = (stand: Stand) => {
+//   const standTypeIcon = getStandTypeIcon(stand.type)
+  
+//   // Mock data for fields not yet in database - replace with actual data when available
+//   const mockData = {
+//     seats: 2,
+//     walkTime: '5 min',
+//     trailCamCoverage: 'No coverage',
+//     totalHarvests: 3,
+//     huntsThisSeason: 8,
+//     totalHunts: 24,
+//     lastHuntDate: null,
+//     bestTime: 'AM', // 'AM', 'PM', 'ALL'
+//     bestSeason: 'archery', // 'archery', 'blackpowder', 'gun'
+//     nearbyWater: true,
+//     overFoodPlot: false,
+//     feederNearby: true,
+//     height: '15 ft',
+//     material: 'Steel',
+//     difficulty: 'Easy',
+//     coverRating: 4,
+//     viewDistance: '75 yards',
+//     maintenanceStatus: 'Good'
+//   }
+
+//   // Make toggle function globally available
+//   if (typeof window !== 'undefined') {
+//     (window as any).toggleStandDetails = (standId: string) => {
+//       const details = document.getElementById('stand-details-' + standId);
+//       const button = document.querySelector(`[onclick*="${standId}"]`) as HTMLButtonElement;
+//       if (details && button) {
+//         if (details.style.display === 'none') {
+//           details.style.display = 'block';
+//           button.innerHTML = `${createLucideIcon('chevron-up', '#566E3D', 12)} Hide Details`;
+//         } else {
+//           details.style.display = 'none';
+//           button.innerHTML = `${createLucideIcon('chevron-down', '#566E3D', 12)} Show More Details`;
+//         }
+//       }
+//     }
+//   }
+
+//   // Condition icons for header (only show if data exists)
+//   let conditionIcons = ''
+//   if (mockData.bestTime) {
+//     const timeIcon = mockData.bestTime === 'AM' ? 'sun' : mockData.bestTime === 'PM' ? 'moon' : 'clock'
+//     conditionIcons += createLucideIcon(timeIcon, '#FA7921', 14)
+//   }
+//   if (mockData.bestSeason) {
+//     const seasonIcon = mockData.bestSeason === 'archery' ? 'bow' : mockData.bestSeason === 'blackpowder' ? 'zap' : 'crosshair'
+//     conditionIcons += createLucideIcon(seasonIcon, '#FA7921', 14)
+//   }
+//   if (mockData.nearbyWater) {
+//     conditionIcons += createLucideIcon('droplet', '#0C4767', 14)
+//   }
+//   if (mockData.overFoodPlot || mockData.feederNearby) {
+//     const feedIcon = mockData.overFoodPlot ? 'wheat' : 'hand-platter'
+//     conditionIcons += createLucideIcon(feedIcon, '#B9A44C', 14)
+//   }
+
+//   return `
+//     <div style="min-width: 280px; max-width: 320px; font-family: system-ui, sans-serif;">
+//       <!-- Header Section -->
+//       <div style="
+//         display: flex; 
+//         align-items: center; 
+//         justify-content: space-between; 
+//         padding: 12px 0 8px 0; 
+//         border-bottom: 2px solid #E8E6E0;
+//         margin-bottom: 12px;
+//       ">
+//         <div style="display: flex; align-items: center; gap: 8px;">
+//           ${createLucideIcon(standTypeIcon, '#FA7921', 18)}
+//           <h3 style="
+//             color: #566E3D; 
+//             font-weight: 700; 
+//             margin: 0; 
+//             font-size: 16px;
+//             line-height: 1.2;
+//           ">${stand.name}</h3>
+//         </div>
+//         <div style="display: flex; gap: 4px; align-items: center;">
+//           ${conditionIcons}
+//         </div>
+//       </div>
+
+//       <!-- Info Grid -->
+//       <div style="
+//         display: grid; 
+//         grid-template-columns: 1fr 1fr; 
+//         gap: 8px 16px; 
+//         margin-bottom: 12px;
+//         font-size: 13px;
+//       ">
+//         <div style="display: flex; align-items: center; gap: 6px; color: #2D3E1F;">
+//           ${createLucideIcon('user', '#566E3D', 14)}
+//           <span><strong>Seats:</strong> ${mockData.seats}</span>
+//         </div>
+//         <div style="display: flex; align-items: center; gap: 6px; color: #2D3E1F;">
+//           ${createLucideIcon('footprints', '#566E3D', 14)}
+//           <span><strong>Walk:</strong> ${mockData.walkTime}</span>
+//         </div>
+//         <div style="display: flex; align-items: center; gap: 6px; color: #2D3E1F; grid-column: 1 / -1;">
+//           ${createLucideIcon('camera', '#566E3D', 14)}
+//           <span><strong>Camera:</strong> ${mockData.trailCamCoverage}</span>
+//         </div>
+//       </div>
+
+//       <!-- Performance Section -->
+//       <div style="
+//         background: #F5F4F0; 
+//         border: 1px solid #E8E6E0; 
+//         border-radius: 6px; 
+//         padding: 10px; 
+//         margin-bottom: 12px;
+//       ">
+//         <div style="
+//           display: flex; 
+//           align-items: center; 
+//           gap: 6px; 
+//           margin-bottom: 8px; 
+//           color: #566E3D; 
+//           font-weight: 600; 
+//           font-size: 12px;
+//         ">
+//           ${createLucideIcon('bar-chart-3', '#566E3D', 14)}
+//           PERFORMANCE
+//         </div>
+//         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; font-size: 11px;">
+//           <div>
+//             <div style="font-weight: 700; color: #FA7921; font-size: 16px;">${mockData.totalHarvests}</div>
+//             <div style="color: #2D3E1F;">Total Harvested</div>
+//           </div>
+//           <div>
+//             <div style="font-weight: 700; color: #B9A44C; font-size: 16px;">${mockData.huntsThisSeason}</div>
+//             <div style="color: #2D3E1F;">Hunts This Season</div>
+//           </div>
+//           <div>
+//             <div style="font-weight: 700; color: #566E3D; font-size: 16px;">${mockData.totalHunts}</div>
+//             <div style="color: #2D3E1F;">All-Time Hunts</div>
+//           </div>
+//         </div>
+//       </div>
+
+//       <!-- Last Used -->
+//       ${mockData.lastHuntDate ? `
+//         <div style="
+//           background: #566E3D; 
+//           color: white; 
+//           padding: 8px 10px; 
+//           border-radius: 6px; 
+//           margin-bottom: 12px; 
+//           font-size: 12px;
+//           text-align: center;
+//         ">
+//           <strong>Last Used:</strong> ${new Date(mockData.lastHuntDate).toLocaleDateString()} PM
+//         </div>
+//       ` : ''}
+
+//       <!-- Coordinates Footer -->
+//       <div style="
+//         display: flex; 
+//         align-items: center; 
+//         gap: 6px; 
+//         padding-top: 8px; 
+//         border-top: 1px solid #E8E6E0; 
+//         font-size: 11px; 
+//         color: #8B7355;
+//       ">
+//         ${createLucideIcon('map-pin', '#8B7355', 12)}
+//         <span>${stand.latitude?.toFixed(6)}, ${stand.longitude?.toFixed(6)}</span>
+//       </div>
+
+//       <!-- Expandable Details Button -->
+//       <div style="margin-top: 10px;">
+//         <button 
+//           onclick="toggleStandDetails('${stand.id}')" 
+//           style="
+//             width: 100%; 
+//             background: #E8E6E0; 
+//             border: 1px solid #B9A44C; 
+//             color: #566E3D; 
+//             padding: 6px 10px; 
+//             border-radius: 4px; 
+//             font-size: 11px; 
+//             font-weight: 600; 
+//             cursor: pointer;
+//             display: flex;
+//             align-items: center;
+//             justify-content: center;
+//             gap: 4px;
+//           "
+//         >
+//           ${createLucideIcon('chevron-down', '#566E3D', 12)}
+//           Show More Details
+//         </button>
+//       </div>
+
+//       <!-- Expandable Details (Initially Hidden) -->
+//       <div id="stand-details-${stand.id}" style="display: none; margin-top: 10px;">
+//         <!-- Physical Details -->
+//         ${mockData.height || mockData.material ? `
+//           <div style="margin-bottom: 10px;">
+//             <div style="
+//               display: flex; 
+//               align-items: center; 
+//               gap: 6px; 
+//               margin-bottom: 6px; 
+//               color: #566E3D; 
+//               font-weight: 600; 
+//               font-size: 11px;
+//             ">
+//               ${createLucideIcon('box', '#566E3D', 12)}
+//               PHYSICAL DETAILS
+//             </div>
+//             <div style="font-size: 11px; color: #2D3E1F; line-height: 1.4;">
+//               ${mockData.height ? `<div><strong>Height:</strong> ${mockData.height}</div>` : ''}
+//               ${mockData.material ? `<div><strong>Material:</strong> ${mockData.material}</div>` : ''}
+//             </div>
+//           </div>
+//         ` : ''}
+
+//         <!-- Access Details -->
+//         ${mockData.difficulty ? `
+//           <div style="margin-bottom: 10px;">
+//             <div style="
+//               display: flex; 
+//               align-items: center; 
+//               gap: 6px; 
+//               margin-bottom: 6px; 
+//               color: #566E3D; 
+//               font-weight: 600; 
+//               font-size: 11px;
+//             ">
+//               ${createLucideIcon('footprints', '#566E3D', 12)}
+//               ACCESS
+//             </div>
+//             <div style="font-size: 11px; color: #2D3E1F;">
+//               <strong>Difficulty:</strong> ${mockData.difficulty}
+//             </div>
+//           </div>
+//         ` : ''}
+
+//         <!-- Hunting Details -->
+//         ${mockData.coverRating || mockData.viewDistance ? `
+//           <div style="margin-bottom: 10px;">
+//             <div style="
+//               display: flex; 
+//               align-items: center; 
+//               gap: 6px; 
+//               margin-bottom: 6px; 
+//               color: #566E3D; 
+//               font-weight: 600; 
+//               font-size: 11px;
+//             ">
+//               ${createLucideIcon('crosshair', '#566E3D', 12)}
+//               HUNTING DETAILS
+//             </div>
+//             <div style="font-size: 11px; color: #2D3E1F; line-height: 1.4;">
+//               ${mockData.coverRating ? `<div><strong>Cover Rating:</strong> ${mockData.coverRating}/5</div>` : ''}
+//               ${mockData.viewDistance ? `<div><strong>View Distance:</strong> ${mockData.viewDistance}</div>` : ''}
+//             </div>
+//           </div>
+//         ` : ''}
+
+//         <!-- Condition -->
+//         <div style="margin-bottom: 10px;">
+//           <div style="
+//             display: flex; 
+//             align-items: center; 
+//             gap: 6px; 
+//             margin-bottom: 6px; 
+//             color: #566E3D; 
+//             font-weight: 600; 
+//             font-size: 11px;
+//           ">
+//             ${createLucideIcon('wrench', '#566E3D', 12)}
+//             CONDITION
+//           </div>
+//           <div style="font-size: 11px; color: #2D3E1F;">
+//             <strong>Status:</strong> ${mockData.maintenanceStatus}
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   `
+// }
 
 export default function MapTest2Page() {
   const mapRef = useRef<HTMLDivElement>(null)
