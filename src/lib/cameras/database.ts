@@ -207,53 +207,103 @@ export async function deleteCameraHardware(
 // ============================================================================
 
 /**
- * Get all camera deployments with hardware info
+ * Get all camera deployments with hardware info (FIXED)
  */
 export async function getCameraDeployments(
   filters?: Partial<CameraFilters>
 ): Promise<CameraAPIResponse<CameraWithStatus[]>> {
   try {
-    let query = supabase
+    // Build deployment query with filters
+    let deploymentQuery = supabase
       .from('camera_deployments')
       .select(`
         *,
-        hardware:camera_hardware(*),
-        latest_report:camera_status_reports(
-          *
-        )
+        camera_hardware(*)
       `)
       .order('location_name', { ascending: true });
 
     // Apply filters
     if (filters?.active !== undefined) {
-      query = query.eq('active', filters.active);
+      deploymentQuery = deploymentQuery.eq('active', filters.active);
     }
     if (filters?.season_year?.length) {
-      query = query.in('season_year', filters.season_year);
+      deploymentQuery = deploymentQuery.in('season_year', filters.season_year);
     }
     if (filters?.is_missing !== undefined) {
-      query = query.eq('is_missing', filters.is_missing);
+      deploymentQuery = deploymentQuery.eq('is_missing', filters.is_missing);
     }
     if (filters?.search) {
-      query = query.or(`location_name.ilike.%${filters.search}%,notes.ilike.%${filters.search}%`);
+      const searchTerm = `%${filters.search}%`;
+      deploymentQuery = deploymentQuery.or(`location_name.ilike.${searchTerm},notes.ilike.${searchTerm}`);
     }
 
-    const { data, error } = await query;
+    const { data: deployments, error: deploymentsError } = await deploymentQuery;
 
-    if (error) {
-      console.error('Error fetching camera deployments:', error);
-      return { success: false, error: error.message };
+    if (deploymentsError) {
+      console.error('Error fetching deployments:', deploymentsError);
+      return { success: false, error: deploymentsError.message };
     }
 
-    // Transform data to match CameraWithStatus interface
-    const transformedData: CameraWithStatus[] = (data || []).map(deployment => {
-      const latestReport = deployment.latest_report?.[0] || null;
+    if (!deployments || deployments.length === 0) {
+      return { success: true, data: [] };
+    }
+
+    // Get latest reports for these deployments
+    const deploymentIds = deployments.map(d => d.id);
+    const { data: allReports, error: reportsError } = await supabase
+      .from('camera_status_reports')
+      .select('*')
+      .in('deployment_id', deploymentIds)
+      .order('report_date', { ascending: false });
+
+    if (reportsError) {
+      console.error('Error fetching reports:', reportsError);
+      return { success: false, error: reportsError.message };
+    }
+
+    // Group reports by deployment_id and get the latest for each
+    const latestReportsMap = new Map();
+    if (allReports) {
+      for (const report of allReports) {
+        if (!latestReportsMap.has(report.deployment_id)) {
+          latestReportsMap.set(report.deployment_id, report);
+        }
+      }
+    }
+
+    // Apply additional filters based on reports
+    let filteredDeployments = deployments;
+
+    if (filters?.has_alerts !== undefined) {
+      filteredDeployments = filteredDeployments.filter(deployment => {
+        const latestReport = latestReportsMap.get(deployment.id);
+        return (latestReport?.needs_attention === true) === filters.has_alerts;
+      });
+    }
+
+    if (filters?.battery_status?.length) {
+      filteredDeployments = filteredDeployments.filter(deployment => {
+        const latestReport = latestReportsMap.get(deployment.id);
+        return latestReport && filters.battery_status!.includes(latestReport.battery_status || '');
+      });
+    }
+
+    // Apply hardware filters
+    if (filters?.brand?.length) {
+      filteredDeployments = filteredDeployments.filter(deployment => 
+        filters.brand!.includes(deployment.camera_hardware?.brand || '')
+      );
+    }
+
+    // Transform to CameraWithStatus format
+    const transformedData: CameraWithStatus[] = filteredDeployments.map(deployment => {
+      const latestReport = latestReportsMap.get(deployment.id) || null;
       const daysSinceLastReport = latestReport 
         ? Math.floor((Date.now() - new Date(latestReport.report_date).getTime()) / (1000 * 60 * 60 * 24))
         : null;
 
       return {
-        hardware: deployment.hardware,
+        hardware: deployment.camera_hardware,
         deployment: deployment,
         latest_report: latestReport,
         days_since_last_report: daysSinceLastReport
@@ -472,42 +522,63 @@ export async function getStatusReports(
 // ============================================================================
 
 /**
- * Get cameras that need attention
+ * Get cameras that need attention (FIXED)
  */
 export async function getCameraAlerts(): Promise<CameraAPIResponse<CameraWithStatus[]>> {
   try {
-    const { data, error } = await supabase
+    // Get deployments with hardware info
+    const { data: deployments, error: deploymentsError } = await supabase
       .from('camera_deployments')
       .select(`
         *,
-        hardware:camera_hardware(*),
-        latest_report:camera_status_reports!inner(*)
+        camera_hardware(*)
       `)
-      .eq('active', true)
-      .eq('latest_report.needs_attention', true)
-      .order('latest_report.report_date', { ascending: false });
+      .eq('active', true);
 
-    if (error) {
-      console.error('Error fetching camera alerts:', error);
-      return { success: false, error: error.message };
+    if (deploymentsError) {
+      console.error('Error fetching deployments:', deploymentsError);
+      return { success: false, error: deploymentsError.message };
     }
 
-    // Transform data to match CameraWithStatus interface
-    const transformedData: CameraWithStatus[] = (data || []).map(deployment => {
-      const latestReport = deployment.latest_report?.[0] || null;
-      const daysSinceLastReport = latestReport 
-        ? Math.floor((Date.now() - new Date(latestReport.report_date).getTime()) / (1000 * 60 * 60 * 24))
-        : null;
+    if (!deployments || deployments.length === 0) {
+      return { success: true, data: [] };
+    }
 
-      return {
-        hardware: deployment.hardware,
-        deployment: deployment,
-        latest_report: latestReport,
-        days_since_last_report: daysSinceLastReport
-      };
-    });
+    // Get recent reports with alerts for these deployments
+    const deploymentIds = deployments.map(d => d.id);
+    const { data: reports, error: reportsError } = await supabase
+      .from('camera_status_reports')
+      .select('*')
+      .in('deployment_id', deploymentIds)
+      .eq('needs_attention', true)
+      .order('report_date', { ascending: false });
 
-    return { success: true, data: transformedData };
+    if (reportsError) {
+      console.error('Error fetching reports:', reportsError);
+      return { success: false, error: reportsError.message };
+    }
+
+    // Combine data in JavaScript (simpler than complex SQL joins)
+    const alertCameras: CameraWithStatus[] = [];
+    const reportsMap = new Map(reports?.map(r => [r.deployment_id, r]) || []);
+
+    for (const deployment of deployments) {
+      const latestReport = reportsMap.get(deployment.id);
+      if (latestReport) {
+        const daysSinceLastReport = latestReport 
+          ? Math.floor((Date.now() - new Date(latestReport.report_date).getTime()) / (1000 * 60 * 60 * 24))
+          : null;
+
+        alertCameras.push({
+          hardware: deployment.camera_hardware,
+          deployment: deployment,
+          latest_report: latestReport,
+          days_since_last_report: daysSinceLastReport
+        });
+      }
+    }
+
+    return { success: true, data: alertCameras };
   } catch (error) {
     console.error('Error in getCameraAlerts:', error);
     return { success: false, error: 'Unknown error occurred' };
@@ -515,11 +586,11 @@ export async function getCameraAlerts(): Promise<CameraAPIResponse<CameraWithSta
 }
 
 /**
- * Get missing cameras
+ * Get missing cameras (FIXED)
  */
 export async function getMissingCameras(): Promise<CameraAPIResponse<MissingCameraAlert[]>> {
   try {
-    const { data, error } = await supabase
+    const { data: deployments, error } = await supabase
       .from('camera_deployments')
       .select(`
         id,
@@ -527,7 +598,7 @@ export async function getMissingCameras(): Promise<CameraAPIResponse<MissingCame
         last_seen_date,
         missing_since_date,
         consecutive_missing_days,
-        hardware:camera_hardware(device_id)
+        camera_hardware!inner(id, device_id)
       `)
       .eq('active', true)
       .eq('is_missing', true)
@@ -539,10 +610,10 @@ export async function getMissingCameras(): Promise<CameraAPIResponse<MissingCame
     }
 
     // Transform data to match MissingCameraAlert interface
-    const transformedData: MissingCameraAlert[] = (data || []).map(deployment => ({
+    const transformedData: MissingCameraAlert[] = (deployments || []).map(deployment => ({
       deployment_id: deployment.id,
-      hardware_id: deployment.hardware.id,
-      device_id: deployment.hardware.device_id,
+      hardware_id: deployment.camera_hardware.id,
+      device_id: deployment.camera_hardware.device_id,
       location_name: deployment.location_name,
       last_seen_date: deployment.last_seen_date,
       missing_since_date: deployment.missing_since_date,
@@ -688,28 +759,38 @@ export async function isDeviceIdAvailable(
 }
 
 /**
- * Get available hardware for deployment
+ * Get available hardware for deployment (FIXED)
  */
 export async function getAvailableHardware(): Promise<CameraAPIResponse<CameraHardware[]>> {
   try {
-    const { data, error } = await supabase
+    // First, get all active hardware
+    const { data: allHardware, error: hardwareError } = await supabase
       .from('camera_hardware')
       .select('*')
       .eq('active', true)
-      .not('id', 'in', 
-        supabase
-          .from('camera_deployments')
-          .select('hardware_id')
-          .eq('active', true)
-      )
       .order('device_id', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching available hardware:', error);
-      return { success: false, error: error.message };
+    if (hardwareError) {
+      console.error('Error fetching hardware:', hardwareError);
+      return { success: false, error: hardwareError.message };
     }
 
-    return { success: true, data: data || [] };
+    // Then, get all active deployments to filter out deployed hardware
+    const { data: activeDeployments, error: deploymentsError } = await supabase
+      .from('camera_deployments')
+      .select('hardware_id')
+      .eq('active', true);
+
+    if (deploymentsError) {
+      console.error('Error fetching deployments:', deploymentsError);
+      return { success: false, error: deploymentsError.message };
+    }
+
+    // Filter out hardware that's currently deployed (do this in JavaScript)
+    const deployedHardwareIds = new Set(activeDeployments?.map(d => d.hardware_id) || []);
+    const availableHardware = (allHardware || []).filter(hw => !deployedHardwareIds.has(hw.id));
+
+    return { success: true, data: availableHardware };
   } catch (error) {
     console.error('Error in getAvailableHardware:', error);
     return { success: false, error: 'Unknown error occurred' };
