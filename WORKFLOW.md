@@ -275,3 +275,175 @@ As your project grows, consider:
 - Setting up CI/CD pipeline
 
 **Remember: Database changes → Export → Document → Commit → Tell Claude!**
+
+---
+
+# Enhanced WORKFLOW.md - Add this Database Section
+
+## Database Modification Workflow
+
+### Before Making Schema Changes
+1. **Document the change**: Add entry to `docs/database/migrations.md`
+2. **Create feature branch**: `git checkout -b feature/db-[change-name]`
+3. **Backup critical data**: Export from Supabase if needed
+4. **Test in development**: Use Supabase staging if available
+
+### Making Schema Changes
+1. **Write migration SQL**: Include rollback procedures
+2. **Update schema docs**: Modify `docs/database/SCHEMA.md`
+3. **Test migration**: Verify all constraints and triggers work
+4. **Export schema**: Run `npm run db:export`
+
+### After Schema Changes
+1. **Commit changes**: Include migration, docs, and exported schema
+2. **Merge to main**: So Claude can see current structure
+3. **Update team**: Document breaking changes if any
+4. **Monitor**: Watch for issues in production
+
+### For Claude Integration
+- **Always merge schema changes to main** before asking Claude for code
+- **Include current schema** in conversation context when needed
+- **Reference migration entries** when explaining database structure
+- **Export schema after every change**: `npm run db:export`
+
+### Database Export Workflow
+
+**Standard Export Command:**
+```bash
+npm run db:export
+```
+
+**Verify Export Success:**
+```bash
+# Check that schema contains your changes
+grep "CREATE TABLE public.your_table" supabase/schema.sql
+
+# Verify functions and triggers
+grep "CREATE FUNCTION" supabase/schema.sql
+```
+
+**Troubleshooting Export Issues:**
+```bash
+# Test public schema only export
+podman run --rm \
+  -e PGPASSWORD="$SUPABASE_DB_PASSWORD" \
+  postgres:17 pg_dump \
+  --host="$SUPABASE_DB_HOST" \
+  --port="$SUPABASE_DB_PORT" \
+  --username="$SUPABASE_DB_USER" \
+  --dbname="$SUPABASE_DB_NAME" \
+  --schema=public \
+  --schema-only \
+  > supabase/schema_test.sql
+
+# Compare with main export
+diff supabase/schema.sql supabase/schema_test.sql
+```
+
+### Migration Documentation Template
+
+**Add to `docs/database/migrations.md`:**
+```markdown
+### [Feature Name] - [Date]
+
+**Type**: Schema Addition | Schema Modification | Data Migration | Performance
+**Affected Tables**: table1, table2, table3
+**Breaking Changes**: Yes/No
+**Rollback Available**: Yes/No
+
+**Purpose**: Brief description of why this change was needed
+
+**Changes Made**:
+- Added table `new_table` with fields: field1, field2, field3
+- Modified table `existing_table`: added field4, removed field5
+- Added indexes: idx_name1, idx_name2
+- Added functions: function_name
+
+**Migration SQL**: 
+```sql
+-- SQL commands used (or reference to artifact)
+```
+
+**Verification Steps**:
+- [ ] Step 1: Verify tables created
+- [ ] Step 2: Test triggers and functions
+- [ ] Step 3: Verify data integrity
+
+**Files Modified**:
+- supabase/schema.sql (exported)
+- docs/database/SCHEMA.md (if structure changed)
+- docs/database/[feature]-system.md (if new feature)
+- src/types/database.ts (if types changed)
+
+**Claude Context**: Include this migration when asking Claude about [specific feature]
+
+**Key Business Logic**:
+- Important behavior notes
+- Special constraints or rules
+- Performance considerations
+```
+
+### Common Database Tasks
+
+**Create New Feature Tables:**
+1. Design table structure with relationships
+2. Write CREATE TABLE statements with constraints
+3. Add appropriate indexes for performance
+4. Create any functions or triggers needed
+5. Enable RLS if required
+6. Test with sample data
+7. Document in migrations.md
+8. Export schema and commit
+
+**Modify Existing Tables:**
+1. Plan backward compatibility
+2. Create migration with ALTER statements
+3. Update related functions/triggers
+4. Test data integrity
+5. Update SCHEMA.md documentation
+6. Export and commit changes
+
+**Performance Optimization:**
+1. Analyze slow queries
+2. Add appropriate indexes
+3. Consider partitioning for large tables
+4. Update statistics
+5. Document performance changes
+
+### Emergency Procedures
+
+**Rollback Schema Changes:**
+1. **Immediate**: Use Supabase dashboard to restore from backup
+2. **Code rollback**: Revert commits and redeploy
+3. **Manual fix**: Write corrective SQL statements
+4. **Data recovery**: Restore from recent backup if needed
+
+**Schema Export Failure:**
+1. Check database connectivity
+2. Verify credentials in .env.local
+3. Test with simplified export (public schema only)
+4. Use Supabase dashboard export as backup
+5. Manual table-by-table export if needed
+
+### Best Practices
+
+**Schema Design:**
+- Use meaningful table and column names
+- Include created_at/updated_at timestamps
+- Add proper foreign key constraints
+- Design for scalability from start
+- Include soft delete capabilities where appropriate
+
+**Migration Safety:**
+- Always backup before major changes
+- Test migrations on copy of production data
+- Include rollback procedures
+- Document breaking changes clearly
+- Coordinate with team before deploying
+
+**Documentation:**
+- Keep SCHEMA.md current with all changes
+- Document business logic in migrations.md
+- Include performance considerations
+- Update Claude context notes
+- Cross-reference related features

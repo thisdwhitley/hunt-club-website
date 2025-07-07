@@ -9,20 +9,20 @@ This document provides a step-by-step implementation plan for the three-table tr
 ## Three-Table System Architecture
 
 ```
-camera_hardware (12 fields)
+camera_hardware (13 fields)
 ├── Physical camera devices and specifications
 ├── Device IDs from daily reports ("002", "013")
 ├── Brand, model, condition tracking
 └── Offline detection fields
 
-camera_deployments (14 fields) 
+camera_deployments (17 fields) 
 ├── Where cameras are currently placed
 ├── Seasonal deployment tracking (2024, 2025)
 ├── Links to nearby stands
 ├── Solar panel configuration
 └── Missing camera detection fields
 
-camera_status_reports (11 fields)
+camera_status_reports (14 fields)
 ├── Daily email report data
 ├── Battery, signal, storage status
 ├── Automatic alert generation
@@ -255,7 +255,7 @@ docs/
 
 ## Camera Management System (Latest)
 
-### camera_hardware (12 fields)
+### camera_hardware (13 fields)
 Physical camera devices and specifications
 - id (uuid, PK)
 - device_id (varchar(10), unique) - From daily reports  
@@ -265,7 +265,7 @@ Physical camera devices and specifications
 - active (boolean)
 - notes, created_at, updated_at
 
-### camera_deployments (14 fields)  
+### camera_deployments (17 fields)  
 Where cameras are currently placed
 - id (uuid, PK)
 - hardware_id (FK to camera_hardware)
@@ -284,7 +284,7 @@ Where cameras are currently placed
   - consecutive_missing_days (integer)
 - created_at, updated_at
 
-### camera_status_reports (11 fields)
+### camera_status_reports (14 fields)
 Daily email report data
 - id (uuid, PK)  
 - deployment_id (FK to camera_deployments)
