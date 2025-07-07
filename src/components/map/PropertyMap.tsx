@@ -106,6 +106,20 @@ export default function PropertyMap({
   const [showIconRef, setShowIconRef] = useState(showIconReference)
   const [currentLayer, setCurrentLayer] = useState<'esri' | 'google' | 'street' | 'terrain' | 'bing'>(defaultLayer)
 
+  // Device detection for desktop overlays
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Device detection effect
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
   // Load data from Supabase
   const loadStands = async () => {
     try {
@@ -474,6 +488,113 @@ export default function PropertyMap({
     { label: 'Trails', visible: showTrails, setter: setShowTrails, color: '#8B7355' }
   ]
 
+  // Desktop Map Layer Overlay (Left Side) - NEW
+  const MapLayerOverlay = () => {
+    if (isMobile) return null
+    
+    return (
+      <div style={{
+        position: 'absolute',
+        top: '12px',
+        left: '12px',
+        zIndex: 1500,
+        background: 'rgba(232, 230, 224, 0.9)',
+        border: '2px solid #566E3D',
+        borderRadius: '8px',
+        padding: '8px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+        backdropFilter: 'blur(4px)',
+        pointerEvents: 'auto'
+      }}>
+        <div style={{ color: '#2D3E1F', fontSize: '11px', fontWeight: '600', marginBottom: '6px' }}>
+          MAP LAYERS
+        </div>
+        <div className="flex flex-col gap-1">
+          {[
+            { key: 'esri', label: 'Esri', color: '#0C4767' },
+            { key: 'google', label: 'Google', color: '#4A5D32' },
+            { key: 'street', label: 'Street', color: '#8B7355' },
+            { key: 'terrain', label: 'Terrain', color: '#A0653A' }
+          ].map((layer) => (
+            <button
+              key={layer.key}
+              onClick={() => switchLayer(layer.key as any)}
+              style={{
+                background: currentLayer === layer.key ? layer.color : 'white',
+                color: currentLayer === layer.key ? 'white' : '#2D3E1F',
+                border: `1px solid ${layer.color}`,
+                borderRadius: '4px',
+                padding: '4px 8px',
+                fontSize: '10px',
+                fontWeight: '600',
+                transition: 'all 0.2s',
+                minWidth: '60px',
+                cursor: 'pointer'
+              }}
+              className="hover:opacity-80"
+            >
+              {layer.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Desktop Components Overlay (Right Side) - NEW
+  const ComponentsOverlay = () => {
+    if (isMobile) return null
+    
+    return (
+      <div style={{
+        position: 'absolute',
+        top: '12px',
+        right: '12px',
+        zIndex: 1500,
+        background: 'rgba(232, 230, 224, 0.9)',
+        border: '2px solid #566E3D',
+        borderRadius: '8px',
+        padding: '8px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+        backdropFilter: 'blur(4px)',
+        pointerEvents: 'auto'
+      }}>
+        <div style={{ color: '#2D3E1F', fontSize: '11px', fontWeight: '600', marginBottom: '6px' }}>
+          COMPONENTS
+        </div>
+        <div className="flex flex-col gap-1">
+          {[
+            { key: 'stands', label: 'Stands', visible: showStands, toggle: () => setShowStands(!showStands), color: '#FA7921' },
+            { key: 'cameras', label: 'Cameras', visible: showCameras, toggle: () => setShowCameras(!showCameras), color: '#566E3D' },
+            { key: 'plots', label: 'Food Plots', visible: showFoodPlots, toggle: () => setShowFoodPlots(!showFoodPlots), color: '#B9A44C' },
+            { key: 'trails', label: 'Trails', visible: showTrails, toggle: () => setShowTrails(!showTrails), color: '#8B7355' }
+          ].map((component) => (
+            <button
+              key={component.key}
+              onClick={component.toggle}
+              style={{
+                background: component.visible ? component.color : 'white',
+                color: component.visible ? 'white' : '#2D3E1F',
+                border: `1px solid ${component.color}`,
+                borderRadius: '4px',
+                padding: '4px 8px',
+                fontSize: '10px',
+                fontWeight: '600',
+                transition: 'all 0.2s',
+                minWidth: '70px',
+                opacity: component.visible ? 1 : 0.6,
+                cursor: 'pointer'
+              }}
+              className="hover:opacity-80"
+            >
+              {component.visible ? '👁️' : '🔒'} {component.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={`${className}`}>
       {/* Map Container with hunting club styling */}
@@ -662,8 +783,18 @@ export default function PropertyMap({
           </div>
         )}
         
-        {/* Map */}
-        <div ref={mapRef} className={`w-full ${height}`} />
+        {/* Map with Desktop Overlays */}
+        <div style={{ position: 'relative' }}>
+          {/* Desktop Overlays - Positioned over map only */}
+          {!isMobile && !error && (
+            <>
+              <MapLayerOverlay />
+              <ComponentsOverlay />
+            </>
+          )}
+          
+          <div ref={mapRef} className={`w-full ${height}`} />
+        </div>
       </div>
 
       {/* Error display */}
