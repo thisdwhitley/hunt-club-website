@@ -8,6 +8,9 @@ import { createClient } from '@/lib/supabase/client'
 import { MapPin, Target, TreePine, Compass } from 'lucide-react'
 import { createRoot } from 'react-dom/client'
 import StandCard from '@/components/stands/StandCard'
+import type { CameraWithStatus } from '@/lib/cameras/types'
+import { getCameraDeployments } from '@/lib/cameras/database'
+import CameraCard from '@/components/cameras/CameraCard'
 
 // Property coordinates for Caswell County Yacht Club clubhouse
 const PROPERTY_CENTER: [number, number] = [36.42712517693617, -79.51073582842501]
@@ -54,6 +57,7 @@ interface PropertyMapProps {
   
   // Event handlers
   onStandClick?: (stand: Stand) => void
+  onCameraClick?: (camera: CameraWithStatus) => void
   onMapReady?: () => void
   onError?: (error: string) => void
   
@@ -77,6 +81,7 @@ export default function PropertyMap({
   className = '',
   height = 'h-96 md:h-[500px]',
   onStandClick,
+  onCameraClick,
   onMapReady,
   onError,
   defaultLayer = 'esri',
@@ -90,6 +95,7 @@ export default function PropertyMap({
   
   // Data states
   const [stands, setStands] = useState<Stand[]>([])
+  const [cameras, setCameras] = useState<CameraWithStatus[]>([])
   const [propertyBoundaries, setPropertyBoundaries] = useState<PropertyBoundary[]>([])
   
   // Map states
@@ -120,7 +126,7 @@ export default function PropertyMap({
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Load data from Supabase
+  // Load stand data from Supabase
   const loadStands = async () => {
     try {
       const supabase = createClient()
@@ -137,6 +143,21 @@ export default function PropertyMap({
       onError?.(errorMsg)
     }
   }
+
+  // Load camera data from Supabase
+  const loadCameras = async () => {
+    try {
+      const result = await getCameraDeployments()
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to load cameras')
+      }
+      setCameras(result.data || [])
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load cameras'
+      console.error('Error loading cameras:', err)
+      // Don't set error state for cameras - let stands work independently
+    }
+  }  
 
   const fetchPropertyBoundaries = async () => {
     try {
@@ -297,7 +318,7 @@ export default function PropertyMap({
     const loadData = async () => {
       try {
         setLoading(true)
-        await Promise.all([loadStands(), fetchPropertyBoundaries()])
+        await Promise.all([loadStands(), loadCameras(), fetchPropertyBoundaries()])
       } finally {
         setLoading(false)
       }
@@ -388,21 +409,55 @@ export default function PropertyMap({
     return popupDiv
   }
 
+  // Create CameraCard popup content
+  const createCameraPopupContent = (camera: CameraWithStatus) => {
+    const popupDiv = document.createElement('div')
+    const root = createRoot(popupDiv)
+    
+    root.render(
+      <CameraCard
+        camera={camera}
+        mode="popup"
+        popupWidth={330}
+        onClick={onCameraClick || ((camera) => {
+          console.log('Camera clicked:', camera.deployment?.location_name || 'Unknown')
+        })}
+        showLocation={true}
+        showStats={true}
+        showActions={true}
+      />
+    )
+    
+    return popupDiv
+  }
+
   // Display property boundaries with updated styling
-  const displayPropertyBoundaries = () => {
-    if (!mapReady || !leafletMapRef.current || !L) return
+const displayPropertyBoundaries = () => {
+  if (!mapReady || !leafletMapRef.current || !L) return
 
-    const boundaryBounds = []
+  const boundaryBounds = []
 
-    propertyBoundaries.forEach(boundary => {
-      if (boundary.boundary_data && Array.isArray(boundary.boundary_data) && boundary.boundary_data.length > 0) {
-        const polyline = L.polyline(boundary.boundary_data, {
-          color: '#FE9920',  // Updated to bright orange
-          weight: 2,         // Updated to 2px
+  propertyBoundaries.forEach(boundary => {
+    if (boundary.boundary_data && Array.isArray(boundary.boundary_data) && boundary.boundary_data.length > 0) {
+      // Add this safety check for coordinates:
+      const validCoordinates = boundary.boundary_data.filter(coord => 
+        coord && 
+        Array.isArray(coord) && 
+        coord.length >= 2 &&
+        typeof coord[0] === 'number' && 
+        typeof coord[1] === 'number' &&
+        !isNaN(coord[0]) && 
+        !isNaN(coord[1])
+      )
+      
+      if (validCoordinates.length > 1) { // Need at least 2 points for a line
+        const polyline = L.polyline(validCoordinates, {
+          color: '#FE9920',
+          weight: 2,
           opacity: 0.8,
           dashArray: '5,5'
         }).addTo(leafletMapRef.current)
-        
+      
         polyline.bindPopup(`
           <div style="min-width: 200px; font-family: sans-serif;">
             <h3 style="color: #566E3D; margin: 0 0 8px 0;">🗺️ ${boundary.name}</h3>
@@ -412,16 +467,17 @@ export default function PropertyMap({
         `)
 
         // Collect boundary points for centering the map
-        boundaryBounds.push(...boundary.boundary_data)
+        boundaryBounds.push(...validCoordinates)
       }
-    })
-
-    // Center map on boundary bounds if boundaries exist
-    if (boundaryBounds.length > 0) {
-      const bounds = L.latLngBounds(boundaryBounds)
-      leafletMapRef.current.fitBounds(bounds, { padding: [10, 10] })
     }
+  })
+
+  // Center map on boundary bounds if boundaries exist
+  if (boundaryBounds.length > 0) {
+    const bounds = L.latLngBounds(boundaryBounds)
+    leafletMapRef.current.fitBounds(bounds, { padding: [10, 10] })
   }
+}
 
   // Update stands and boundaries on map when data changes
   useEffect(() => {
@@ -440,6 +496,46 @@ export default function PropertyMap({
 
     // Display property boundaries first (this will center the map)
     displayPropertyBoundaries()
+
+    // ADD CAMERA MARKERS (new section)
+    if (showCameras && cameras.length > 0) {
+      // Create camera icon (olive green to match your camera theme)
+      const cameraIcon = L.divIcon({
+        html: `
+          <div style="
+            background: #0C4767; 
+            border: 1px solid #E8E6E0; 
+            border-radius: 50%; 
+            width: 14px; 
+            height: 14px;
+            box-shadow: 0 0px 0px rgba(0,0,0,0.3);
+          "></div>
+        `,
+        className: 'camera-marker',
+        iconSize: [14, 14],
+        iconAnchor: [0, 0],
+        popupAnchor: [0, -8],
+      })
+
+      // Add camera markers
+      cameras.forEach((camera) => {
+        const { deployment } = camera
+        if (deployment?.latitude && deployment?.longitude && deployment?.active) {
+          const marker = L.marker([deployment.latitude, deployment.longitude], { icon: cameraIcon })
+            .addTo(leafletMapRef.current)
+          
+          // Bind popup with CameraCard and proper styling
+          marker.bindPopup(() => createCameraPopupContent(camera), {
+            maxWidth: 350,
+            minWidth: 330,
+            className: 'camera-popup',
+            closeButton: true,
+            autoPan: true,
+            keepInView: true
+          })
+        }
+      })
+    }
 
     if (!showStands) return
 
@@ -478,12 +574,12 @@ export default function PropertyMap({
         })
       }
     })
-  }, [mapReady, stands, showStands, propertyBoundaries])
+  }, [mapReady, stands, showStands, cameras, showCameras, propertyBoundaries])
 
   // Component visibility controls
   const mapComponents = [
     { label: 'Stands', visible: showStands, setter: setShowStands, color: '#FA7921' },
-    { label: 'Cameras', visible: showCameras, setter: setShowCameras, color: '#566E3D' },
+    { label: 'Cameras', visible: showCameras, setter: setShowCameras, color: '#0C4767' },
     { label: 'Food Plots', visible: showFoodPlots, setter: setShowFoodPlots, color: '#B9A44C' },
     { label: 'Trails', visible: showTrails, setter: setShowTrails, color: '#8B7355' }
   ]
@@ -565,7 +661,7 @@ export default function PropertyMap({
         <div className="flex flex-col gap-1">
           {[
             { key: 'stands', label: 'Stands', visible: showStands, toggle: () => setShowStands(!showStands), color: '#FA7921' },
-            { key: 'cameras', label: 'Cameras', visible: showCameras, toggle: () => setShowCameras(!showCameras), color: '#566E3D' },
+            { key: 'cameras', label: 'Cameras', visible: showCameras, toggle: () => setShowCameras(!showCameras), color: '#0C4767' },
             { key: 'plots', label: 'Food Plots', visible: showFoodPlots, toggle: () => setShowFoodPlots(!showFoodPlots), color: '#B9A44C' },
             { key: 'trails', label: 'Trails', visible: showTrails, toggle: () => setShowTrails(!showTrails), color: '#8B7355' }
           ].map((component) => (

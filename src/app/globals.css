@@ -149,3 +149,16 @@ body {
 .club-shadow-lg {
   box-shadow: 0 10px 15px -3px rgba(86, 110, 61, 0.1), 0 4px 6px -2px rgba(86, 110, 61, 0.05);
 }
+
+.leaflet-div-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Fix red square background on custom map markers */
+.hunting-stand-marker,
+.camera-marker {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}

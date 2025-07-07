@@ -1,7 +1,8 @@
 // Camera Database Service Layer
 // Phase 2, Step 2.2: Database CRUD operations for camera system
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
+// import { createClient } from '@supabase/supabase-js';
 import type {
   CameraHardware,
   CameraDeployment,
@@ -213,13 +214,12 @@ export async function getCameraDeployments(
   filters?: Partial<CameraFilters>
 ): Promise<CameraAPIResponse<CameraWithStatus[]>> {
   try {
+    const supabase = createClient()
+    
     // Build deployment query with filters
     let deploymentQuery = supabase
       .from('camera_deployments')
-      .select(`
-        *,
-        camera_hardware(*)
-      `)
+      .select(`*, hardware:camera_hardware(*)`)
       .order('location_name', { ascending: true });
 
     // Apply filters
@@ -291,7 +291,7 @@ export async function getCameraDeployments(
     // Apply hardware filters
     if (filters?.brand?.length) {
       filteredDeployments = filteredDeployments.filter(deployment => 
-        filters.brand!.includes(deployment.camera_hardware?.brand || '')
+        filters.brand!.includes(deployment.hardware?.brand || '')
       );
     }
 
@@ -303,7 +303,7 @@ export async function getCameraDeployments(
         : null;
 
       return {
-        hardware: deployment.camera_hardware,
+        hardware: deployment.hardware,
         deployment: deployment,
         latest_report: latestReport,
         days_since_last_report: daysSinceLastReport
