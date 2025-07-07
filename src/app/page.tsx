@@ -30,6 +30,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { CalendarView } from "@/components/CalendarView";
 import Link from "next/link";
+import PropertyMap from '@/components/map/PropertyMap';
 
 export default function MainPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -254,6 +255,11 @@ export default function MainPage() {
     switch (activeSection) {
       case 'calendar':
         return <CalendarView />;
+      case 'property':
+        return         <PropertyMap 
+          // height="h-80"
+          showControls={false} // Minimal for dashboard
+        />;
       case 'dashboard':
         return renderDashboard();
       default:
