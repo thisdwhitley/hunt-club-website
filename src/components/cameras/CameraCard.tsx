@@ -306,106 +306,106 @@ export default function CameraCard({
   }
 
   // Render compact mode info
-  const renderCompactInfo = () => {
-    if (mode !== 'compact') return null
+  // const renderCompactInfo = () => {
+  //   if (mode !== 'compact') return null
 
-    return (
-      <div className="flex items-center justify-between text-sm">
-        <span style={{ color: HUNTING_COLORS.forestShadow }}>
-          Device {camera.hardware.device_id}
-        </span>
+  //   return (
+  //     <div className="flex items-center justify-between text-sm">
+  //       <span style={{ color: HUNTING_COLORS.forestShadow }}>
+  //         Device {camera.hardware.device_id}
+  //       </span>
         
-        <div className="flex items-center gap-2">
-          {camera.deployment?.has_solar_panel && (
-            <SolarIcon size={12} style={{ color: HUNTING_COLORS.darkTeal }} />
-          )}
-          <span style={{ 
-            color: alertStatus.color,
-            fontSize: '12px',
-            fontWeight: '600'
-          }}>
-            {camera.latest_report ? 
-              (camera.days_since_last_report === 0 ? 'Today' : `${camera.days_since_last_report}d ago`) : 
-              'Not data'
-            }
-          </span>
-        </div>
-      </div>
-    )
-  }
+  //       <div className="flex items-center gap-2">
+  //         {camera.deployment?.has_solar_panel && (
+  //           <SolarIcon size={12} style={{ color: HUNTING_COLORS.darkTeal }} />
+  //         )}
+  //         <span style={{ 
+  //           color: alertStatus.color,
+  //           fontSize: '12px',
+  //           fontWeight: '600'
+  //         }}>
+  //           {camera.latest_report ? 
+  //             (camera.days_since_last_report === 0 ? 'Today' : `${camera.days_since_last_report}d ago`) : 
+  //             'Not data'
+  //           }
+  //         </span>
+  //       </div>
+  //     </div>
+  //   )
+  // }
 
   // Render key details section (hardware/deployment data - always available)
-  const renderKeyDetails = () => {
-    const details = []
+  // const renderKeyDetails = () => {
+  //   const details = []
 
-    // Hardware info (always available)
-    if (camera.hardware.brand && camera.hardware.model) {
-      details.push(
-        <div key="hardware" className="flex items-center gap-2">
-          {/* <Camera size={14} style={{ color: HUNTING_COLORS.forestGreen }} /> */}
-          <span style={{ color: HUNTING_COLORS.forestShadow }}>
-            {[camera.hardware.brand, camera.hardware.model].filter(Boolean).join(' ')}
-          </span>
-        </div>
-      )
-    }
+  //   // Hardware info (always available)
+  //   if (camera.hardware.brand && camera.hardware.model) {
+  //     details.push(
+  //       <div key="hardware" className="flex items-center gap-2">
+  //         {/* <Camera size={14} style={{ color: HUNTING_COLORS.forestGreen }} /> */}
+  //         <span style={{ color: HUNTING_COLORS.forestShadow }}>
+  //           {[camera.hardware.brand, camera.hardware.model].filter(Boolean).join(' ')}
+  //         </span>
+  //       </div>
+  //     )
+  //   }
 
-    // Solar panel status (always available)
-    if (camera.deployment?.has_solar_panel) {
-      details.push(
-        <div key="solar" className="flex items-center gap-2">
-          <SolarIcon size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
-          {/* <span style={{ color: HUNTING_COLORS.forestShadow }}>
-            <strong>Power:</strong> Solar Panel Equipped
-          </span> */}
-        </div>
-      )
-    }
+  //   // Solar panel status (always available)
+  //   if (camera.deployment?.has_solar_panel) {
+  //     details.push(
+  //       <div key="solar" className="flex items-center gap-2">
+  //         <SolarIcon size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
+  //         {/* <span style={{ color: HUNTING_COLORS.forestShadow }}>
+  //           <strong>Power:</strong> Solar Panel Equipped
+  //         </span> */}
+  //       </div>
+  //     )
+  //   }
 
-    // Only show report-dependent data in full mode with timestamps
-    if (mode === 'full') {
-      // Battery Status (report data)
-      if (camera.latest_report?.battery_status) {
-        const batteryIcon = camera.deployment?.has_solar_panel ? SolarIcon : BatteryIcon
-        details.push(
-          <div key="battery" className="flex items-center gap-2">
-            {React.createElement(batteryIcon, { 
-              size: 14, 
-              style: { color: HUNTING_COLORS.forestGreen } 
-            })}
-            <span style={{ color: HUNTING_COLORS.forestShadow }}>
-              <strong>Battery:</strong> {camera.latest_report.battery_status}
-            </span>
-          </div>
-        )
-      }
+  //   // Only show report-dependent data in full mode with timestamps
+  //   if (mode === 'full') {
+  //     // Battery Status (report data)
+  //     if (camera.latest_report?.battery_status) {
+  //       const batteryIcon = camera.deployment?.has_solar_panel ? SolarIcon : BatteryIcon
+  //       details.push(
+  //         <div key="battery" className="flex items-center gap-2">
+  //           {React.createElement(batteryIcon, { 
+  //             size: 14, 
+  //             style: { color: HUNTING_COLORS.forestGreen } 
+  //           })}
+  //           <span style={{ color: HUNTING_COLORS.forestShadow }}>
+  //             <strong>Battery:</strong> {camera.latest_report.battery_status}
+  //           </span>
+  //         </div>
+  //       )
+  //     }
 
-      // Signal Level (report data)
-      if (camera.latest_report?.signal_level !== null && camera.latest_report?.signal_level !== undefined) {
-        details.push(
-          <div key="signal" className="flex items-center gap-2">
-            <Signal size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
-            <span style={{ color: HUNTING_COLORS.forestShadow }}>
-              <strong>Signal:</strong> {camera.latest_report.signal_level}%
-            </span>
-          </div>
-        )
-      }
+  //     // Signal Level (report data)
+  //     if (camera.latest_report?.signal_level !== null && camera.latest_report?.signal_level !== undefined) {
+  //       details.push(
+  //         <div key="signal" className="flex items-center gap-2">
+  //           <Signal size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
+  //           <span style={{ color: HUNTING_COLORS.forestShadow }}>
+  //             <strong>Signal:</strong> {camera.latest_report.signal_level}%
+  //           </span>
+  //         </div>
+  //       )
+  //     }
 
 
-    }
+  //   }
 
-    if (details.length === 0) return null
+  //   if (details.length === 0) return null
 
-    return (
-      <div 
-        className="grid grid-cols-2 gap-2 mb-3 text-xs"
-        style={{ padding: '8px 10px' }}
-      >
-        {details}
-      </div>
-    )
-  }
+  //   return (
+  //     <div 
+  //       className="grid grid-cols-2 gap-2 mb-3 text-xs"
+  //       style={{ padding: '8px 10px' }}
+  //     >
+  //       {details}
+  //     </div>
+  //   )
+  // }
 
   // Render report data section (only in full mode)
   const renderReportDataSection = () => {
@@ -455,10 +455,6 @@ export default function CameraCard({
               fontWeight: '600'
             }}>
               {!hasReportData ? 'No data' : null }
-              {/* //   reportAge === 0 ? 'Today' : 
-              //   reportAge === 1 ? '1 day ago' :
-              //   `${reportAge} days ago`
-              // ) : 'Nop data'} */}
             </div>
         </div>
 
@@ -487,7 +483,9 @@ export default function CameraCard({
             )}
 
             {/* Image Count (report data) */} 
-            {camera.latest_report.sd_images_count && (
+            {camera.latest_report?.sd_images_count !== null && 
+             camera.latest_report?.sd_images_count !== undefined && 
+             camera.latest_report?.sd_images_count > 0 && (
               <div key="images" className="flex items-center gap-2">
                 <ImagesIcon size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
                 <span style={{ color: HUNTING_COLORS.forestShadow }}>
@@ -497,7 +495,9 @@ export default function CameraCard({
             )}
 
             {/* Storage Space (report data) */}
-            {camera.latest_report?.sd_free_space_mb && (
+            {camera.latest_report?.sd_free_space_mb !== null && 
+             camera.latest_report?.sd_free_space_mb !== undefined && 
+             camera.latest_report?.sd_free_space_mb > 0 && (
               <div key="storage" className="flex items-center gap-2">
                 <HardDrive size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
                 <span style={{ color: HUNTING_COLORS.forestShadow }}>
@@ -517,7 +517,9 @@ export default function CameraCard({
             )}
 
             {/* Link Count (report data) */} 
-            {camera.latest_report.network_links && (
+            {camera.latest_report?.network_links !== null && 
+             camera.latest_report?.network_links !== undefined && 
+             camera.latest_report?.network_links > 0 && (
               <div key="links" className="flex items-center gap-2">
                 <LinksIcon size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
                 <span style={{ color: HUNTING_COLORS.forestShadow }}>
@@ -526,10 +528,10 @@ export default function CameraCard({
               </div>
             )}
 
-
-    
             {/* Image Queue (report data) */} 
-            {camera.latest_report.image_queue && (
+            {camera.latest_report?.image_queue !== null && 
+             camera.latest_report?.image_queue !== undefined && 
+             camera.latest_report?.image_queue > 0 && (
               <div key="queue" className="flex items-center gap-2">
                 <QueueIcon size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
                 <span style={{ color: HUNTING_COLORS.forestShadow }}>
