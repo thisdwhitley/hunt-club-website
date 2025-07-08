@@ -1,112 +1,122 @@
 'use client'
 
 // src/components/cameras/CameraCard.tsx
-// Mobile-first camera card component with multiple display modes
-// Phase 3, Step 3.1: Core component following StandCard patterns
+// Enhanced camera display component with hunting club styling to match StandCard
+//
+// DATA STRATEGY:
+// - Always Available: location_name, device_id, hardware info, deployment settings
+// - Report Data: battery, signal, photos - may be missing or stale, always show timestamps
+// - Mode-Specific Display:
+//   * Popup: Basic ID info + status + "View Details" button
+//   * Compact: Name + device + basic status indicator  
+//   * Full: All data with clear report data timestamps and freshness indicators
 
 import React from 'react'
 import { 
-  Camera, 
   MapPin, 
-  Battery, 
-  Signal, 
-  AlertTriangle, 
-  Eye,
-  Calendar,
-  HardDrive,
+  Camera, 
+  Battery as BatteryIcon,
+  BatteryCharging as BatteryBankIcon,
   Wifi,
-  Navigation,
+  WifiOff,
   Edit3,
   Trash2,
-  Sun,
+  Navigation,
+  AlertTriangle,
   CheckCircle,
-  XCircle
+  XCircle,
+  Clock,
+  Signal,
+  HardDrive,
+  Calendar,
+  Eye,
+  Zap as SolarIcon,
+  Images as ImagesIcon,
+  GalleryHorizontalEnd as QueueIcon,
+  Waypoints as LinksIcon,
+  CalendarFold as SeasonIcon,
 } from 'lucide-react'
+
 import type { CameraWithStatus } from '@/lib/cameras/types'
 
-// ============================================================================
-// INTERFACES
-// ============================================================================
+// Power source options
+const POWER_SOURCE_OPTIONS = {
+  battery: { label: 'Internal Battery', icon: BatteryIcon, color: '#B9A44C' },
+  bank: { label: 'Battery Bank', icon: BatteryBankIcon, color: '#FA7921' },
+  solar: { label: 'Solar Panel', icon: SolarIcon, color: '#FA7921' }
+}
+
+// Hunting club color constants (matching StandCard)
+const HUNTING_COLORS = {
+  forestGreen: '#566E3D',
+  forestShadow: '#2D3E1F', 
+  burntOrange: '#FA7921',
+  darkTeal: '#0C4767',
+  morningMist: '#E8E6E0'
+}
+
+const tealSquareStyle = {
+  display: 'inline-flex' as const,
+  alignItems: 'center' as const, 
+  justifyContent: 'center' as const,
+  width: '32px',
+  height: '32px',
+  // backgroundColor: 'rgba(12, 71, 103, 0.25)', // Adjust here
+  color: '#0C4767',
+  // border: '2px solid rgba(12, 71, 103, 0.4)',
+  borderRadius: '6px',
+  fontWeight: 'bold' as const,
+  fontSize: '20px',
+  // boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+}
+
+// Helper functions
+const formatDate = (dateString: string | null): string => {
+  if (!dateString) return 'Never'
+  const date = new Date(dateString)
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+const formatDaysAgo = (days: number | null): string => {
+  if (days === null) return 'Unknown'
+  if (days === 0) return 'Today'
+  if (days === 1) return '1 day ago'
+  return `${days} days ago`
+}
+
+const formatStorageSpace = (mb: number | null): string => {
+  if (!mb) return 'Unknown'
+  if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`
+  return `${mb} MB`
+}
 
 interface CameraCardProps {
   camera: CameraWithStatus
+  
+  // Display mode
   mode?: 'full' | 'compact' | 'popup'
-  popupWidth?: number
+  
+  // Interaction options
   onClick?: (camera: CameraWithStatus) => void
   onEdit?: (camera: CameraWithStatus) => void
   onDelete?: (camera: CameraWithStatus) => void
   onNavigate?: (camera: CameraWithStatus) => void
+  
+  // Display options
   showLocation?: boolean
   showStats?: boolean
   showActions?: boolean
+  
+  // Layout options
   className?: string
-}
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-const getBatteryColor = (batteryStatus: string | null): string => {
-  if (!batteryStatus) return '#6B7280' // gray-500
   
-  switch (batteryStatus.toLowerCase()) {
-    case 'full': return '#10B981' // green-500
-    case 'good': return '#34D399' // green-400
-    case 'ok': return '#F59E0B' // amber-500
-    case 'low': return '#EF4444' // red-500
-    case 'critical': return '#B91C1C' // red-700
-    case 'ext ok': return '#8B5CF6' // purple-500 (external power)
-    default: return '#6B7280'
-  }
+  // Popup specific options
+  popupWidth?: number
 }
-
-const getBatteryIcon = (batteryStatus: string | null, hasSolar: boolean) => {
-  if (hasSolar) return <Sun size={14} />
-  return <Battery size={14} />
-}
-
-const getSignalColor = (signalLevel: number | null): string => {
-  if (!signalLevel) return '#6B7280'
-  if (signalLevel >= 80) return '#10B981' // green-500
-  if (signalLevel >= 60) return '#34D399' // green-400
-  if (signalLevel >= 40) return '#F59E0B' // amber-500
-  if (signalLevel >= 20) return '#EF4444' // red-500
-  return '#B91C1C' // red-700
-}
-
-const getAlertLevel = (camera: CameraWithStatus): 'none' | 'warning' | 'critical' => {
-  const { deployment, latest_report, days_since_last_report } = camera
-  
-  // Critical alerts
-  if (deployment?.is_missing) return 'critical'
-  if (latest_report?.needs_attention) return 'critical'
-  if (latest_report?.battery_status === 'Critical') return 'critical'
-  if ((days_since_last_report || 0) > 7) return 'critical'
-  
-  // Warning alerts
-  if (latest_report?.battery_status === 'Low') return 'warning'
-  if ((days_since_last_report || 0) > 3) return 'warning'
-  if (latest_report?.signal_level && latest_report.signal_level < 30) return 'warning'
-  
-  return 'none'
-}
-
-const formatLastSeen = (days: number | null): string => {
-  if (!days) return 'Today'
-  if (days === 1) return '1 day ago'
-  if (days <= 7) return `${days} days ago`
-  if (days <= 30) return `${Math.floor(days / 7)} weeks ago`
-  return `${Math.floor(days / 30)} months ago`
-}
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
 
 export default function CameraCard({
   camera,
   mode = 'full',
-  popupWidth = 320,
   onClick,
   onEdit,
   onDelete,
@@ -114,219 +124,527 @@ export default function CameraCard({
   showLocation = true,
   showStats = true,
   showActions = true,
-  className = ''
+  className = '',
+  popupWidth
 }: CameraCardProps) {
-  const { hardware, deployment, latest_report, days_since_last_report } = camera
+
+  // Get power icon based on source
+  const getPowerSourceIcon = () => {
+    // Determine power source based on camera data
+    let powerSource: keyof typeof POWER_SOURCE_OPTIONS = 'battery' // default
+    
+    if (camera.deployment?.has_solar_panel) {
+      powerSource = 'solar'
+    } else if (camera.latest_report?.battery_status === 'Ext OK') {
+      powerSource = 'bank'
+    }
   
-  const alertLevel = getAlertLevel(camera)
-  const hasLocation = deployment?.latitude && deployment?.longitude
-  
-  // ============================================================================
-  // STYLES
-  // ============================================================================
-  
+  return POWER_SOURCE_OPTIONS[powerSource]
+}
+
+  // Determine alert status and color
+  const getAlertStatus = () => {
+    if (camera.deployment?.is_missing) {
+      return { status: 'missing', color: '#DC2626', label: 'MISSING' }
+    }
+    if (camera.latest_report?.needs_attention) {
+      return { status: 'critical', color: '#DC2626', label: 'CRITICAL' }
+    }
+    if (camera.latest_report?.battery_status === 'Low' || camera.days_since_last_report && camera.days_since_last_report > 3) {
+      return { status: 'warning', color: '#D97706', label: 'WARNING' }
+    }
+    return { status: 'good', color: '#059669', label: 'GOOD' }
+  }
+
+  const alertStatus = getAlertStatus()
+
   const getCardStyles = () => {
-    let baseStyles = `
-      bg-white rounded-lg border shadow-sm
-      transition-all duration-200 hover:shadow-md cursor-pointer
+    const baseStyles = `
+      bg-white rounded-lg border border-gray-200 shadow-sm
+      transition-all duration-200 hover:shadow-md
     `
     
-    // Alert styling
-    switch (alertLevel) {
-      case 'critical':
-        baseStyles += ` border-red-300 bg-red-50 hover:bg-red-100`
-        break
-      case 'warning':
-        baseStyles += ` border-amber-300 bg-amber-50 hover:bg-amber-100`
-        break
-      default:
-        baseStyles += ` border-gray-200 hover:border-gray-300`
-    }
-    
-    // Mode-specific sizing
     switch (mode) {
       case 'compact':
-        return `${baseStyles} p-3`
+        return `${baseStyles} p-3 min-w-[240px] sm:min-w-[280px]`
       case 'popup':
-        return `${baseStyles} p-4 w-full max-w-none`
+        return `${baseStyles} p-4 max-w-none min-w-[280px] sm:min-w-[330px]`
       default:
-        return `${baseStyles} p-4`
+        return `${baseStyles} p-4 hover:border-gray-300 min-w-[320px] sm:min-w-[380px] ${showActions ? 'pb-12' : ''}`
     }
   }
-  
+
   const getTouchTargetSize = () => {
     return mode === 'popup' ? 'min-h-[44px]' : 'min-h-[56px]'
   }
 
-  // ============================================================================
-  // HANDLERS
-  // ============================================================================
-  
-  const handleCardClick = (e: React.MouseEvent) => {
-    // Don't trigger card click if clicking on action buttons
-    if ((e.target as HTMLElement).closest('button')) return
+  const handleCardClick = () => {
     if (onClick) onClick(camera)
   }
 
-  // ============================================================================
-  // RENDER HELPERS
-  // ============================================================================
-  
-  const renderHeader = () => (
-    <div className="flex items-start justify-between mb-2">
-      <div className="flex items-center gap-2 min-w-0 flex-1">
-        <div className="flex-shrink-0">
-          <Camera 
-            size={mode === 'compact' ? 16 : 20} 
-            className={`
-              ${alertLevel === 'critical' ? 'text-red-600' : 
-                alertLevel === 'warning' ? 'text-amber-600' : 'text-gray-600'}
-            `}
-          />
-        </div>
-        
-        <div className="min-w-0 flex-1">
-          <h3 className={`font-medium text-gray-900 truncate ${
-            mode === 'compact' ? 'text-sm' : 'text-base'
-          }`}>
-            {deployment?.location_name || 'Unknown Location'}
-          </h3>
-          
-          {mode !== 'compact' && hardware.device_id && (
-            <p className="text-xs text-gray-500">
-              Device {hardware.device_id} • {hardware.brand || 'Unknown Brand'}
-            </p>
-          )}
-        </div>
-      </div>
+  // Render status badge (shows overall camera health)
+  const renderStatusBadge = () => {
+    if (mode === 'compact') return null
 
-      {/* Alert indicator */}
-      {alertLevel !== 'none' && (
-        <div className="flex-shrink-0 ml-2">
-          {alertLevel === 'critical' ? (
-            <AlertTriangle size={16} className="text-red-500" />
-          ) : (
-            <AlertTriangle size={16} className="text-amber-500" />
+    const badgeText = mode === 'popup' ? 
+      (alertStatus.status === 'good' ? '●' : alertStatus.status === 'warning' ? '⚠' : '●') : 
+      alertStatus.label
+
+    return (
+      <div className="absolute top-5 right-4" >
+        <div className="flex items-center gap-1 justify-end">
+          {mode === 'full' && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onEdit(camera) }}
+                className={`min-h-[28px] px-3 rounded-md flex items-center justify-center text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200`}
+                title="Edit camera"
+              >
+                <Edit3 size={16} />
+              </button>
           )}
+          {/* Delete button - second in the row */}
+          {mode === 'full' && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(camera) }}
+              className="min-h-[28px] px-3 rounded-md flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors duration-200"
+              title="Delete camera"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+          <div className="px-2 py-1 rounded-full text-xs font-bold"
+            style={{ 
+              backgroundColor: `${alertStatus.color}20`,
+              color: alertStatus.color,
+              border: `1px solid ${alertStatus.color}40`
+            }}
+          >
+            {badgeText}
+          </div>
+
         </div>
-      )}
-    </div>
-  )
-  
-  const renderStatusIndicators = () => {
-    if (mode === 'compact') return null
-    
-    const batteryColor = getBatteryColor(latest_report?.battery_status || null)
-    const signalColor = getSignalColor(latest_report?.signal_level || null)
-    
-    return (
-      <div className="flex items-center gap-3 text-xs">
-        {/* Battery Status */}
-        {latest_report?.battery_status && (
-          <div className="flex items-center gap-1">
-            <div style={{ color: batteryColor }}>
-              {getBatteryIcon(latest_report.battery_status, deployment?.has_solar_panel || false)}
-            </div>
-            <span style={{ color: batteryColor }} className="font-medium">
-              {latest_report.battery_status}
-            </span>
-          </div>
-        )}
-        
-        {/* Signal Level */}
-        {latest_report?.signal_level !== null && latest_report?.signal_level !== undefined && (
-          <div className="flex items-center gap-1">
-            <Signal size={14} style={{ color: signalColor }} />
-            <span style={{ color: signalColor }} className="font-medium">
-              {latest_report.signal_level}%
-            </span>
-          </div>
-        )}
-        
-        {/* Network Links */}
-        {latest_report?.network_links && (
-          <div className="flex items-center gap-1 text-gray-600">
-            <Wifi size={14} />
-            <span>{latest_report.network_links}</span>
-          </div>
-        )}
       </div>
     )
   }
-  
+
+  // Render hardware highlight details for compact and popup
+  const renderHardwareHighlights = () => {
+    const hardware = []
+
+    // Hardware info (always available)
+    if (camera.hardware.brand && camera.hardware.model) {
+      hardware.push(
+        <div key="hardware" className="flex items-center gap-1 text-xs">
+          <span style={{ color: HUNTING_COLORS.forestShadow }}>
+            {[camera.hardware.brand, camera.hardware.model].filter(Boolean).join(' ')}
+          </span>
+        </div>
+      )
+    }
+
+    // Solar panel status (always available)
+    if (camera.deployment?.has_solar_panel) {
+      hardware.push(
+        <div key="solar" className="flex items-center gap-1">
+          <SolarIcon size={12} style={{ color: HUNTING_COLORS.forestGreen }} />
+        </div>
+      )
+    }
+
+    if (hardware.length === 0) return null
+
+    return (
+      <div className="flex items-center gap-1 flex-wrap">
+        {hardware}
+      </div>
+    )
+  }
+
+  // Render hardware in box
+  const renderHardwareFull = () => {
+    const hardware = []
+
+    if (camera.hardware.brand && camera.hardware.model) {
+      hardware.push(
+        <div key="camera" className="flex items-center gap-2">
+          <Camera size={14} style={{ color: HUNTING_COLORS.darkTeal }} />
+          <span style={{ color: HUNTING_COLORS.forestShadow }}>
+            <strong>Model:</strong> {[camera.hardware.brand, camera.hardware.model].filter(Boolean).join(' ')}
+          </span>
+        </div>
+      )
+    }
+
+    const powerConfig = getPowerSourceIcon()
+    const PowerIcon = powerConfig.icon
+    if (PowerIcon) {
+      hardware.push(
+        <div key="power" className="flex items-center gap-2">
+          <PowerIcon size={14} style={{ color: HUNTING_COLORS.darkTeal }} />
+          <span style={{ color: HUNTING_COLORS.forestShadow }}>
+            <strong>Power:</strong> {powerConfig.label}
+          </span>
+        </div>
+      )
+    }
+
+    if (hardware.length === 0) return null
+
+    return (
+      <div className="mb-2" 
+        style={{
+          padding: '8px 10px',
+          borderRadius: '6px',
+          border: `1px solid ${HUNTING_COLORS.darkTeal}`,
+        }}
+      >
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          {hardware}
+        </div>
+      </div>
+    )
+  }
+
+  // Render compact mode info
+  const renderCompactInfo = () => {
+    if (mode !== 'compact') return null
+
+    return (
+      <div className="flex items-center justify-between text-sm">
+        <span style={{ color: HUNTING_COLORS.forestShadow }}>
+          Device {camera.hardware.device_id}
+        </span>
+        
+        <div className="flex items-center gap-2">
+          {camera.deployment?.has_solar_panel && (
+            <SolarIcon size={12} style={{ color: HUNTING_COLORS.darkTeal }} />
+          )}
+          <span style={{ 
+            color: alertStatus.color,
+            fontSize: '12px',
+            fontWeight: '600'
+          }}>
+            {camera.latest_report ? 
+              (camera.days_since_last_report === 0 ? 'Today' : `${camera.days_since_last_report}d ago`) : 
+              'Not data'
+            }
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  // Render key details section (hardware/deployment data - always available)
   const renderKeyDetails = () => {
-    if (mode === 'compact') return null
-    
     const details = []
-    
-    // Last seen
-    if (days_since_last_report !== null) {
-      details.push({
-        icon: <Calendar size={14} />,
-        label: 'Last seen',
-        value: formatLastSeen(days_since_last_report),
-        critical: days_since_last_report > 7
-      })
+
+    // Hardware info (always available)
+    if (camera.hardware.brand && camera.hardware.model) {
+      details.push(
+        <div key="hardware" className="flex items-center gap-2">
+          {/* <Camera size={14} style={{ color: HUNTING_COLORS.forestGreen }} /> */}
+          <span style={{ color: HUNTING_COLORS.forestShadow }}>
+            {[camera.hardware.brand, camera.hardware.model].filter(Boolean).join(' ')}
+          </span>
+        </div>
+      )
     }
-    
-    // Photos on SD card
-    if (latest_report?.sd_images_count) {
-      details.push({
-        icon: <HardDrive size={14} />,
-        label: 'SD Photos',
-        value: latest_report.sd_images_count.toLocaleString(),
-        critical: false
-      })
+
+    // Solar panel status (always available)
+    if (camera.deployment?.has_solar_panel) {
+      details.push(
+        <div key="solar" className="flex items-center gap-2">
+          <SolarIcon size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
+          {/* <span style={{ color: HUNTING_COLORS.forestShadow }}>
+            <strong>Power:</strong> Solar Panel Equipped
+          </span> */}
+        </div>
+      )
     }
-    
-    // Image queue
-    if (latest_report?.image_queue) {
-      details.push({
-        icon: <Eye size={14} />,
-        label: 'Queue',
-        value: latest_report.image_queue.toLocaleString(),
-        critical: latest_report.image_queue > 100
-      })
-    }
-    
-    if (details.length === 0) return null
-    
-    return (
-      <div className="space-y-1">
-        {details.map((detail, index) => (
-          <div key={index} className="flex items-center gap-2 text-xs">
-            <span className={detail.critical ? 'text-red-500' : 'text-gray-500'}>
-              {detail.icon}
-            </span>
-            <span className="text-gray-600">{detail.label}:</span>
-            <span className={`font-medium ${detail.critical ? 'text-red-600' : 'text-gray-900'}`}>
-              {detail.value}
+
+    // Only show report-dependent data in full mode with timestamps
+    if (mode === 'full') {
+      // Battery Status (report data)
+      if (camera.latest_report?.battery_status) {
+        const batteryIcon = camera.deployment?.has_solar_panel ? SolarIcon : BatteryIcon
+        details.push(
+          <div key="battery" className="flex items-center gap-2">
+            {React.createElement(batteryIcon, { 
+              size: 14, 
+              style: { color: HUNTING_COLORS.forestGreen } 
+            })}
+            <span style={{ color: HUNTING_COLORS.forestShadow }}>
+              <strong>Battery:</strong> {camera.latest_report.battery_status}
             </span>
           </div>
-        ))}
+        )
+      }
+
+      // Signal Level (report data)
+      if (camera.latest_report?.signal_level !== null && camera.latest_report?.signal_level !== undefined) {
+        details.push(
+          <div key="signal" className="flex items-center gap-2">
+            <Signal size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
+            <span style={{ color: HUNTING_COLORS.forestShadow }}>
+              <strong>Signal:</strong> {camera.latest_report.signal_level}%
+            </span>
+          </div>
+        )
+      }
+
+
+    }
+
+    if (details.length === 0) return null
+
+    return (
+      <div 
+        className="grid grid-cols-2 gap-2 mb-3 text-xs"
+        style={{ padding: '8px 10px' }}
+      >
+        {details}
       </div>
     )
   }
-  
-  const renderLocation = () => {
-    if (!showLocation || !hasLocation || mode === 'compact') return null
-    
+
+  // Render report data section (only in full mode)
+  const renderReportDataSection = () => {
+    if (mode === 'compact' || !showStats) return null
+
+    // Show section even if no report data, but indicate data freshness
+    const hasReportData = camera.latest_report !== null
+    const reportDate = camera.latest_report?.report_date
+    const reportAge = camera.days_since_last_report
+
     return (
-      <div className="flex items-center gap-2 text-xs text-gray-600">
-        <MapPin size={14} />
+      <div
+        style={{
+          background: '#F5F4F0',
+          border: '1px solid #E8E6E0',
+          borderRadius: '6px',
+          padding: '10px',
+          marginBottom: '8px',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '6px',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              color: HUNTING_COLORS.forestGreen,
+              fontWeight: '600',
+              fontSize: '12px',
+            }}
+          >
+            <Camera size={14} /> CAMERA REPORT DATA
+          </div>
+          
+
+
+          {/* Data freshness indicator */}
+            <div className="text-xs" style={{ 
+              color: reportAge && reportAge > 7 ? '#DC2626' : reportAge && reportAge > 3 ? '#D97706' : '#059669',
+              fontWeight: '600'
+            }}>
+              {!hasReportData ? 'No data' : null }
+              {/* //   reportAge === 0 ? 'Today' : 
+              //   reportAge === 1 ? '1 day ago' :
+              //   `${reportAge} days ago`
+              // ) : 'Nop data'} */}
+            </div>
+        </div>
+
+        {hasReportData ? (
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            {/* Season (year) (report data) */}
+            {camera.deployment?.season_year && (
+              <div key="season" className="flex items-center gap-2">
+                <SeasonIcon size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
+                <span style={{ color: HUNTING_COLORS.forestShadow }}>
+                  <strong>Season:</strong> {camera.deployment.season_year}
+                </span>
+              </div>
+            )}
+
+            {/* Power Status (report data) */}
+            {/* const powerConfig = getPowerSourceIcon()
+            const PowerIcon = powerConfig.icon */}
+            {camera.latest_report?.battery_status && (
+              <div key="battery" className="flex items-center gap-2">
+                <BatteryIcon size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
+                <span style={{ color: HUNTING_COLORS.forestShadow }}>
+                  <strong>Power status:</strong> {camera.latest_report.battery_status}
+                </span>
+              </div>
+            )}
+
+            {/* Image Count (report data) */} 
+            {camera.latest_report.sd_images_count && (
+              <div key="images" className="flex items-center gap-2">
+                <ImagesIcon size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
+                <span style={{ color: HUNTING_COLORS.forestShadow }}>
+                  <strong>Photos:</strong> {camera.latest_report.sd_images_count.toLocaleString()}
+                </span>
+              </div>
+            )}
+
+            {/* Storage Space (report data) */}
+            {camera.latest_report?.sd_free_space_mb && (
+              <div key="storage" className="flex items-center gap-2">
+                <HardDrive size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
+                <span style={{ color: HUNTING_COLORS.forestShadow }}>
+                  <strong>Storage:</strong> {formatStorageSpace(camera.latest_report.sd_free_space_mb)} free
+                </span>
+              </div>
+            )}
+
+            {/* Signal Level (report data) */} 
+            {camera.latest_report?.signal_level !== null && camera.latest_report?.signal_level !== undefined && (
+              <div key="signal" className="flex items-center gap-2">
+                <Signal size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
+                <span style={{ color: HUNTING_COLORS.forestShadow }}>
+                  <strong>Signal:</strong> {camera.latest_report.signal_level}%
+                </span>
+              </div>
+            )}
+
+            {/* Link Count (report data) */} 
+            {camera.latest_report.network_links && (
+              <div key="links" className="flex items-center gap-2">
+                <LinksIcon size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
+                <span style={{ color: HUNTING_COLORS.forestShadow }}>
+                  <strong>Links:</strong> {camera.latest_report.network_links}
+                </span>
+              </div>
+            )}
+
+
+    
+            {/* Image Queue (report data) */} 
+            {camera.latest_report.image_queue && (
+              <div key="queue" className="flex items-center gap-2">
+                <QueueIcon size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
+                <span style={{ color: HUNTING_COLORS.forestShadow }}>
+                  <strong>Queue:</strong> {camera.latest_report.image_queue}
+                </span>
+              </div>
+            )}
+
+          </div>
+        ) : (
+          <div className="text-xs text-gray-500 italic justify-center">
+            <strong>No report data available - camera may not be transmitting</strong>
+          </div>
+        )}
+          {hasReportData && (
+            <div
+              style={{
+                display: 'flex',
+                background: HUNTING_COLORS.forestGreen,
+                color: 'white',
+                padding: '8px 10px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                justifyContent: 'center',
+              }}
+            >
+              <strong>Report Data From: </strong> 
+              <div style={{ 
+              color: reportAge && reportAge > 7 ? '#FA7921' : reportAge && reportAge > 3 ? '#D97706' : '#FFFFFF',
+              fontWeight: '600'
+            }}>
+              {hasReportData ? (
+                reportAge === 0 ? ' Today' : 
+                reportAge === 1 ? ' 1 day ago' :
+                ` ${reportAge} days ago`
+              ) : 'Nog data'}
+            </div>
+            </div>
+          )}
+
+        {camera.latest_report?.alert_reason && (
+          <div className="mt-2 pt-2 border-t border-gray-200">
+            <div className="flex items-center justify-center gap-2 text-xs">
+              <AlertTriangle size={12} style={{ color: alertStatus.color }} />
+              <span style={{ color: alertStatus.color }}>
+                <strong>Alert:</strong> {camera.latest_report.alert_reason}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Render simple status for popup mode
+  const renderSimpleStatus = () => {
+    if (mode !== 'popup') return null
+
+    const reportAge = camera.days_since_last_report
+    const hasRecentData = camera.latest_report && reportAge !== null && reportAge <= 3
+
+    return (
+      <div className="mb-3">
+        <div className="flex items-center justify-between text-sm">
+          {/* <span style={{ color: HUNTING_COLORS.forestShadow }}>
+            <strong>Device:</strong> {camera.hardware.device_id}
+          </span>
+          
+          {camera.deployment?.has_solar_panel && (
+            <div className="flex items-center gap-1" style={{ color: HUNTING_COLORS.darkTeal }}>
+              <SolarIcon size={12} />
+              <span className="text-xs">Solar</span>
+            </div>
+          )} */}
+        </div>
+        
+        <div className="flex items-center justify-between text-xs mt-1">
+          <span style={{ 
+            color: hasRecentData ? '#059669' : reportAge && reportAge > 7 ? '#DC2626' : '#D97706' 
+          }}>
+            {camera.latest_report ? (
+              reportAge === 0 ? '✓ Reported today' : 
+              reportAge === 1 ? '⚠ Last report: 1 day ago' :
+              `⚠ Last report: ${reportAge} days ago`
+            ) : '✗ No recent reports'}
+          </span>
+          
+        </div>
+      </div>
+    )
+  }
+
+  // Render location info except in compact mode
+  const renderLocationInfo = () => {
+    if (!showLocation || !camera.deployment?.latitude || !camera.deployment?.longitude || mode === 'compact') {
+      return null
+    }
+    return (
+      <div className="flex justify-center gap-1 text-xs" style={{ color: HUNTING_COLORS.darkTeal}}>
+        <MapPin size={12} />
         <span>
-          {deployment!.latitude.toFixed(6)}, {deployment!.longitude.toFixed(6)}
+          {camera.deployment.latitude.toFixed(4)}, {camera.deployment.longitude.toFixed(4)}
         </span>
       </div>
     )
+    return null
   }
-  
+
+  // Render actions
   const renderActions = () => {
     if (!showActions || mode === 'compact') return null
-    
+
     return (
-      <div className="flex items-center gap-1 pt-2 border-t border-gray-200">
-        {onNavigate && hasLocation && (
+      <div className="flex items-center gap-1">
+        {onNavigate && camera.deployment?.latitude && camera.deployment?.longitude && (
           <button
             onClick={(e) => { e.stopPropagation(); onNavigate(camera) }}
             className={`${getTouchTargetSize()} px-3 rounded-md flex items-center justify-center text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200`}
@@ -358,66 +676,74 @@ export default function CameraCard({
       </div>
     )
   }
-  
-  const renderMissingAlert = () => {
-    if (!deployment?.is_missing) return null
-    
-    return (
-      <div className="bg-red-100 border border-red-200 rounded-md p-2 text-xs">
-        <div className="flex items-center gap-2 text-red-800">
-          <XCircle size={14} />
-          <span className="font-medium">Camera Missing</span>
-        </div>
-        {deployment.consecutive_missing_days > 0 && (
-          <p className="text-red-700 mt-1">
-            Missing for {deployment.consecutive_missing_days} days
-          </p>
-        )}
-      </div>
-    )
-  }
-  
-  const renderNeedsAttentionAlert = () => {
-    if (!latest_report?.needs_attention || deployment?.is_missing) return null
-    
-    return (
-      <div className="bg-amber-100 border border-amber-200 rounded-md p-2 text-xs">
-        <div className="flex items-center gap-2 text-amber-800">
-          <AlertTriangle size={14} />
-          <span className="font-medium">Needs Attention</span>
-        </div>
-        {latest_report.alert_reason && (
-          <p className="text-amber-700 mt-1">
-            {latest_report.alert_reason}
-          </p>
-        )}
-      </div>
-    )
-  }
 
-  // ============================================================================
-  // MAIN RENDER
-  // ============================================================================
-  
   return (
-    <div 
-      className={`${getCardStyles()} ${className}`}
-      style={mode === 'popup' ? { width: `${popupWidth}px` } : undefined}
+    <div
+      className={`${getCardStyles()} ${className} ${
+        onClick ? 'cursor-pointer' : ''
+      } relative`}
       onClick={handleCardClick}
+      style={{
+        ...(popupWidth && mode === 'popup' ? { width: popupWidth } : {})
+      }}
     >
-      {renderHeader()}
-      {renderStatusIndicators()}
-      
-      {mode !== 'compact' && (
-        <div className="space-y-2 mt-2">
-          {renderMissingAlert()}
-          {renderNeedsAttentionAlert()}
-          {renderKeyDetails()}
-          {renderLocation()}
+      {/* Status Badge */}
+      {renderStatusBadge()}
+
+      {/* Header */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div 
+            className="p-1 rounded-lg flex-shrink-0"
+            style={{ backgroundColor: `${HUNTING_COLORS.darkTeal}20` }}
+          >
+            <span style={tealSquareStyle}>{camera.hardware.device_id}</span>
+          </div>
+          
+          <div className="min-w-0">
+            <h3 
+              className="truncate"
+              style={{
+                color: HUNTING_COLORS.forestGreen,
+                fontWeight: '700',
+                fontSize: '16px',
+              }}
+            >
+              {camera.deployment?.location_name || 'Unknown Location'}
+            </h3>
+            {mode != 'full' && renderHardwareHighlights()}
+          </div>
         </div>
+      </div>
+
+      {/* Description on full mode*/}
+      {mode === 'full' && camera.deployment?.notes && (
+        <p className="text-sm text-gray-700 mb-3 line-clamp-2">
+          {camera.deployment.notes}
+        </p>
       )}
-      
-      {renderActions()}
+
+      {/* Hardware in full mode */}
+      {mode === 'full' && renderHardwareFull()}
+
+      {/* Report Data Section (except in compact mode) */}
+      {mode === 'full' && renderReportDataSection()}
+
+      {/* Compact Mode Info */}
+      {/* {renderCompactInfo()} */}
+
+      {/* Simple Status for Popup Mode */}
+      {/* {renderSimpleStatus()} */}
+
+      {/* Key Details (only in full and popup modes) */}
+      {/* {mode === 'full' && renderKeyDetails()} */}
+
+
+      {/* Location Row */}
+      {renderLocationInfo()}
+
+      {/* Actions */}
+      {/* {mode === 'full' && renderActions()} */}
     </div>
   )
 }

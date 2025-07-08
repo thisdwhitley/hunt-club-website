@@ -517,7 +517,7 @@ export default function CamerasTestPage() {
           
           {/* Display cameras based on selected data source */}
           {selectedMode === 'full' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(380px,1fr))] gap-4">
               {(showSampleData ? sampleCameras : cameras).map((camera, index) => (
                 <CameraCard
                   key={camera.hardware.id || index}
