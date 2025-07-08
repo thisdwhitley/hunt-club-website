@@ -167,7 +167,7 @@ export default function StandCard({
   const getCardStyles = () => {
     const baseStyles = `
       bg-white rounded-lg border-2 border-gray-200 shadow-sm
-      transition-all duration-200 hover:shadow-md
+      transition-all duration-200 hover:shadow-md relative
     `
     
     switch (mode) {
@@ -192,74 +192,58 @@ export default function StandCard({
     if (!showActions || mode != 'full') return null
 
   return (
-    <div 
-      className="mt-4 pt-3 border-t-2"
-      style={{ 
-        borderColor: HUNTING_COLORS.mutedGold,
-      }}
-    >
-      <div className="flex items-center justify-between gap-3">
-        {/* Primary Action - Navigate (left side) */}
-        {onNavigate && stand.latitude && stand.longitude && (
+    <div className="absolute top-4 right-4" >
+      <div className="flex items-center gap-1 justify-end">
+        {mode === 'full' && (
           <button
-            onClick={(e) => { e.stopPropagation(); onNavigate(stand) }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200"
-            style={{
-              background: HUNTING_COLORS.huntingOrange,
-              color: 'white',
-              border: `2px solid ${HUNTING_COLORS.forestShadow}`,
-              boxShadow: '0 2px 4px rgba(250, 121, 33, 0.2)'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#FE9920'
-              e.currentTarget.style.transform = 'translateY(-1px)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = HUNTING_COLORS.huntingOrange
-              e.currentTarget.style.transform = 'translateY(0)'
-            }}
+            onClick={(e) => { e.stopPropagation(); onEdit(stand) }}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
+            // style={{
+            //   background: HUNTING_COLORS.forestGreen,
+            //   color: 'white',
+            //   border: `2px solid ${HUNTING_COLORS.forestShadow}`,
+            // }}
+            title="Edit stand details"
           >
-            <Navigation size={16} />
-            Navigate
+            <Edit3 size={16} />
           </button>
         )}
-
-        {/* Management Actions (right side) */}
-        <div className="flex items-center gap-2">
-          {onEdit && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onEdit(stand) }}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200"
-              style={{
-                background: HUNTING_COLORS.forestGreen,
-                color: 'white',
-                border: `2px solid ${HUNTING_COLORS.forestShadow}`,
-              }}
-              title="Edit stand details"
-            >
-              <Edit3 size={14} />
-              Edit
-            </button>
-          )}
-          
-          {onDelete && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onDelete(stand) }}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200"
-              style={{
-                background: HUNTING_COLORS.weatheredWood,
-                color: 'white',
-                border: `2px solid ${HUNTING_COLORS.forestShadow}`,
-              }}
-              title="Delete stand"
-            >
-              <Trash2 size={14} />
-              Delete
-            </button>
-          )}
-        </div>
+                {mode === 'full' && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(stand) }}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors duration-200"
+            // style={{
+            //   background: HUNTING_COLORS.forestGreen,
+            //   color: 'white',
+            //   border: `2px solid ${HUNTING_COLORS.forestShadow}`,
+            // }}
+            title="Delete stand"
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
       </div>
     </div>
+    
+          
+    //       {onDelete && (
+    //         <button
+    //           onClick={(e) => { e.stopPropagation(); onDelete(stand) }}
+    //           className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200"
+    //           style={{
+    //             background: HUNTING_COLORS.weatheredWood,
+    //             color: 'white',
+    //             border: `2px solid ${HUNTING_COLORS.forestShadow}`,
+    //           }}
+    //           title="Delete stand"
+    //         >
+    //           <Trash2 size={14} />
+    //           Delete
+    //         </button>
+    //       )}
+    //     </div>
+    //   </div>
+    // </div>
   )
   }
 
