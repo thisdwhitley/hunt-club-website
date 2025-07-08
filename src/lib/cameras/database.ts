@@ -796,3 +796,98 @@ export async function getAvailableHardware(): Promise<CameraAPIResponse<CameraHa
     return { success: false, error: 'Unknown error occurred' };
   }
 }
+
+
+/**
+ * HARD DELETE camera hardware (actually removes from database)
+ * WARNING: This will permanently delete the camera and all associated data
+ */
+export async function hardDeleteCameraHardware(
+  id: string
+): Promise<CameraAPIResponse<void>> {
+  try {
+    // First, delete all status reports for this hardware
+    const { error: reportsError } = await supabase
+      .from('camera_status_reports')
+      .delete()
+      .eq('hardware_id', id);
+
+    if (reportsError) {
+      console.error('Error deleting status reports:', reportsError);
+      return { success: false, error: `Failed to delete status reports: ${reportsError.message}` };
+    }
+
+    // Then, delete all deployments for this hardware
+    const { error: deploymentsError } = await supabase
+      .from('camera_deployments')
+      .delete()
+      .eq('hardware_id', id);
+
+    if (deploymentsError) {
+      console.error('Error deleting deployments:', deploymentsError);
+      return { success: false, error: `Failed to delete deployments: ${deploymentsError.message}` };
+    }
+
+    // Finally, delete the hardware itself
+    const { error: hardwareError } = await supabase
+      .from('camera_hardware')
+      .delete()
+      .eq('id', id);
+
+    if (hardwareError) {
+      console.error('Error deleting camera hardware:', hardwareError);
+      return { success: false, error: hardwareError.message };
+    }
+
+    return { 
+      success: true, 
+      message: 'Camera hardware and all associated data deleted permanently'
+    };
+  } catch (error) {
+    console.error('Error in hardDeleteCameraHardware:', error);
+    return { success: false, error: 'Unknown error occurred during deletion' };
+  }
+}
+
+/**
+ * SOFT DELETE camera hardware (sets inactive, preserves data)
+ * This is the safer option that keeps historical data
+ */
+export async function softDeleteCameraHardware(
+  id: string
+): Promise<CameraAPIResponse<void>> {
+  try {
+    // First check if hardware has active deployments
+    const { data: deployments } = await supabase
+      .from('camera_deployments')
+      .select('id')
+      .eq('hardware_id', id)
+      .eq('active', true);
+
+    if (deployments && deployments.length > 0) {
+      return { 
+        success: false, 
+        error: 'Cannot delete hardware with active deployments. Deactivate deployments first.' 
+      };
+    }
+
+    // Soft delete by setting inactive
+    const { error } = await supabase
+      .from('camera_hardware')
+      .update({ active: false, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error soft deleting camera hardware:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { 
+      success: true, 
+      message: 'Camera hardware deactivated successfully (data preserved)'
+    };
+  } catch (error) {
+    console.error('Error in softDeleteCameraHardware:', error);
+    return { success: false, error: 'Unknown error occurred' };
+  }
+}

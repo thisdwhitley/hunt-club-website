@@ -24,7 +24,8 @@ import {
   getCameraHardwareById,
   createCameraHardware,
   updateCameraHardware,
-  deleteCameraHardware,
+  softDeleteCameraHardware,  // ← Changed to softDeleteCameraHardware
+  hardDeleteCameraHardware,  // ← Added hardDeleteCameraHardware
   getCameraDeployments,
   getCameraDeploymentById,
   createCameraDeployment,
@@ -116,7 +117,7 @@ export function useCameraHardware(filters?: Partial<CameraFilters>) {
     try {
       setError(null);
       
-      const result = await deleteCameraHardware(id);
+      const result = await softDeleteCameraHardware(id);  // ← Changed to use softDeleteCameraHardware
       if (!result.success) {
         throw new Error(result.error || 'Failed to delete camera hardware');
       }

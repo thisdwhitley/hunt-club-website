@@ -4,7 +4,9 @@ import React, { useState, useMemo } from 'react'
 import { Camera, Search, Filter, Plus, MapPin, AlertCircle, X } from 'lucide-react'
 import { useCameras, useCameraAlerts, useCameraStats, useCameraHardware } from '@/lib/cameras/hooks'
 import CameraCard from '@/components/cameras/CameraCard'
-import type { CameraWithStatus, CameraHardware, CameraFilters } from '@/lib/cameras/types'
+import { CameraForm } from '@/components/cameras/CameraForms'
+import { updateCameraDeployment, deactivateCameraDeployment, createCameraDeployment, hardDeleteCameraHardware } from '@/lib/cameras/database'
+import type { CameraWithStatus, CameraHardware, CameraFilters, CameraHardwareFormData, CameraDeploymentFormData } from '@/lib/cameras/types'
 
 // Define the same filters interface pattern as stands
 export interface CameraManagementFilters {
@@ -176,10 +178,17 @@ export default function CameraManagementPage() {
   })
   const [showFilters, setShowFilters] = useState(false)
 
+  // Form management state
+  const [showCameraForm, setShowCameraForm] = useState(false)
+  const [editingCamera, setEditingCamera] = useState<CameraWithStatus | null>(null)
+  const [formMode, setFormMode] = useState<'create' | 'edit-hardware' | 'edit-deployment'>('create')
+  const [formLoading, setFormLoading] = useState(false)
+
   // Load data using your hooks
   const { cameras, loading, error, refresh: refreshCameras } = useCameras()
   const { alerts, loading: alertsLoading } = useCameraAlerts()
   const { stats, loading: statsLoading } = useCameraStats()
+  const { hardware: allHardware, createHardware, updateHardware, deleteHardware } = useCameraHardware()
 
   // Filter cameras based on search and filters (matching stands pattern)
   const filteredCameras = useMemo(() => {
@@ -254,35 +263,183 @@ export default function CameraManagementPage() {
     })
   }
 
-  // Camera action handlers (matching your stand handlers pattern)
+  // Camera action handlers using real database operations
   const handleEditCamera = (camera: CameraWithStatus) => {
-    console.log('Edit camera:', camera.hardware?.device_id)
-    // TODO: Open edit modal or navigate to edit page
-    alert(`Edit camera ${camera.hardware?.device_id} - ${camera.deployment?.location_name}`)
+    setEditingCamera(camera)
+    setFormMode('edit-hardware')
+    setShowCameraForm(true)
   }
 
-  const handleDeleteCamera = (camera: CameraWithStatus) => {
-    console.log('Delete camera:', camera.hardware?.device_id)
-    if (confirm(`Delete camera ${camera.hardware?.device_id}?`)) {
-      // TODO: Implement delete functionality
-      alert(`Would delete: ${camera.hardware?.device_id}`)
-      refreshCameras()
+  const handleDeleteCamera = async (camera: CameraWithStatus) => {
+    const hardwareId = camera.hardware?.id
+    const deviceId = camera.hardware?.device_id
+    
+    if (!hardwareId || !deviceId) {
+      alert('Cannot delete camera: missing hardware information')
+      return
+    }
+
+    const confirmMessage = `WARNING: This will PERMANENTLY DELETE camera ${deviceId} and ALL associated data including:
+    
+• Camera hardware record
+• All deployment history  
+• All status reports and photos data
+• This action CANNOT be undone
+
+Type "${deviceId}" to confirm deletion:`
+
+    const userInput = prompt(confirmMessage)
+    
+    if (userInput !== deviceId) {
+      if (userInput !== null) { // null means they clicked Cancel
+        alert('Deletion cancelled - device ID did not match')
+      }
+      return
+    }
+
+    try {
+      setFormLoading(true)
+      
+      console.log('Permanently deleting camera hardware:', hardwareId)
+      const deleteResult = await hardDeleteCameraHardware(hardwareId)
+      
+      if (!deleteResult.success) {
+        throw new Error(deleteResult.error || 'Failed to delete camera hardware')
+      }
+      
+      // Refresh the camera list
+      await refreshCameras()
+      alert(`Camera ${deviceId} has been permanently deleted`)
+      
+    } catch (error) {
+      console.error('Error deleting camera:', error)
+      alert(`Failed to delete camera: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setFormLoading(false)
     }
   }
 
   const handleNavigateToCamera = (camera: CameraWithStatus) => {
-    console.log('Navigate to camera:', camera.hardware?.device_id)
     if (camera.deployment?.latitude && camera.deployment?.longitude) {
       const url = `https://maps.google.com/?q=${camera.deployment.latitude},${camera.deployment.longitude}`
       window.open(url, '_blank')
+    } else {
+      alert('No coordinates available for this camera')
     }
   }
 
   const handleCreateCamera = () => {
-    console.log('Create camera')
-    // TODO: Open create modal or navigate to create page
-    alert('Create new camera - form coming soon!')
+    setEditingCamera(null)
+    setFormMode('create')
+    setShowCameraForm(true)
   }
+
+  const handleEditDeployment = (camera: CameraWithStatus) => {
+    console.log('Editing deployment for camera:', camera) // Debug log
+    
+    if (!camera.hardware) {
+      alert('Cannot edit deployment: camera hardware information is missing')
+      return
+    }
+    
+    setEditingCamera(camera)
+    setFormMode('edit-deployment')
+    setShowCameraForm(true)
+  }
+
+  // Comprehensive form handler
+  const handleCameraFormSubmit = async (hardwareData: CameraHardwareFormData, deploymentData?: CameraDeploymentFormData) => {
+    try {
+      setFormLoading(true)
+      
+      console.log('Form submission:', { 
+        formMode, 
+        editingCamera: editingCamera?.hardware?.device_id, 
+        hasDeployment: !!editingCamera?.deployment,
+        deploymentData: !!deploymentData 
+      }) // Debug log
+      
+      if (formMode === 'create') {
+        // Create new hardware
+        console.log('Creating hardware:', hardwareData)
+        const newHardware = await createHardware(hardwareData)
+        if (!newHardware) {
+          throw new Error('Failed to create camera hardware')
+        }
+        
+        // Create deployment if provided
+        if (deploymentData) {
+          console.log('Creating deployment:', deploymentData)
+          const deploymentWithHardwareId = {
+            ...deploymentData,
+            hardware_id: newHardware.id
+          }
+          const deploymentResult = await createCameraDeployment(deploymentWithHardwareId)
+          if (!deploymentResult.success) {
+            throw new Error(deploymentResult.error || 'Failed to create deployment')
+          }
+        }
+        
+        alert(`Camera ${hardwareData.device_id} created successfully`)
+        
+      } else if (formMode === 'edit-hardware' && editingCamera?.hardware) {
+        // Update existing hardware
+        console.log('Updating hardware:', editingCamera.hardware.id, hardwareData)
+        const updateResult = await updateHardware(editingCamera.hardware.id, hardwareData)
+        if (!updateResult) {
+          throw new Error('Failed to update camera hardware')
+        }
+        
+        alert(`Camera ${hardwareData.device_id} updated successfully`)
+        
+      } else if (formMode === 'edit-deployment') {
+        if (!editingCamera?.hardware) {
+          throw new Error('Cannot update deployment: camera hardware information is missing')
+        }
+        
+        if (!deploymentData) {
+          throw new Error('Cannot update deployment: deployment data is missing')
+        }
+        
+        if (editingCamera.deployment) {
+          // Update existing deployment
+          console.log('Updating existing deployment:', editingCamera.deployment.id, deploymentData)
+          const updateResult = await updateCameraDeployment(editingCamera.deployment.id, deploymentData)
+          if (!updateResult.success) {
+            throw new Error(updateResult.error || 'Failed to update deployment')
+          }
+          alert(`Camera deployment updated successfully`)
+        } else {
+          // Create new deployment for existing hardware (camera has hardware but no deployment)
+          console.log('Creating new deployment for existing hardware:', editingCamera.hardware.id, deploymentData)
+          const deploymentWithHardwareId = {
+            ...deploymentData,
+            hardware_id: editingCamera.hardware.id
+          }
+          const deploymentResult = await createCameraDeployment(deploymentWithHardwareId)
+          if (!deploymentResult.success) {
+            throw new Error(deploymentResult.error || 'Failed to create deployment')
+          }
+          alert(`Camera deployed to ${deploymentData.location_name} successfully`)
+        }
+      } else {
+        throw new Error(`Invalid form mode: ${formMode}`)
+      }
+      
+      setShowCameraForm(false)
+      setEditingCamera(null)
+      await refreshCameras()
+      
+    } catch (error) {
+      console.error('Error saving camera:', error)
+      alert(`Failed to save camera: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setFormLoading(false)
+    }
+  }
+
+  // Get available hardware for deployment form
+  const availableHardware = allHardware.filter(hw => hw.active)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -471,25 +628,48 @@ export default function CameraManagementPage() {
 
         {/* Cameras Grid - matching your stands grid pattern */}
         {!loading && !error && filteredCameras.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredCameras.map((camera) => (
-              <CameraCard
-                key={camera.hardware?.id || camera.deployment?.id}
-                camera={camera}
-                mode="full"
-                onClick={() => {/* Could open detail view */}}
-                onEdit={handleEditCamera}
-                onDelete={handleDeleteCamera}
-                onNavigate={handleNavigateToCamera}
-                showLocation={true}
-                showStats={true}
-                showActions={true}
-                className="hover:shadow-lg transition-shadow"
-              />
-            ))}
-          </div>
+          <>
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Edit Options:</strong> Click <strong>Edit</strong> button to modify camera hardware • 
+                Click anywhere on camera card to edit location/deployment details
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredCameras.map((camera) => (
+                <CameraCard
+                  key={camera.hardware?.id || camera.deployment?.id}
+                  camera={camera}
+                  mode="full"
+                  onClick={() => handleEditDeployment(camera)} // Click card to edit deployment/location
+                  onEdit={handleEditCamera} // Edit button edits hardware
+                  onDelete={handleDeleteCamera}
+                  onNavigate={handleNavigateToCamera}
+                  showLocation={true}
+                  showStats={true}
+                  showActions={true}
+                  className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-blue-300"
+                />
+              ))}
+            </div>
+          </>
         )}
       </div>
+
+      {/* Form Modal */}
+      {showCameraForm && (
+        <CameraForm
+          camera={editingCamera}
+          mode={formMode}
+          onClose={() => {
+            setShowCameraForm(false)
+            setEditingCamera(null)
+          }}
+          onSubmit={handleCameraFormSubmit}
+          isLoading={formLoading}
+        />
+      )}
     </div>
   )
 }
