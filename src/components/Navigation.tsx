@@ -55,7 +55,7 @@ const navigationItems = [
     name: 'Trail Cameras',
     href: '/cameras',
     icon: Camera,
-    description: 'Manage trail camera photos'
+    description: 'Manage trail cameras and deployments'
   },
   {
     name: 'Calendar',
