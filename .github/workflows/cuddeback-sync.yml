@@ -4,7 +4,7 @@ on:
     # Run daily at 6:00 AM EST (11:00 AM UTC)
     - cron: '0 11 * * *'
   workflow_dispatch:
-    # Allow manual triggers for testing (owner only)
+    # Allow manual triggers for testing
     inputs:
       debug_mode:
         description: 'Enable debug logging'
@@ -41,7 +41,6 @@ jobs:
       - name: 📦 Install Dependencies
         run: |
           npm ci
-          # Puppeteer is already in devDependencies
 
       - name: 🎯 Extract Cuddeback Camera Data
         id: extract_data
@@ -60,105 +59,6 @@ jobs:
             sync-results.json
             sync-log.txt
           retention-days: 7
-
-      - name: 📧 Notify on Failure
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: '🚨 Cuddeback Sync Failed',
-              body: '**Failed Run:** #${{ github.run_number }}\n**URL:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\nCheck the action logs for details.',
-              labels: ['automation', 'cuddeback', 'alert']
-            });
-
-      - name: ✅ Report Success
-        if: success()
-        run: |
-          echo "🎉 Cuddeback camera sync completed successfully!"
-          echo "📊 Check sync-results.json for details"name: 🎯 Daily Cuddeback Camera Sync
-on:
-  schedule:
-    # Run daily at 6:00 AM EST (11:00 AM UTC)
-    - cron: '0 11 * * *'
-  workflow_dispatch:
-    # Allow manual triggers for testing
-    inputs:
-      debug_mode:
-        description: 'Enable debug logging'
-        required: false
-        default: 'false'
-        type: boolean
-
-env:
-  NODE_VERSION: '18'
-  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-  CUDDEBACK_EMAIL: ${{ secrets.CUDDEBACK_EMAIL }}
-  CUDDEBACK_PASSWORD: ${{ secrets.CUDDEBACK_PASSWORD }}
-
-jobs:
-  sync-cuddeback-data:
-    name: 🔄 Sync Cuddeback Camera Data
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    
-    steps:
-      - name: 📥 Checkout Repository  
-        uses: actions/checkout@v4
-
-      - name: 🟢 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 📦 Install Dependencies
-        run: |
-          npm ci
-          # Puppeteer is already in devDependencies
-
-      - name: 🎯 Extract Cuddeback Camera Data
-        id: extract_data
-        run: |
-          echo "🔍 Starting Cuddeback data extraction..."
-          node scripts/sync-cuddeback-cameras.js
-        env:
-          DEBUG_MODE: ${{ github.event.inputs.debug_mode || 'false' }}
-
-      - name: 📊 Upload Sync Results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: cuddeback-sync-results-${{ github.run_number }}
-          path: |
-            sync-results.json
-            sync-log.txt
-          retention-days: 7
-
-      - name: 📧 Notify on Failure
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const title = '🚨 Cuddeback Sync Failed';
-            const body = `
-            **Failed Run:** [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            **Time:** ${{ steps.extract_data.outputs.sync_time || 'Unknown' }}
-            **Error:** Check the action logs for details
-            
-            This is an automated alert from the daily Cuddeback camera sync.
-            `;
-            
-            github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: title,
-              body: body,
-              labels: ['automation', 'cuddeback', 'alert']
-            });
 
       - name: ✅ Report Success
         if: success()
