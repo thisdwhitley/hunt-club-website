@@ -66,11 +66,11 @@ IS 'Daily camera status reports (15 fields) - web scraped from Cuddeback';
 ```
 
 **Verification Steps**:
-- [ ] New field exists in camera_status_reports table
-- [ ] Index created successfully
-- [ ] Field count updated to 15 in documentation
-- [ ] Local test script can populate the field
-- [ ] GitHub Actions workflow can access the field
+- [x] New field exists in camera_status_reports table
+- [x] Index created successfully
+- [x] Field count updated to 15 in documentation
+- [x] Local test script can populate the field
+- [x] GitHub Actions workflow can access the field
 
 **Files Modified**:
 - supabase/schema.sql (export after migration)
