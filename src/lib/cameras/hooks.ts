@@ -244,7 +244,7 @@ export function useAvailableHardware() {
 // ============================================================================
 
 /**
- * Main hook for camera deployments (similar to useStands pattern)
+ * Main hook for camera deployments with filtering support
  */
 export function useCameras(filters?: Partial<CameraFilters>) {
   const [cameras, setCameras] = useState<CameraWithStatus[]>([]);
@@ -256,11 +256,14 @@ export function useCameras(filters?: Partial<CameraFilters>) {
       setLoading(true);
       setError(null);
       
+      console.log('Loading cameras with filters:', filters); // Debug log
+      
       const result = await getCameraDeployments(filters);
       if (!result.success) {
         throw new Error(result.error || 'Failed to fetch camera deployments');
       }
       
+      console.log('Loaded cameras:', result.data?.length); // Debug log
       setCameras(result.data || []);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load cameras';
@@ -269,71 +272,7 @@ export function useCameras(filters?: Partial<CameraFilters>) {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
-
-  const createDeployment = useCallback(async (formData: CameraDeploymentFormData): Promise<CameraDeployment | null> => {
-    try {
-      setError(null);
-      
-      const result = await createCameraDeployment(formData);
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to create camera deployment');
-      }
-      
-      // Refresh the list
-      await loadCameras();
-      return result.data;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create camera deployment';
-      setError(errorMessage);
-      console.error('Error creating camera deployment:', err);
-      return null;
-    }
-  }, [loadCameras]);
-
-  const updateDeployment = useCallback(async (id: string, formData: Partial<CameraDeploymentFormData>): Promise<CameraDeployment | null> => {
-    try {
-      setError(null);
-      
-      const result = await updateCameraDeployment(id, formData);
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to update camera deployment');
-      }
-      
-      // Update in state
-      setCameras(prev => prev.map(camera => 
-        camera.deployment?.id === id 
-          ? { ...camera, deployment: result.data! }
-          : camera
-      ));
-      return result.data;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update camera deployment';
-      setError(errorMessage);
-      console.error('Error updating camera deployment:', err);
-      return null;
-    }
-  }, []);
-
-  const deactivateDeployment = useCallback(async (id: string): Promise<boolean> => {
-    try {
-      setError(null);
-      
-      const result = await deactivateCameraDeployment(id);
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to deactivate camera deployment');
-      }
-      
-      // Remove from state or mark as inactive
-      setCameras(prev => prev.filter(camera => camera.deployment?.id !== id));
-      return true;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to deactivate camera deployment';
-      setError(errorMessage);
-      console.error('Error deactivating camera deployment:', err);
-      return false;
-    }
-  }, []);
+  }, [filters]); // Add filters as dependency
 
   const refresh = useCallback(() => {
     loadCameras();
@@ -348,9 +287,6 @@ export function useCameras(filters?: Partial<CameraFilters>) {
     cameras,
     loading,
     error,
-    createDeployment,
-    updateDeployment,
-    deactivateDeployment,
     refresh
   };
 }
@@ -506,10 +442,6 @@ export function useCameraAlerts() {
 
   useEffect(() => {
     loadAlerts();
-    
-    // Auto-refresh alerts every 5 minutes
-    const interval = setInterval(loadAlerts, 5 * 60 * 1000);
-    return () => clearInterval(interval);
   }, [loadAlerts]);
 
   return {
@@ -590,7 +522,7 @@ export function useMissingCameras() {
 // ============================================================================
 
 /**
- * Hook for camera system statistics
+ * Hook for camera statistics
  */
 export function useCameraStats() {
   const [stats, setStats] = useState<CameraStats | null>(null);
@@ -619,10 +551,6 @@ export function useCameraStats() {
 
   useEffect(() => {
     loadStats();
-    
-    // Auto-refresh stats every 10 minutes
-    const interval = setInterval(loadStats, 10 * 60 * 1000);
-    return () => clearInterval(interval);
   }, [loadStats]);
 
   return {

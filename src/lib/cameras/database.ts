@@ -208,33 +208,34 @@ export async function deleteCameraHardware(
 // ============================================================================
 
 /**
- * Get all camera deployments with hardware info (FIXED)
+ * Enhanced getCameraDeployments with proper filtering
  */
 export async function getCameraDeployments(
   filters?: Partial<CameraFilters>
 ): Promise<CameraAPIResponse<CameraWithStatus[]>> {
   try {
-    const supabase = createClient()
+    const supabase = createClient();
     
-    // Build deployment query with filters
+    // Build deployment query
     let deploymentQuery = supabase
       .from('camera_deployments')
-      .select(`*, hardware:camera_hardware(*)`)
+      .select(`
+        *,
+        camera_hardware(*)
+      `)
       .order('location_name', { ascending: true });
 
-    // Apply filters
+    // Apply database-level filters for performance
     if (filters?.active !== undefined) {
       deploymentQuery = deploymentQuery.eq('active', filters.active);
     }
-    if (filters?.season_year?.length) {
+
+    if (filters?.season_year && filters.season_year.length > 0) {
       deploymentQuery = deploymentQuery.in('season_year', filters.season_year);
     }
+
     if (filters?.is_missing !== undefined) {
       deploymentQuery = deploymentQuery.eq('is_missing', filters.is_missing);
-    }
-    if (filters?.search) {
-      const searchTerm = `%${filters.search}%`;
-      deploymentQuery = deploymentQuery.or(`location_name.ilike.${searchTerm},notes.ilike.${searchTerm}`);
     }
 
     const { data: deployments, error: deploymentsError } = await deploymentQuery;
@@ -250,65 +251,67 @@ export async function getCameraDeployments(
 
     // Get latest reports for these deployments
     const deploymentIds = deployments.map(d => d.id);
-    const { data: allReports, error: reportsError } = await supabase
+    const { data: reports } = await supabase
       .from('camera_status_reports')
       .select('*')
       .in('deployment_id', deploymentIds)
       .order('report_date', { ascending: false });
 
-    if (reportsError) {
-      console.error('Error fetching reports:', reportsError);
-      return { success: false, error: reportsError.message };
-    }
-
-    // Group reports by deployment_id and get the latest for each
+    // Create map of latest reports by deployment_id
     const latestReportsMap = new Map();
-    if (allReports) {
-      for (const report of allReports) {
-        if (!latestReportsMap.has(report.deployment_id)) {
-          latestReportsMap.set(report.deployment_id, report);
-        }
+    reports?.forEach(report => {
+      if (!latestReportsMap.has(report.deployment_id)) {
+        latestReportsMap.set(report.deployment_id, report);
       }
-    }
+    });
 
-    // Apply additional filters based on reports
-    let filteredDeployments = deployments;
-
-    if (filters?.has_alerts !== undefined) {
-      filteredDeployments = filteredDeployments.filter(deployment => {
-        const latestReport = latestReportsMap.get(deployment.id);
-        return (latestReport?.needs_attention === true) === filters.has_alerts;
-      });
-    }
-
-    if (filters?.battery_status?.length) {
-      filteredDeployments = filteredDeployments.filter(deployment => {
-        const latestReport = latestReportsMap.get(deployment.id);
-        return latestReport && filters.battery_status!.includes(latestReport.battery_status || '');
-      });
-    }
-
-    // Apply hardware filters
-    if (filters?.brand?.length) {
-      filteredDeployments = filteredDeployments.filter(deployment => 
-        filters.brand!.includes(deployment.hardware?.brand || '')
-      );
-    }
-
-    // Transform to CameraWithStatus format
-    const transformedData: CameraWithStatus[] = filteredDeployments.map(deployment => {
+    // Transform and filter data
+    let transformedData: CameraWithStatus[] = deployments.map(deployment => {
       const latestReport = latestReportsMap.get(deployment.id) || null;
       const daysSinceLastReport = latestReport 
         ? Math.floor((Date.now() - new Date(latestReport.report_date).getTime()) / (1000 * 60 * 60 * 24))
         : null;
 
       return {
-        hardware: deployment.hardware,
+        hardware: deployment.camera_hardware,
         deployment: deployment,
         latest_report: latestReport,
         days_since_last_report: daysSinceLastReport
       };
     });
+
+    // Apply JavaScript-level filters for complex logic
+    if (filters?.brand && filters.brand.length > 0) {
+      transformedData = transformedData.filter(camera => 
+        camera.hardware?.brand && filters.brand!.includes(camera.hardware.brand)
+      );
+    }
+
+    if (filters?.condition && filters.condition.length > 0) {
+      transformedData = transformedData.filter(camera =>
+        camera.hardware?.condition && filters.condition!.includes(camera.hardware.condition)
+      );
+    }
+
+    if (filters?.has_alerts !== undefined) {
+      transformedData = transformedData.filter(camera => {
+        const hasAlerts = camera.latest_report?.needs_attention || 
+                         camera.deployment?.is_missing ||
+                         (camera.days_since_last_report !== null && camera.days_since_last_report > 1);
+        return filters.has_alerts ? hasAlerts : !hasAlerts;
+      });
+    }
+
+    if (filters?.search) {
+      const searchTerm = filters.search.toLowerCase();
+      transformedData = transformedData.filter(camera =>
+        camera.hardware?.device_id?.toLowerCase().includes(searchTerm) ||
+        camera.deployment?.location_name?.toLowerCase().includes(searchTerm) ||
+        camera.hardware?.brand?.toLowerCase().includes(searchTerm) ||
+        camera.hardware?.model?.toLowerCase().includes(searchTerm) ||
+        camera.deployment?.notes?.toLowerCase().includes(searchTerm)
+      );
+    }
 
     return { success: true, data: transformedData };
   } catch (error) {
@@ -522,66 +525,40 @@ export async function getStatusReports(
 // ============================================================================
 
 /**
- * Get cameras that need attention (FIXED)
+ * Get cameras that need attention (alerts)
  */
 export async function getCameraAlerts(): Promise<CameraAPIResponse<CameraWithStatus[]>> {
   try {
-    // Get deployments with hardware info
-    const { data: deployments, error: deploymentsError } = await supabase
-      .from('camera_deployments')
-      .select(`
-        *,
-        camera_hardware(*)
-      `)
-      .eq('active', true);
-
-    if (deploymentsError) {
-      console.error('Error fetching deployments:', deploymentsError);
-      return { success: false, error: deploymentsError.message };
+    // Get all cameras first
+    const camerasResult = await getCameraDeployments();
+    if (!camerasResult.success) {
+      return { success: false, error: camerasResult.error };
     }
 
-    if (!deployments || deployments.length === 0) {
-      return { success: true, data: [] };
-    }
-
-    // Get recent reports with alerts for these deployments
-    const deploymentIds = deployments.map(d => d.id);
-    const { data: reports, error: reportsError } = await supabase
-      .from('camera_status_reports')
-      .select('*')
-      .in('deployment_id', deploymentIds)
-      .eq('needs_attention', true)
-      .order('report_date', { ascending: false });
-
-    if (reportsError) {
-      console.error('Error fetching reports:', reportsError);
-      return { success: false, error: reportsError.message };
-    }
-
-    // Combine data in JavaScript (simpler than complex SQL joins)
-    const alertCameras: CameraWithStatus[] = [];
-    const reportsMap = new Map(reports?.map(r => [r.deployment_id, r]) || []);
-
-    for (const deployment of deployments) {
-      const latestReport = reportsMap.get(deployment.id);
-      if (latestReport) {
-        const daysSinceLastReport = latestReport 
-          ? Math.floor((Date.now() - new Date(latestReport.report_date).getTime()) / (1000 * 60 * 60 * 24))
-          : null;
-
-        alertCameras.push({
-          hardware: deployment.camera_hardware,
-          deployment: deployment,
-          latest_report: latestReport,
-          days_since_last_report: daysSinceLastReport
-        });
+    // Filter to only cameras that need attention
+    const alertCameras = camerasResult.data?.filter(camera => {
+      // Check if latest report has alerts
+      if (camera.latest_report?.needs_attention) {
+        return true;
       }
-    }
+
+      // Check if camera is missing (no recent reports)
+      if (camera.days_since_last_report !== null && camera.days_since_last_report > 1) {
+        return true;
+      }
+
+      // Check if deployment is marked as missing
+      if (camera.deployment?.is_missing) {
+        return true;
+      }
+
+      return false;
+    }) || [];
 
     return { success: true, data: alertCameras };
   } catch (error) {
     console.error('Error in getCameraAlerts:', error);
-    return { success: false, error: 'Unknown error occurred' };
+    return { success: false, error: 'Unknown error occurred while fetching alerts' };
   }
 }
 
@@ -659,67 +636,128 @@ export async function detectMissingCameras(
 // ============================================================================
 
 /**
- * Get camera system statistics
+ * Get comprehensive camera system statistics
  */
 export async function getCameraStats(): Promise<CameraAPIResponse<CameraStats>> {
   try {
-    // Get basic counts
-    const [
-      hardwareResult,
-      deploymentsResult,
-      alertsResult,
-      missingResult
-    ] = await Promise.all([
-      supabase.from('camera_hardware').select('id, brand').eq('active', true),
-      supabase.from('camera_deployments').select('id, season_year').eq('active', true),
-      supabase.from('camera_status_reports').select('id').eq('needs_attention', true),
-      supabase.from('camera_deployments').select('id, consecutive_missing_days').eq('is_missing', true)
-    ]);
+    // Get hardware stats
+    const { data: hardware, error: hardwareError } = await supabase
+      .from('camera_hardware')
+      .select('id, brand, active');
 
-    // Calculate statistics
-    const stats: CameraStats = {
-      total_hardware: hardwareResult.data?.length || 0,
-      active_deployments: deploymentsResult.data?.length || 0,
-      cameras_with_alerts: alertsResult.data?.length || 0,
-      missing_cameras: missingResult.data?.length || 0,
-      average_battery_level: 0, // Will be calculated from recent reports
-      total_photos_stored: 0, // Will be calculated from recent reports
-      cameras_by_brand: {},
-      deployments_by_season: {},
-      alerts_by_type: {},
-      missing_by_days: {}
-    };
+    if (hardwareError) {
+      console.error('Error fetching hardware for stats:', hardwareError);
+      return { success: false, error: hardwareError.message };
+    }
+
+    // Get deployment stats
+    const { data: deployments, error: deploymentsError } = await supabase
+      .from('camera_deployments')
+      .select('id, season_year, active, is_missing, consecutive_missing_days');
+
+    if (deploymentsError) {
+      console.error('Error fetching deployments for stats:', deploymentsError);
+      return { success: false, error: deploymentsError.message };
+    }
+
+    // Get recent status reports for battery and photo calculations
+    const { data: recentReports, error: reportsError } = await supabase
+      .from('camera_status_reports')
+      .select('battery_status, sd_images_count, needs_attention, alert_reason')
+      .gte('report_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]) // Last 30 days
+      .order('report_date', { ascending: false });
+
+    if (reportsError) {
+      console.error('Error fetching reports for stats:', reportsError);
+      // Don't fail on reports error, just log it
+    }
+
+    // Calculate basic counts
+    const totalHardware = hardware?.length || 0;
+    const activeHardware = hardware?.filter(h => h.active).length || 0;
+    const activeDeployments = deployments?.filter(d => d.active).length || 0;
+    const missingCameras = deployments?.filter(d => d.is_missing).length || 0;
 
     // Calculate brand distribution
-    if (hardwareResult.data) {
-      hardwareResult.data.forEach(hw => {
-        if (hw.brand) {
-          stats.cameras_by_brand[hw.brand] = (stats.cameras_by_brand[hw.brand] || 0) + 1;
-        }
-      });
-    }
+    const camerasByBrand: Record<string, number> = {};
+    hardware?.forEach(hw => {
+      if (hw.brand && hw.active) {
+        camerasByBrand[hw.brand] = (camerasByBrand[hw.brand] || 0) + 1;
+      }
+    });
 
-    // Calculate season distribution
-    if (deploymentsResult.data) {
-      deploymentsResult.data.forEach(dep => {
-        if (dep.season_year) {
-          stats.deployments_by_season[dep.season_year] = (stats.deployments_by_season[dep.season_year] || 0) + 1;
-        }
-      });
-    }
+    // Calculate deployments by season
+    const deploymentsBySeason: Record<number, number> = {};
+    deployments?.forEach(dep => {
+      if (dep.season_year && dep.active) {
+        deploymentsBySeason[dep.season_year] = (deploymentsBySeason[dep.season_year] || 0) + 1;
+      }
+    });
 
-    // Calculate missing days distribution
-    if (missingResult.data) {
-      missingResult.data.forEach(missing => {
-        const days = missing.consecutive_missing_days;
-        stats.missing_by_days[days] = (stats.missing_by_days[days] || 0) + 1;
-      });
-    }
+    // Calculate missing cameras by days
+    const missingByDays: Record<number, number> = {};
+    deployments?.filter(d => d.is_missing).forEach(dep => {
+      const days = dep.consecutive_missing_days || 0;
+      missingByDays[days] = (missingByDays[days] || 0) + 1;
+    });
+
+    // Calculate alerts by type
+    const alertsByType: Record<string, number> = {};
+    const camerasWithAlerts = new Set();
+    recentReports?.filter(r => r.needs_attention).forEach(report => {
+      if (report.alert_reason) {
+        const alertType = report.alert_reason.toLowerCase().includes('battery') ? 'Battery' :
+                         report.alert_reason.toLowerCase().includes('storage') ? 'Storage' :
+                         report.alert_reason.toLowerCase().includes('signal') ? 'Signal' :
+                         report.alert_reason.toLowerCase().includes('missing') ? 'Missing' : 'Other';
+        alertsByType[alertType] = (alertsByType[alertType] || 0) + 1;
+        camerasWithAlerts.add(report.alert_reason); // This is a rough count
+      }
+    });
+
+    // Calculate average battery level
+    let totalBatteryReadings = 0;
+    let batterySum = 0;
+    recentReports?.forEach(report => {
+      if (report.battery_status) {
+        // Extract percentage from battery status like "75%" or "OK (85%)"
+        const match = report.battery_status.match(/(\d+)%/);
+        if (match) {
+          const percentage = parseInt(match[1]);
+          batterySum += percentage;
+          totalBatteryReadings++;
+        } else if (report.battery_status.toLowerCase().includes('ok')) {
+          // Assume "OK" means 75%
+          batterySum += 75;
+          totalBatteryReadings++;
+        }
+      }
+    });
+
+    const averageBatteryLevel = totalBatteryReadings > 0 ? Math.round(batterySum / totalBatteryReadings) : null;
+
+    // Calculate total photos stored
+    const totalPhotosStored = recentReports?.reduce((sum, report) => {
+      return sum + (report.sd_images_count || 0);
+    }, 0) || 0;
+
+    const stats: CameraStats = {
+      total_hardware: totalHardware,
+      active_deployments: activeDeployments,
+      cameras_with_alerts: Object.values(alertsByType).reduce((sum, count) => sum + count, 0),
+      missing_cameras: missingCameras,
+      average_battery_level: averageBatteryLevel,
+      total_photos_stored: totalPhotosStored,
+      cameras_by_brand: camerasByBrand,
+      deployments_by_season: deploymentsBySeason,
+      alerts_by_type: alertsByType,
+      missing_by_days: missingByDays
+    };
 
     return { success: true, data: stats };
   } catch (error) {
     console.error('Error in getCameraStats:', error);
-    return { success: false, error: 'Unknown error occurred' };
+    return { success: false, error: 'Unknown error occurred while calculating statistics' };
   }
 }
 

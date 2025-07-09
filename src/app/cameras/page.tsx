@@ -1,11 +1,13 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { Camera, Search, Filter, Plus, MapPin, AlertCircle, X } from 'lucide-react'
+import { Camera, Search, Filter, Plus, MapPin, AlertCircle, X, Battery, HardDrive, AlertTriangle, Upload } from 'lucide-react'
 import { useCameras, useCameraAlerts, useCameraStats, useCameraHardware } from '@/lib/cameras/hooks'
 import CameraCard from '@/components/cameras/CameraCard'
 import { CameraForm } from '@/components/cameras/CameraForms'
-import { updateCameraDeployment, deactivateCameraDeployment, createCameraDeployment, hardDeleteCameraHardware } from '@/lib/cameras/database'
+import { CameraDetailModal } from '@/components/cameras/CameraDetailModal'
+import { GPXImportModal } from '@/components/cameras/GPXImportModal'
+import { updateCameraDeployment, deactivateCameraDeployment, createCameraDeployment, hardDeleteCameraHardware, createCameraHardware, updateCameraHardware } from '@/lib/cameras/database'
 import type { CameraWithStatus, CameraHardware, CameraFilters, CameraHardwareFormData, CameraDeploymentFormData } from '@/lib/cameras/types'
 
 // Define the same filters interface pattern as stands
@@ -16,6 +18,28 @@ export interface CameraManagementFilters {
   alerts: string
   hasCoordinates: string
   season: string
+}
+
+// Interface for GPX import data
+interface CameraImportData {
+  // Hardware data
+  device_id: string
+  brand: string
+  model: string
+  condition: 'good' | 'questionable' | 'poor' | 'retired'
+  active: boolean
+  
+  // Deployment data
+  location_name: string
+  latitude: number
+  longitude: number
+  season_year: number
+  has_solar_panel: boolean
+  notes: string
+  
+  // Import metadata
+  source_name: string
+  import_notes: string
 }
 
 // Filters Component matching your StandFilters pattern
@@ -178,58 +202,53 @@ export default function CameraManagementPage() {
   })
   const [showFilters, setShowFilters] = useState(false)
 
-  // Form management state
+  // Modal states
   const [showCameraForm, setShowCameraForm] = useState(false)
+  const [showCameraDetail, setShowCameraDetail] = useState(false)
+  const [showGPXImport, setShowGPXImport] = useState(false)
+  
+  // Form/detail management state  
   const [editingCamera, setEditingCamera] = useState<CameraWithStatus | null>(null)
-  const [formMode, setFormMode] = useState<'create' | 'edit-hardware' | 'edit-deployment'>('create')
+  const [viewingCamera, setViewingCamera] = useState<CameraWithStatus | null>(null)
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create')
   const [formLoading, setFormLoading] = useState(false)
+  const [importing, setImporting] = useState(false)
 
-  // Load data using your hooks
-  const { cameras, loading, error, refresh: refreshCameras } = useCameras()
+  // Sorting state
+  const [sortBy, setSortBy] = useState<'location_name' | 'device_id' | 'last_seen' | 'battery_status' | 'brand'>('location_name')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+
+  // Load data using your hooks with proper filtering
+  const cameraFilters = useMemo(() => {
+    const filterObj: Partial<CameraFilters> = {}
+    
+    // Convert UI filters to database filters
+    if (filters.status === 'active') filterObj.active = true
+    if (filters.status === 'inactive') filterObj.active = false
+    
+    if (filters.brand !== 'all') filterObj.brand = [filters.brand]
+    
+    if (filters.alerts === 'has-alerts') filterObj.has_alerts = true
+    if (filters.alerts === 'no-alerts') filterObj.has_alerts = false
+    
+    if (filters.season !== 'all') filterObj.season_year = [parseInt(filters.season)]
+    
+    // Add search term
+    if (filters.search.trim()) filterObj.search = filters.search.trim()
+    
+    return filterObj
+  }, [filters])
+
+  const { cameras, loading, error, refresh: refreshCameras } = useCameras(cameraFilters)
   const { alerts, loading: alertsLoading } = useCameraAlerts()
   const { stats, loading: statsLoading } = useCameraStats()
   const { hardware: allHardware, createHardware, updateHardware, deleteHardware } = useCameraHardware()
 
-  // Filter cameras based on search and filters (matching stands pattern)
+  // Filter cameras based on coordinate availability and apply sorting
   const filteredCameras = useMemo(() => {
     let filtered = cameras
 
-    // Apply search filter
-    if (filters.search) {
-      const search = filters.search.toLowerCase()
-      filtered = filtered.filter(camera => 
-        camera.hardware?.device_id?.toLowerCase().includes(search) ||
-        camera.deployment?.location_name?.toLowerCase().includes(search) ||
-        camera.hardware?.brand?.toLowerCase().includes(search) ||
-        camera.hardware?.model?.toLowerCase().includes(search)
-      )
-    }
-
-    // Apply status filter
-    if (filters.status !== 'all') {
-      filtered = filtered.filter(camera => {
-        if (filters.status === 'active') return camera.deployment?.active
-        if (filters.status === 'inactive') return !camera.deployment?.active
-        return true
-      })
-    }
-
-    // Apply brand filter
-    if (filters.brand !== 'all') {
-      filtered = filtered.filter(camera => camera.hardware?.brand === filters.brand)
-    }
-
-    // Apply alerts filter
-    if (filters.alerts !== 'all') {
-      filtered = filtered.filter(camera => {
-        const hasAlerts = camera.latest_report?.needs_attention || camera.days_since_last_report > 1
-        if (filters.alerts === 'has-alerts') return hasAlerts
-        if (filters.alerts === 'no-alerts') return !hasAlerts
-        return true
-      })
-    }
-
-    // Apply coordinates filter
+    // Apply coordinates filter (this can't be done efficiently in database)
     if (filters.hasCoordinates !== 'all') {
       filtered = filtered.filter(camera => {
         const hasCoords = camera.deployment?.latitude && camera.deployment?.longitude
@@ -239,17 +258,81 @@ export default function CameraManagementPage() {
       })
     }
 
-    // Apply season filter
-    if (filters.season !== 'all') {
-      const seasonYear = parseInt(filters.season)
-      filtered = filtered.filter(camera => camera.deployment?.season === seasonYear)
-    }
+    // Apply sorting
+    const sorted = [...filtered].sort((a, b) => {
+      let aValue: any, bValue: any
 
-    return filtered
-  }, [cameras, filters])
+      switch (sortBy) {
+        case 'device_id':
+          // Extract numeric part from device ID for proper numerical sorting
+          const extractNumericId = (deviceId: string) => {
+            const match = deviceId.match(/(\d+)/)
+            return match ? parseInt(match[1], 10) : 0
+          }
+          aValue = extractNumericId(a.hardware?.device_id || '')
+          bValue = extractNumericId(b.hardware?.device_id || '')
+          break
+        case 'location_name':
+          aValue = a.deployment?.location_name || ''
+          bValue = b.deployment?.location_name || ''
+          break
+        case 'last_seen':
+          aValue = a.days_since_last_report ?? 9999 // Put cameras with no reports at the end
+          bValue = b.days_since_last_report ?? 9999
+          break
+        case 'battery_status':
+          // Sort by battery status priority: Critical < Low < OK < Good < Full
+          const batteryPriority = (status: string | null) => {
+            if (!status) return 0
+            if (status.includes('Critical')) return 5
+            if (status.includes('Low')) return 4
+            if (status.includes('OK') || status.includes('Ext OK')) return 3
+            if (status.includes('Good')) return 2
+            if (status.includes('Full')) return 1
+            return 0
+          }
+          aValue = batteryPriority(a.latest_report?.battery_status)
+          bValue = batteryPriority(b.latest_report?.battery_status)
+          break
+        case 'brand':
+          aValue = a.hardware?.brand || ''
+          bValue = b.hardware?.brand || ''
+          break
+        default:
+          aValue = a.deployment?.location_name || ''
+          bValue = b.deployment?.location_name || ''
+      }
+
+      // Handle numeric vs string comparison
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue
+      } else {
+        // String comparison
+        const aStr = String(aValue).toLowerCase()
+        const bStr = String(bValue).toLowerCase()
+        if (aStr < bStr) return sortDirection === 'asc' ? -1 : 1
+        if (aStr > bStr) return sortDirection === 'asc' ? 1 : -1
+        return 0
+      }
+    })
+
+    return sorted
+  }, [cameras, filters.hasCoordinates, sortBy, sortDirection])
 
   // Check if any filters are active
   const hasActiveFilters = Object.values(filters).some(value => value !== 'all' && value !== '')
+
+  // Helper function to get readable sort labels
+  const getSortLabel = (sortKey: string) => {
+    const labels: Record<string, string> = {
+      'location_name': 'location name',
+      'device_id': 'device ID',
+      'last_seen': 'last seen',
+      'battery_status': 'battery status',
+      'brand': 'brand'
+    }
+    return labels[sortKey] || sortKey
+  }
 
   // Clear all filters
   const clearFilters = () => {
@@ -263,10 +346,86 @@ export default function CameraManagementPage() {
     })
   }
 
-  // Camera action handlers using real database operations
+  // GPX Import handler
+  const handleGPXImport = async (importData: CameraImportData[]) => {
+    setImporting(true)
+    let successCount = 0
+    let errorCount = 0
+    const errors: string[] = []
+
+    try {
+      for (const cameraData of importData) {
+        try {
+          // Create hardware first
+          const hardwareData: CameraHardwareFormData = {
+            device_id: cameraData.device_id,
+            brand: cameraData.brand || '',
+            model: cameraData.model || '',
+            condition: cameraData.condition,
+            active: cameraData.active,
+            notes: cameraData.import_notes
+          }
+
+          const hardwareResult = await createCameraHardware(hardwareData)
+          if (!hardwareResult.success) {
+            throw new Error(hardwareResult.error || 'Failed to create hardware')
+          }
+
+          // Create deployment
+          const deploymentData: CameraDeploymentFormData = {
+            hardware_id: hardwareResult.data!.id,
+            location_name: cameraData.location_name,
+            latitude: cameraData.latitude,
+            longitude: cameraData.longitude,
+            season_year: cameraData.season_year,
+            has_solar_panel: cameraData.has_solar_panel,
+            active: true,
+            notes: cameraData.notes
+          }
+
+          const deploymentResult = await createCameraDeployment(deploymentData)
+          if (!deploymentResult.success) {
+            throw new Error(deploymentResult.error || 'Failed to create deployment')
+          }
+
+          successCount++
+        } catch (error) {
+          errorCount++
+          errors.push(`${cameraData.device_id}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+          console.error(`Failed to import camera ${cameraData.device_id}:`, error)
+        }
+      }
+
+      // Show results
+      if (successCount > 0) {
+        await refreshCameras()
+      }
+
+      if (errorCount === 0) {
+        alert(`Successfully imported ${successCount} cameras from GPX file!`)
+      } else {
+        const message = `Import completed with ${successCount} successes and ${errorCount} errors.\n\nErrors:\n${errors.join('\n')}`
+        alert(message)
+      }
+
+    } catch (error) {
+      console.error('GPX import error:', error)
+      alert(`Failed to import cameras: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  // NEW: Camera card click shows detailed read-only view
+  const handleCameraCardClick = (camera: CameraWithStatus) => {
+    setViewingCamera(camera)
+    setShowCameraDetail(true)
+  }
+
+  // Edit button shows comprehensive edit form
   const handleEditCamera = (camera: CameraWithStatus) => {
     setEditingCamera(camera)
-    setFormMode('edit-hardware')
+    setFormMode('edit')
     setShowCameraForm(true)
   }
 
@@ -334,20 +493,7 @@ Type "${deviceId}" to confirm deletion:`
     setShowCameraForm(true)
   }
 
-  const handleEditDeployment = (camera: CameraWithStatus) => {
-    console.log('Editing deployment for camera:', camera) // Debug log
-    
-    if (!camera.hardware) {
-      alert('Cannot edit deployment: camera hardware information is missing')
-      return
-    }
-    
-    setEditingCamera(camera)
-    setFormMode('edit-deployment')
-    setShowCameraForm(true)
-  }
-
-  // Comprehensive form handler
+  // Comprehensive form handler for simplified modes
   const handleCameraFormSubmit = async (hardwareData: CameraHardwareFormData, deploymentData?: CameraDeploymentFormData) => {
     try {
       setFormLoading(true)
@@ -357,7 +503,7 @@ Type "${deviceId}" to confirm deletion:`
         editingCamera: editingCamera?.hardware?.device_id, 
         hasDeployment: !!editingCamera?.deployment,
         deploymentData: !!deploymentData 
-      }) // Debug log
+      })
       
       if (formMode === 'create') {
         // Create new hardware
@@ -382,7 +528,7 @@ Type "${deviceId}" to confirm deletion:`
         
         alert(`Camera ${hardwareData.device_id} created successfully`)
         
-      } else if (formMode === 'edit-hardware' && editingCamera?.hardware) {
+      } else if (formMode === 'edit' && editingCamera?.hardware) {
         // Update existing hardware
         console.log('Updating hardware:', editingCamera.hardware.id, hardwareData)
         const updateResult = await updateHardware(editingCamera.hardware.id, hardwareData)
@@ -390,38 +536,30 @@ Type "${deviceId}" to confirm deletion:`
           throw new Error('Failed to update camera hardware')
         }
         
+        // Handle deployment data
+        if (deploymentData) {
+          if (editingCamera.deployment) {
+            // Update existing deployment
+            console.log('Updating existing deployment:', editingCamera.deployment.id, deploymentData)
+            const updateResult = await updateCameraDeployment(editingCamera.deployment.id, deploymentData)
+            if (!updateResult.success) {
+              throw new Error(updateResult.error || 'Failed to update deployment')
+            }
+          } else {
+            // Create new deployment for existing hardware
+            console.log('Creating new deployment for existing hardware:', editingCamera.hardware.id, deploymentData)
+            const deploymentWithHardwareId = {
+              ...deploymentData,
+              hardware_id: editingCamera.hardware.id
+            }
+            const deploymentResult = await createCameraDeployment(deploymentWithHardwareId)
+            if (!deploymentResult.success) {
+              throw new Error(deploymentResult.error || 'Failed to create deployment')
+            }
+          }
+        }
+        
         alert(`Camera ${hardwareData.device_id} updated successfully`)
-        
-      } else if (formMode === 'edit-deployment') {
-        if (!editingCamera?.hardware) {
-          throw new Error('Cannot update deployment: camera hardware information is missing')
-        }
-        
-        if (!deploymentData) {
-          throw new Error('Cannot update deployment: deployment data is missing')
-        }
-        
-        if (editingCamera.deployment) {
-          // Update existing deployment
-          console.log('Updating existing deployment:', editingCamera.deployment.id, deploymentData)
-          const updateResult = await updateCameraDeployment(editingCamera.deployment.id, deploymentData)
-          if (!updateResult.success) {
-            throw new Error(updateResult.error || 'Failed to update deployment')
-          }
-          alert(`Camera deployment updated successfully`)
-        } else {
-          // Create new deployment for existing hardware (camera has hardware but no deployment)
-          console.log('Creating new deployment for existing hardware:', editingCamera.hardware.id, deploymentData)
-          const deploymentWithHardwareId = {
-            ...deploymentData,
-            hardware_id: editingCamera.hardware.id
-          }
-          const deploymentResult = await createCameraDeployment(deploymentWithHardwareId)
-          if (!deploymentResult.success) {
-            throw new Error(deploymentResult.error || 'Failed to create deployment')
-          }
-          alert(`Camera deployed to ${deploymentData.location_name} successfully`)
-        }
       } else {
         throw new Error(`Invalid form mode: ${formMode}`)
       }
@@ -438,12 +576,9 @@ Type "${deviceId}" to confirm deletion:`
     }
   }
 
-  // Get available hardware for deployment form
-  const availableHardware = allHardware.filter(hw => hw.active)
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header - matching your stands page pattern */}
+      {/* Header - matching your stands page pattern with GPX import button */}
       <div className="bg-olive-green text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-6">
@@ -472,6 +607,15 @@ Type "${deviceId}" to confirm deletion:`
                 </button>
                 
                 <button
+                  onClick={() => setShowGPXImport(true)}
+                  className="bg-burnt-orange hover:bg-clay-earth text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium"
+                  title="Import cameras from GPX file"
+                >
+                  <Upload size={20} />
+                  <span className="hidden sm:inline">Import GPX</span>
+                </button>
+                
+                <button
                   onClick={handleCreateCamera}
                   className="bg-burnt-orange hover:bg-clay-earth text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium"
                 >
@@ -489,18 +633,51 @@ Type "${deviceId}" to confirm deletion:`
         {/* Search and Stats Bar - matching your stands pattern */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            {/* Search */}
-            <div className="relative flex-1 max-w-md">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-weathered-wood" />
+            {/* Search and Sort Row */}
+            <div className="flex flex-col sm:flex-row gap-3 flex-1">
+              {/* Search */}
+              <div className="relative flex-1 max-w-md">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-5 w-5 text-weathered-wood" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search cameras by device ID, location, brand..."
+                  value={filters.search}
+                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-morning-mist placeholder-weathered-wood focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                />
               </div>
-              <input
-                type="text"
-                placeholder="Search cameras by device ID, location, brand..."
-                value={filters.search}
-                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-morning-mist placeholder-weathered-wood focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-              />
+
+              {/* Sort Controls */}
+              <div className="flex items-center gap-2 min-w-0">
+                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Sort by:</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="text-sm border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                >
+                  <option value="location_name">Location Name</option>
+                  <option value="device_id">Device ID</option>
+                  <option value="brand">Brand</option>
+                  <option value="last_seen">Last Seen</option>
+                  <option value="battery_status">Battery Status</option>
+                </select>
+                <button
+                  onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+                  className="p-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  title={`Sort ${sortDirection === 'asc' ? 'Descending' : 'Ascending'}`}
+                >
+                  <div className="flex flex-col items-center justify-center w-4 h-4">
+                    <div className={`w-0 h-0 border-l-2 border-r-2 border-b-2 border-transparent ${
+                      sortDirection === 'asc' ? 'border-b-gray-600' : 'border-b-gray-300'
+                    } mb-0.5`} style={{ borderBottomWidth: '3px', borderLeftWidth: '2px', borderRightWidth: '2px' }} />
+                    <div className={`w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent ${
+                      sortDirection === 'desc' ? 'border-t-gray-600' : 'border-t-gray-300'
+                    }`} style={{ borderTopWidth: '3px', borderLeftWidth: '2px', borderRightWidth: '2px' }} />
+                  </div>
+                </button>
+              </div>
             </div>
 
             {/* Stats */}
@@ -523,6 +700,12 @@ Type "${deviceId}" to confirm deletion:`
                   <span>{alerts.length} alerts</span>
                 </div>
               )}
+              <div className="hidden sm:flex items-center gap-1 text-xs text-gray-500">
+                <span>•</span>
+                <span>
+                  Sorted by {getSortLabel(sortBy)} ({sortDirection === 'asc' ? '↑' : '↓'})
+                </span>
+              </div>
             </div>
           </div>
 
@@ -598,14 +781,23 @@ Type "${deviceId}" to confirm deletion:`
             <Camera className="h-12 w-12 text-weathered-wood mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No cameras deployed yet</h3>
             <p className="text-weathered-wood mb-4">
-              Get started by adding your first trail camera to the system.
+              Get started by adding cameras manually or importing from a GPX file.
             </p>
-            <button
-              onClick={handleCreateCamera}
-              className="bg-burnt-orange hover:bg-clay-earth text-white px-6 py-2 rounded-lg font-medium transition-colors"
-            >
-              Add Your First Camera
-            </button>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => setShowGPXImport(true)}
+                className="bg-olive-green hover:bg-pine-needle text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                <Upload size={16} />
+                Import from GPX
+              </button>
+              <button
+                onClick={handleCreateCamera}
+                className="bg-burnt-orange hover:bg-clay-earth text-white px-6 py-2 rounded-lg font-medium transition-colors"
+              >
+                Add Camera Manually
+              </button>
+            </div>
           </div>
         )}
 
@@ -626,13 +818,14 @@ Type "${deviceId}" to confirm deletion:`
           </div>
         )}
 
-        {/* Cameras Grid - matching your stands grid pattern */}
+        {/* Cameras Grid - NEW INTERACTION PATTERN */}
         {!loading && !error && filteredCameras.length > 0 && (
           <>
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
-                <strong>Edit Options:</strong> Click <strong>Edit</strong> button to modify camera hardware • 
-                Click anywhere on camera card to edit location/deployment details
+                <strong>Interface:</strong> Click on any camera card to view detailed information • 
+                Click the <strong>Edit</strong> button to modify camera hardware and location settings • 
+                Use the sort dropdown to organize cameras by device ID, location, battery status, etc.
               </p>
             </div>
             
@@ -642,8 +835,8 @@ Type "${deviceId}" to confirm deletion:`
                   key={camera.hardware?.id || camera.deployment?.id}
                   camera={camera}
                   mode="full"
-                  onClick={() => handleEditDeployment(camera)} // Click card to edit deployment/location
-                  onEdit={handleEditCamera} // Edit button edits hardware
+                  onClick={() => handleCameraCardClick(camera)} // NEW: Click for detailed view
+                  onEdit={handleEditCamera} // Edit button for comprehensive editing
                   onDelete={handleDeleteCamera}
                   onNavigate={handleNavigateToCamera}
                   showLocation={true}
@@ -657,7 +850,20 @@ Type "${deviceId}" to confirm deletion:`
         )}
       </div>
 
-      {/* Form Modal */}
+      {/* Camera Detail Modal (NEW) */}
+      {showCameraDetail && viewingCamera && (
+        <CameraDetailModal
+          camera={viewingCamera}
+          onClose={() => {
+            setShowCameraDetail(false)
+            setViewingCamera(null)
+          }}
+          onEdit={handleEditCamera}
+          onNavigate={handleNavigateToCamera}
+        />
+      )}
+
+      {/* Form Modal (UPDATED) */}
       {showCameraForm && (
         <CameraForm
           camera={editingCamera}
@@ -668,6 +874,15 @@ Type "${deviceId}" to confirm deletion:`
           }}
           onSubmit={handleCameraFormSubmit}
           isLoading={formLoading}
+        />
+      )}
+
+      {/* GPX Import Modal */}
+      {showGPXImport && (
+        <GPXImportModal
+          onClose={() => setShowGPXImport(false)}
+          onImport={handleGPXImport}
+          isImporting={importing}
         />
       )}
     </div>

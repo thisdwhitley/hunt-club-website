@@ -1,5 +1,5 @@
 // src/components/cameras/CameraForms.tsx
-// Comprehensive forms for creating and editing cameras with all fields
+// Updated comprehensive forms for creating and editing cameras with simplified modes
 
 'use client'
 
@@ -14,13 +14,13 @@ import type {
   CameraDeploymentFormData 
 } from '@/lib/cameras/types'
 
-// Combined Camera Form (Hardware + Deployment)
+// Combined Camera Form (Hardware + Deployment) - Simplified Modes
 interface CameraFormProps {
   camera?: CameraWithStatus | null
   onClose: () => void
   onSubmit: (hardwareData: CameraHardwareFormData, deploymentData?: CameraDeploymentFormData) => Promise<void>
   isLoading?: boolean
-  mode: 'create' | 'edit-hardware' | 'edit-deployment'
+  mode: 'create' | 'edit' // Simplified to just two modes
 }
 
 export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: CameraFormProps) {
@@ -35,7 +35,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
     cl_version: '',
     condition: 'good',
     active: true,
-    notes: '' // Keep for type compatibility, but set to empty and clean to undefined in submit
+    notes: ''
   })
 
   // Deployment form data
@@ -51,7 +51,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
     notes: ''
   })
 
-  const [includeDeployment, setIncludeDeployment] = useState(mode === 'create')
+  const [includeDeployment, setIncludeDeployment] = useState(mode === 'edit' || (mode === 'create'))
   const [gettingLocation, setGettingLocation] = useState(false)
 
   // Get stands for the dropdown
@@ -84,7 +84,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
 
   // Initialize form with existing data
   useEffect(() => {
-    console.log('Form initialization:', { mode, camera: camera?.hardware?.device_id, hasDeployment: !!camera?.deployment }) // Debug log
+    console.log('Form initialization:', { mode, camera: camera?.hardware?.device_id, hasDeployment: !!camera?.deployment })
     
     if (camera) {
       // Initialize hardware data
@@ -99,7 +99,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
           cl_version: camera.hardware.cl_version || '',
           condition: camera.hardware.condition,
           active: camera.hardware.active,
-          notes: '' // Don't populate hardware notes since we're not using them
+          notes: camera.hardware.notes || ''
         })
 
         // Set hardware_id for deployment
@@ -109,7 +109,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
         }))
       }
 
-      // Initialize deployment data (or set defaults if no deployment)
+      // Initialize deployment data if it exists
       if (camera.deployment) {
         setDeploymentData(prev => ({
           ...prev,
@@ -124,14 +124,14 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
           active: camera.deployment.active,
           notes: camera.deployment.notes || ''
         }))
-      } else if (mode === 'edit-deployment' && camera.hardware) {
-        // No existing deployment, set up for new deployment
-        console.log('Setting up new deployment for existing hardware:', camera.hardware.device_id)
+        setIncludeDeployment(true)
+      } else if (mode === 'edit' && camera.hardware) {
+        // No existing deployment for edit mode - set up defaults but allow user to choose
         setDeploymentData(prev => ({
           ...prev,
           hardware_id: camera.hardware.id,
-          location_name: `${camera.hardware.device_id} Location`, // Provide a default name
-          latitude: 36.427236, // Default to property center
+          location_name: `${camera.hardware.device_id} Location`,
+          latitude: 36.427236,
           longitude: -79.510881,
           season_year: new Date().getFullYear(),
           stand_id: undefined,
@@ -140,7 +140,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
           active: true,
           notes: ''
         }))
-        setIncludeDeployment(true)
+        setIncludeDeployment(false) // Let user decide whether to add deployment
       }
     }
   }, [camera, mode])
@@ -157,48 +157,48 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
       alert('Location name is required for deployment')
       return
     }
-    
-    // For edit-deployment mode, we always need deployment data
-    if (mode === 'edit-deployment' && !deploymentData.location_name.trim()) {
-      alert('Location name is required')
-      return
-    }
 
     // Clean up date fields and handle database constraints
     const cleanHardwareData = {
       ...hardwareData,
       device_id: hardwareData.device_id.trim(),
-      brand: hardwareData.brand.trim() || '', // Keep empty string for NOT NULL fields
-      model: hardwareData.model.trim() || '', // Keep empty string for NOT NULL fields  
+      brand: hardwareData.brand.trim() || '',
+      model: hardwareData.model.trim() || '',
       serial_number: hardwareData.serial_number.trim() || '',
-      purchase_date: hardwareData.purchase_date.trim() || null, // Use null for date fields
+      purchase_date: hardwareData.purchase_date.trim() || null,
       fw_version: hardwareData.fw_version.trim() || '',
       cl_version: hardwareData.cl_version.trim() || '',
-      notes: '' // Set to empty string instead of undefined
+      notes: hardwareData.notes?.trim() || ''
     }
 
     // Clean deployment data if provided
-    const cleanDeploymentData = deploymentData ? {
+    const cleanDeploymentData = includeDeployment ? {
       ...deploymentData,
       location_name: deploymentData.location_name.trim(),
       notes: deploymentData.notes?.trim() || ''
     } : undefined
 
-    await onSubmit(cleanHardwareData, (includeDeployment || mode === 'edit-deployment') ? cleanDeploymentData : undefined)
+    await onSubmit(cleanHardwareData, cleanDeploymentData)
   }
 
   const getTitle = () => {
     switch (mode) {
       case 'create': return 'Add New Camera'
-      case 'edit-hardware': return 'Edit Camera Hardware'
-      case 'edit-deployment': return 'Edit Camera Deployment'
+      case 'edit': return 'Edit Camera'
       default: return 'Camera Form'
     }
   }
 
+  const getSubmitButtonText = () => {
+    if (mode === 'create') {
+      return includeDeployment ? 'Create Camera & Deploy' : 'Create Camera'
+    }
+    return 'Save Changes'
+  }
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="bg-olive-green text-white px-6 py-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -347,6 +347,20 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
               </div>
             </div>
 
+            {/* Hardware Notes */}
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Hardware Notes
+              </label>
+              <textarea
+                value={hardwareData.notes}
+                onChange={(e) => setHardwareData({ ...hardwareData, notes: e.target.value })}
+                rows={2}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                placeholder="Purchase details, warranty info, maintenance history, etc..."
+              />
+            </div>
+
             {/* Hardware Active Status */}
             <div className="mt-4 flex items-center">
               <input
@@ -363,8 +377,13 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
           </div>
 
           {/* Deployment Section */}
-          {(mode === 'create' || mode === 'edit-deployment') && (
-            <>
+          <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                <MapPin size={18} />
+                Camera Location & Deployment
+              </h3>
+              
               {mode === 'create' && (
                 <div className="flex items-center">
                   <input
@@ -379,184 +398,194 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                   </label>
                 </div>
               )}
-
-              {(includeDeployment || mode === 'edit-deployment') && (
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-                    <MapPin size={18} />
-                    {mode === 'edit-deployment' ? 'Edit Camera Location & Settings' : 'Deployment Details'}
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Location Name */}
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Location Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={deploymentData.location_name}
-                        onChange={(e) => setDeploymentData({ ...deploymentData, location_name: e.target.value })}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-                        placeholder="e.g., North Creek Trail, Oak Tree Stand, Food Plot #3"
-                        required={includeDeployment}
-                      />
-                    </div>
-
-                    {/* Coordinates */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Latitude *
-                      </label>
-                      <input
-                        type="number"
-                        step="any"
-                        value={deploymentData.latitude}
-                        onChange={(e) => setDeploymentData({ ...deploymentData, latitude: parseFloat(e.target.value) || 0 })}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-                        placeholder="36.427236"
-                        required={includeDeployment}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Longitude *
-                      </label>
-                      <input
-                        type="number"
-                        step="any"
-                        value={deploymentData.longitude}
-                        onChange={(e) => setDeploymentData({ ...deploymentData, longitude: parseFloat(e.target.value) || 0 })}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-                        placeholder="-79.510881"
-                        required={includeDeployment}
-                      />
-                    </div>
-
-                    {/* Use Current Location Button */}
-                    <div className="md:col-span-2">
-                      <button
-                        type="button"
-                        onClick={getCurrentLocation}
-                        disabled={gettingLocation}
-                        className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                      >
-                        {gettingLocation ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
-                        ) : (
-                          <MapPin size={16} />
-                        )}
-                        {gettingLocation ? 'Getting location...' : 'Use Current Location'}
-                      </button>
-                    </div>
-
-                    {/* Season Year */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Season Year
-                      </label>
-                      <input
-                        type="number"
-                        value={deploymentData.season_year}
-                        onChange={(e) => setDeploymentData({ ...deploymentData, season_year: parseInt(e.target.value) || new Date().getFullYear() })}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-                        min="2020"
-                        max="2030"
-                      />
-                    </div>
-
-                    {/* Stand Association */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Associated Stand
-                      </label>
-                      <select
-                        value={deploymentData.stand_id || ''}
-                        onChange={(e) => setDeploymentData({ ...deploymentData, stand_id: e.target.value || undefined })}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-                      >
-                        <option value="">No associated stand</option>
-                        {stands?.map((stand) => (
-                          <option key={stand.id} value={stand.id}>
-                            {stand.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Facing Direction */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Facing Direction
-                      </label>
-                      <select
-                        value={deploymentData.facing_direction || ''}
-                        onChange={(e) => setDeploymentData({ ...deploymentData, facing_direction: e.target.value as any || undefined })}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-                      >
-                        <option value="">Not specified</option>
-                        <option value="N">North</option>
-                        <option value="NE">Northeast</option>
-                        <option value="E">East</option>
-                        <option value="SE">Southeast</option>
-                        <option value="S">South</option>
-                        <option value="SW">Southwest</option>
-                        <option value="W">West</option>
-                        <option value="NW">Northwest</option>
-                      </select>
-                    </div>
-
-                    {/* Solar Panel */}
-                    <div className="md:col-span-2">
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          id="solar"
-                          checked={deploymentData.has_solar_panel}
-                          onChange={(e) => setDeploymentData({ ...deploymentData, has_solar_panel: e.target.checked })}
-                          className="h-4 w-4 text-olive-green focus:ring-olive-green border-gray-300 rounded"
-                        />
-                        <label htmlFor="solar" className="ml-2 block text-sm text-gray-700">
-                          Has solar panel (affects battery alerts)
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* Active Status */}
-                    <div className="md:col-span-2">
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          id="deploymentActive"
-                          checked={deploymentData.active}
-                          onChange={(e) => setDeploymentData({ ...deploymentData, active: e.target.checked })}
-                          className="h-4 w-4 text-olive-green focus:ring-olive-green border-gray-300 rounded"
-                        />
-                        <label htmlFor="deploymentActive" className="ml-2 block text-sm text-gray-700">
-                          Active deployment (camera is currently at this location)
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Deployment Notes */}
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Notes
-                    </label>
-                    <textarea
-                      value={deploymentData.notes}
-                      onChange={(e) => setDeploymentData({ ...deploymentData, notes: e.target.value })}
-                      rows={3}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-                      placeholder="Camera location details, access notes, setup specifics, maintenance reminders, etc..."
-                    />
-                    <p className="text-xs text-gray-500 mt-1">These notes will appear on the camera card</p>
-                  </div>
+              
+              {mode === 'edit' && !camera?.deployment && (
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="includeDeployment"
+                    checked={includeDeployment}
+                    onChange={(e) => setIncludeDeployment(e.target.checked)}
+                    className="h-4 w-4 text-olive-green focus:ring-olive-green border-gray-300 rounded"
+                  />
+                  <label htmlFor="includeDeployment" className="ml-2 block text-sm text-gray-700">
+                    Add deployment information
+                  </label>
                 </div>
               )}
-            </>
-          )}
+            </div>
+            
+            {includeDeployment && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Location Name */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Location Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={deploymentData.location_name}
+                      onChange={(e) => setDeploymentData({ ...deploymentData, location_name: e.target.value })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                      placeholder="e.g., North Creek Trail, Oak Tree Stand, Food Plot #3"
+                      required={includeDeployment}
+                    />
+                  </div>
+
+                  {/* Coordinates */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Latitude *
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={deploymentData.latitude}
+                      onChange={(e) => setDeploymentData({ ...deploymentData, latitude: parseFloat(e.target.value) || 0 })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                      placeholder="36.427236"
+                      required={includeDeployment}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Longitude *
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={deploymentData.longitude}
+                      onChange={(e) => setDeploymentData({ ...deploymentData, longitude: parseFloat(e.target.value) || 0 })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                      placeholder="-79.510881"
+                      required={includeDeployment}
+                    />
+                  </div>
+
+                  {/* Use Current Location Button */}
+                  <div className="md:col-span-2">
+                    <button
+                      type="button"
+                      onClick={getCurrentLocation}
+                      disabled={gettingLocation}
+                      className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    >
+                      {gettingLocation ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                      ) : (
+                        <MapPin size={16} />
+                      )}
+                      {gettingLocation ? 'Getting location...' : 'Use Current Location'}
+                    </button>
+                  </div>
+
+                  {/* Season Year */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Season Year
+                    </label>
+                    <input
+                      type="number"
+                      value={deploymentData.season_year}
+                      onChange={(e) => setDeploymentData({ ...deploymentData, season_year: parseInt(e.target.value) || new Date().getFullYear() })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                      min="2020"
+                      max="2030"
+                    />
+                  </div>
+
+                  {/* Stand Association */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Associated Stand
+                    </label>
+                    <select
+                      value={deploymentData.stand_id || ''}
+                      onChange={(e) => setDeploymentData({ ...deploymentData, stand_id: e.target.value || undefined })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                    >
+                      <option value="">No associated stand</option>
+                      {stands?.map((stand) => (
+                        <option key={stand.id} value={stand.id}>
+                          {stand.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Facing Direction */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Facing Direction
+                    </label>
+                    <select
+                      value={deploymentData.facing_direction || ''}
+                      onChange={(e) => setDeploymentData({ ...deploymentData, facing_direction: e.target.value as any || undefined })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                    >
+                      <option value="">Not specified</option>
+                      <option value="N">North</option>
+                      <option value="NE">Northeast</option>
+                      <option value="E">East</option>
+                      <option value="SE">Southeast</option>
+                      <option value="S">South</option>
+                      <option value="SW">Southwest</option>
+                      <option value="W">West</option>
+                      <option value="NW">Northwest</option>
+                    </select>
+                  </div>
+
+                  {/* Solar Panel */}
+                  <div className="md:col-span-2">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="solar"
+                        checked={deploymentData.has_solar_panel}
+                        onChange={(e) => setDeploymentData({ ...deploymentData, has_solar_panel: e.target.checked })}
+                        className="h-4 w-4 text-olive-green focus:ring-olive-green border-gray-300 rounded"
+                      />
+                      <label htmlFor="solar" className="ml-2 block text-sm text-gray-700">
+                        Has solar panel (affects battery alerts)
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Active Status */}
+                  <div className="md:col-span-2">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="deploymentActive"
+                        checked={deploymentData.active}
+                        onChange={(e) => setDeploymentData({ ...deploymentData, active: e.target.checked })}
+                        className="h-4 w-4 text-olive-green focus:ring-olive-green border-gray-300 rounded"
+                      />
+                      <label htmlFor="deploymentActive" className="ml-2 block text-sm text-gray-700">
+                        Active deployment (camera is currently at this location)
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Deployment Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Location Notes
+                  </label>
+                  <textarea
+                    value={deploymentData.notes}
+                    onChange={(e) => setDeploymentData({ ...deploymentData, notes: e.target.value })}
+                    rows={3}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                    placeholder="Camera location details, access notes, setup specifics, maintenance reminders, etc..."
+                  />
+                  <p className="text-xs text-gray-500 mt-1">These notes will appear on the camera card</p>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Actions */}
           <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
@@ -569,7 +598,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
             </button>
             <button
               type="submit"
-              disabled={isLoading || !hardwareData.device_id.trim() || ((includeDeployment || mode === 'edit-deployment') && !deploymentData.location_name.trim())}
+              disabled={isLoading || !hardwareData.device_id.trim() || (includeDeployment && !deploymentData.location_name.trim())}
               className="bg-olive-green text-white px-6 py-2 rounded-md hover:bg-pine-needle transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               {isLoading ? (
@@ -577,9 +606,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
               ) : (
                 <Save size={16} />
               )}
-              {mode === 'create' ? 'Create Camera' : 
-               mode === 'edit-deployment' ? 'Save Location' : 
-               'Save Changes'}
+              {getSubmitButtonText()}
             </button>
           </div>
         </form>
