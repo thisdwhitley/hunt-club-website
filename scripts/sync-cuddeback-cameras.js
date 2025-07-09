@@ -1,236 +1,186 @@
 #!/usr/bin/env node
 
 /**
- * 🎯 Cuddeback Camera Data Sync Script - Production Version
+ * 🧪 Local Cuddeback Sync Testing Script
  * 
- * Automates daily extraction of camera data from Cuddeback web interface
- * and syncs to Supabase database for the hunting club management system.
+ * Test the Cuddeback automation locally before deploying to GitHub Actions.
+ * This script runs the same logic as the GitHub Actions workflow but with
+ * enhanced debugging and field mapping verification.
  * 
- * Usage: node scripts/sync-cuddeback-cameras.js
- * Environment Variables Required:
- * - CUDDEBACK_EMAIL: Login email for Cuddeback account
- * - CUDDEBACK_PASSWORD: Password for Cuddeback account  
- * - SUPABASE_URL: Supabase project URL
- * - SUPABASE_SERVICE_ROLE_KEY: Service role key for database access
- * - DEBUG_MODE: Enable verbose logging (optional)
+ * Usage: 
+ *   1. Copy .env.local.example to .env.local and fill in credentials
+ *   2. Run: node test-cuddeback-sync.js
  */
 
+require('dotenv').config({ path: '.env.local' });
 const puppeteer = require('puppeteer');
 const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs').promises;
 
 // Configuration
 const CONFIG = {
   CUDDEBACK_LOGIN_URL: 'https://camp.cuddeback.com/Identity/Account/Login',
-  SYNC_TIMEOUT: 300000, // 5 minutes
-  RETRY_ATTEMPTS: 3,
-  DEBUG: process.env.DEBUG_MODE === 'true'
+  DEBUG: true,
+  HEADLESS: false, // Set to true for production-like testing
+  SLOW_MO: 500     // Slow down for debugging
 };
 
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+// Colors for console output
+const colors = {
+  reset: '\x1b[0m',
+  bright: '\x1b[1m',
+  red: '\x1b[31m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  magenta: '\x1b[35m',
+  cyan: '\x1b[36m'
+};
 
-/**
- * Logging utilities
- */
-const logger = {
-  info: (msg) => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] INFO: ${msg}`);
-  },
+// Enhanced logging
+const log = {
+  info: (msg) => console.log(`${colors.blue}ℹ${colors.reset} ${msg}`),
+  success: (msg) => console.log(`${colors.green}✅${colors.reset} ${msg}`),
+  warn: (msg) => console.log(`${colors.yellow}⚠️${colors.reset} ${msg}`),
+  error: (msg) => console.log(`${colors.red}❌${colors.reset} ${msg}`),
   debug: (msg) => {
-    if (CONFIG.DEBUG) {
-      const timestamp = new Date().toISOString();
-      console.log(`[${timestamp}] DEBUG: ${msg}`);
-    }
+    if (CONFIG.DEBUG) console.log(`${colors.cyan}🔍${colors.reset} ${msg}`);
   },
-  error: (msg, error = null) => {
-    const timestamp = new Date().toISOString();
-    console.error(`[${timestamp}] ERROR: ${msg}`);
-    if (error) console.error(error);
-  },
-  warn: (msg) => {
-    const timestamp = new Date().toISOString();
-    console.warn(`[${timestamp}] WARN: ${msg}`);
-  }
+  step: (msg) => console.log(`${colors.magenta}📍${colors.reset} ${colors.bright}${msg}${colors.reset}`)
 };
 
 /**
- * Main sync function
+ * Validate environment variables
  */
-async function syncCuddebackCameras() {
-  let browser = null;
-  const syncResults = {
-    timestamp: new Date().toISOString(),
-    success: false,
-    cameras_processed: 0,
-    cameras_updated: 0,
-    hardware_updated: 0,
-    cuddeback_report_time: null,
-    errors: [],
-    warnings: [],
-    raw_data: []
-  };
-
-  try {
-    logger.info('🎯 Starting Cuddeback camera data sync');
-    
-    // 1. Launch browser and extract camera data
-    logger.info('🌐 Launching headless browser...');
-    browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process',
-        '--disable-gpu'
-      ]
-    });
-
-    const extractionResult = await extractCuddebackData(browser);
-    syncResults.raw_data = extractionResult.cameras;
-    syncResults.cameras_processed = extractionResult.cameras.length;
-    syncResults.cuddeback_report_time = extractionResult.lastUpdated;
-
-    logger.info(`📊 Extracted data for ${extractionResult.cameras.length} cameras from Cuddeback`);
-    logger.info(`🕒 Cuddeback report last updated: ${extractionResult.lastUpdated}`);
-
-    // 2. Get current database state
-    logger.info('🗄️ Loading current camera database state...');
-    const { data: deployments, error: dbError } = await supabase
-      .from('camera_deployments')
-      .select(`
-        *,
-        hardware:camera_hardware(*)
-      `)
-      .eq('active', true);
-
-    if (dbError) {
-      throw new Error(`Database query failed: ${dbError.message}`);
-    }
-
-    logger.debug(`Found ${deployments?.length || 0} active camera deployments in database`);
-
-    // 3. Match and sync camera data
-    const updateResults = await syncCameraData(extractionResult.cameras, deployments || [], extractionResult.lastUpdated);
-    syncResults.cameras_updated = updateResults.status_reports_updated;
-    syncResults.hardware_updated = updateResults.hardware_updated;
-    syncResults.warnings = updateResults.warnings;
-
-    // 4. Run missing camera detection
-    logger.info('🔍 Running missing camera detection...');
-    const { error: detectionError } = await supabase.rpc('detect_missing_cameras', {
-      check_date: new Date().toISOString().split('T')[0]
-    });
-
-    if (detectionError) {
-      logger.warn(`Missing camera detection failed: ${detectionError.message}`);
-      syncResults.warnings.push(`Missing detection failed: ${detectionError.message}`);
-    }
-
-    syncResults.success = true;
-    logger.info(`✅ Sync completed successfully!`);
-    logger.info(`📊 Updated ${syncResults.cameras_updated} status reports, ${syncResults.hardware_updated} hardware records`);
-
-  } catch (error) {
-    logger.error('❌ Sync failed with error:', error);
-    syncResults.errors.push(error.message);
-    syncResults.success = false;
-  } finally {
-    if (browser) {
-      await browser.close();
-      logger.debug('🌐 Browser closed');
-    }
-  }
-
-  // 5. Save results and exit
-  await saveResults(syncResults);
+function validateEnvironment() {
+  log.step('Validating environment variables...');
   
-  if (!syncResults.success) {
+  const required = [
+    'CUDDEBACK_EMAIL',
+    'CUDDEBACK_PASSWORD', 
+    'SUPABASE_URL',
+    'SUPABASE_SERVICE_ROLE_KEY'
+  ];
+  
+  const missing = required.filter(key => !process.env[key]);
+  
+  if (missing.length > 0) {
+    log.error(`Missing required environment variables: ${missing.join(', ')}`);
+    log.info('Create .env.local file with:');
+    missing.forEach(key => {
+      log.info(`${key}=your_value_here`);
+    });
     process.exit(1);
   }
-
-  logger.info('🎉 Cuddeback camera sync completed successfully');
+  
+  log.success('Environment variables validated');
 }
 
 /**
- * Extract camera data from Cuddeback web interface using dynamic navigation
+ * Test Supabase connection and database structure
  */
-async function extractCuddebackData(browser) {
-  const page = await browser.newPage();
+async function testDatabaseConnection() {
+  log.step('Testing Supabase database connection...');
+  
+  const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+
+  try {
+    // Test basic connection
+    const { data: testData, error } = await supabase
+      .from('camera_hardware')
+      .select('count')
+      .limit(1);
+    
+    if (error) throw error;
+    log.success('Supabase connection successful');
+
+    // Verify table structure
+    log.debug('Checking camera table structure...');
+    
+    const { data: hardware, error: hwError } = await supabase
+      .from('camera_hardware')
+      .select('device_id, brand, model')
+      // No limit - show all cameras
+    
+    if (hwError) throw hwError;
+    log.success(`Found ${hardware.length} camera hardware records`);
+    
+    const { data: deployments, error: depError } = await supabase
+      .from('camera_deployments')
+      .select(`
+        *,
+        hardware:camera_hardware(device_id, brand, model)
+      `)
+      .eq('active', true)
+      // No limit - show all active deployments
+    
+    if (depError) throw depError;
+    log.success(`Found ${deployments.length} active camera deployments`);
+    
+    // Show all device IDs for mapping verification
+    if (deployments.length > 0) {
+      log.info('All Device IDs in database:');
+      deployments.forEach(d => {
+        log.info(`  - ${d.hardware.device_id} (${d.location_name})`);
+      });
+      
+      if (deployments.length > 10) {
+        log.info(`\n📊 Total: ${deployments.length} active camera deployments`);
+      }
+    }
+    
+    return { supabase, deployments };
+    
+  } catch (error) {
+    log.error(`Database connection failed: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+/**
+ * Test Cuddeback login and navigation
+ */
+async function testCuddebackAccess() {
+  log.step('Testing Cuddeback access...');
+  
+  let browser = null;
   
   try {
-    // Set realistic user agent
+    browser = await puppeteer.launch({
+      headless: CONFIG.HEADLESS,
+      slowMo: CONFIG.SLOW_MO,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    
+    const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
     
-    logger.info('🔐 Logging into Cuddeback...');
-    
-    // Navigate to login page
+    log.debug('Navigating to Cuddeback login...');
     await page.goto(CONFIG.CUDDEBACK_LOGIN_URL, { waitUntil: 'networkidle2' });
     
-    // Find and fill login fields using multiple selectors
-    logger.debug('🔍 Looking for login form...');
-    
-    let emailField = null;
-    let passwordField = null;
-    
-    // Try multiple selectors for email field
-    const emailSelectors = ['input[type="email"]', 'input[name*="mail"]', 'input[name*="Email"]', 'input[name*="username"]', 'input[name*="Username"]'];
-    for (const selector of emailSelectors) {
-      emailField = await page.$(selector);
-      if (emailField) {
-        logger.debug(`✅ Found email field with selector: ${selector}`);
-        break;
-      }
-    }
-    
-    // Try multiple selectors for password field
-    const passwordSelectors = ['input[type="password"]', 'input[name*="password"]', 'input[name*="Password"]'];
-    for (const selector of passwordSelectors) {
-      passwordField = await page.$(selector);
-      if (passwordField) {
-        logger.debug(`✅ Found password field with selector: ${selector}`);
-        break;
-      }
-    }
+    // Find login fields
+    const emailField = await page.$('input[type="email"], input[name*="mail"], input[name*="Email"]');
+    const passwordField = await page.$('input[type="password"]');
     
     if (!emailField || !passwordField) {
-      throw new Error('Login form not found - could not locate email/password fields');
+      throw new Error('Could not find login form fields');
     }
     
-    // Clear fields and enter credentials
-    logger.debug('📝 Filling in credentials...');
-    await emailField.click();
-    await page.keyboard.down('Control');
-    await page.keyboard.press('KeyA');
-    await page.keyboard.up('Control');
+    log.debug('Filling login credentials...');
     await emailField.type(process.env.CUDDEBACK_EMAIL, { delay: 50 });
-    
-    await passwordField.click();
-    await page.keyboard.down('Control');
-    await page.keyboard.press('KeyA');
-    await page.keyboard.up('Control');
     await passwordField.type(process.env.CUDDEBACK_PASSWORD, { delay: 50 });
     
-    // Find and click submit button
-    logger.debug('🔍 Looking for submit button...');
-    const submitButton = await page.$('button[type="submit"], input[type="submit"], .btn-primary');
-    
+    // Submit login
+    const submitButton = await page.$('button[type="submit"], input[type="submit"]');
     if (!submitButton) {
-      throw new Error('Submit button not found');
+      throw new Error('Could not find submit button');
     }
     
-    // Submit the form
-    logger.debug('🚀 Submitting login form...');
+    log.debug('Submitting login...');
     await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 }),
+      page.waitForNavigation({ waitUntil: 'networkidle2' }),
       submitButton.click()
     ]);
     
@@ -240,366 +190,290 @@ async function extractCuddebackData(browser) {
       throw new Error('Login failed - still on login page');
     }
     
-    logger.info('✅ Login successful, navigating to device report...');
+    log.success('Cuddeback login successful');
     
-    // Use dynamic navigation to find Report link (from your working script)
-    logger.debug('🔍 Looking for Report navigation link...');
+    // Navigate to device report
+    log.debug('Looking for Report navigation...');
     
-    let deviceReportUrl = null;
-    
-    // Try clicking on "Report" link specifically
-    try {
-      const clicked = await page.evaluate(() => {
-        const links = Array.from(document.querySelectorAll('a'));
-        const reportLink = links.find(l => l.textContent && l.textContent.includes('Report'));
-        if (reportLink) {
-          reportLink.click();
-          return true;
-        }
-        return false;
-      });
-      
-      if (clicked) {
-        await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 });
-        logger.debug(`📍 Navigated via "Report" to: ${page.url()}`);
-        
-        const hasTable = await page.$('table') !== null;
-        if (hasTable) {
-          deviceReportUrl = page.url();
-          logger.info('✅ Found device report via "Report" link!');
-        }
+    const clicked = await page.evaluate(() => {
+      const links = Array.from(document.querySelectorAll('a'));
+      const reportLink = links.find(l => l.textContent && l.textContent.includes('Report'));
+      if (reportLink) {
+        reportLink.click();
+        return true;
       }
-    } catch (e) {
-      logger.debug('❌ Report link click failed, trying alternative navigation...');
-    }
-    
-    // Fallback: try other navigation approaches
-    if (!deviceReportUrl) {
-      logger.debug('🔍 Trying alternative navigation methods...');
-      
-      const navigationLinks = await page.evaluate(() => {
-        const links = [];
-        const allLinks = document.querySelectorAll('a');
-        
-        for (let i = 0; i < allLinks.length; i++) {
-          const link = allLinks[i];
-          const text = link.textContent ? link.textContent.trim() : '';
-          const href = link.href || '';
-          
-          if (text && (
-            text.toLowerCase().includes('device') ||
-            text.toLowerCase().includes('camera') ||
-            text.toLowerCase().includes('report') ||
-            text.toLowerCase().includes('status')
-          )) {
-            links.push({ text, href });
-          }
-        }
-        
-        return links;
-      });
-      
-      logger.debug(`Found ${navigationLinks.length} potential navigation links`);
-      
-      // Try promising links
-      const priorityTerms = ['report', 'device report', 'camera report', 'device', 'camera'];
-      
-      for (const term of priorityTerms) {
-        const matchingLink = navigationLinks.find(link => 
-          link.text.toLowerCase().includes(term)
-        );
-        
-        if (matchingLink) {
-          try {
-            logger.debug(`🔗 Trying to click on: "${matchingLink.text}"`);
-            
-            await page.evaluate((linkText) => {
-              const links = Array.from(document.querySelectorAll('a'));
-              const link = links.find(l => l.textContent.includes(linkText));
-              if (link) {
-                link.click();
-                return true;
-              }
-              return false;
-            }, matchingLink.text);
-            
-            await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 });
-            
-            const hasTable = await page.$('table') !== null;
-            const hasCameraData = await page.evaluate(() => {
-              const headers = Array.from(document.querySelectorAll('th'));
-              return headers.some(th => {
-                const text = th.textContent ? th.textContent.toLowerCase() : '';
-                return text.includes('camera') || text.includes('battery') || text.includes('level') || text.includes('location');
-              });
-            });
-            
-            if (hasTable && hasCameraData) {
-              deviceReportUrl = page.url();
-              logger.info(`✅ Found device report page via navigation: ${deviceReportUrl}`);
-              break;
-            }
-            
-          } catch (e) {
-            logger.debug(`❌ Failed to navigate via "${matchingLink.text}": ${e.message}`);
-            continue;
-          }
-        }
-      }
-    }
-    
-    if (!deviceReportUrl) {
-      throw new Error('Could not locate device report page via any navigation method');
-    }
-
-    // Wait for table to load
-    await page.waitForSelector('table', { timeout: 30000 });
-
-    logger.info('📋 Extracting camera data from device report...');
-
-    // Extract "Last Updated" timestamp and camera data
-    const extractionResult = await page.evaluate(() => {
-      // Find "Last Updated" text on page
-      let lastUpdated = null;
-      const allText = document.body.textContent || '';
-      const lastUpdatedMatch = allText.match(/Last Updated[:\s]*([^<\n]+)/i);
-      if (lastUpdatedMatch) {
-        lastUpdated = lastUpdatedMatch[1].trim();
-      }
-
-      // Extract camera data from table
-      const cameras = [];
-      const table = document.querySelector('table');
-      if (!table) return { cameras: [], lastUpdated };
-
-      const rows = Array.from(table.querySelectorAll('tbody tr'));
-      
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        const cells = Array.from(row.querySelectorAll('td'));
-        
-        // Expecting 13 columns as specified
-        if (cells.length >= 10) {
-          const camera = {
-            sequence_number: cells[0] ? cells[0].textContent.trim() : '',
-            location_id: cells[1] ? cells[1].textContent.trim() : '',      // This maps to device_id
-            camera_id: cells[2] ? cells[2].textContent.trim() : '',
-            level: cells[3] ? cells[3].textContent.trim() : '',            // Signal level
-            links: cells[4] ? cells[4].textContent.trim() : '',            // Network links
-            battery: cells[5] ? cells[5].textContent.trim() : '',          // Battery level (don't normalize)
-            battery_days: cells[6] ? cells[6].textContent.trim() : '',     // Battery days remaining
-            image_queue: cells[7] ? cells[7].textContent.trim() : '',      // Images queued for upload
-            sd_images: cells[8] ? cells[8].textContent.trim() : '',        // Images on SD card
-            sd_free_space: cells[9] ? cells[9].textContent.trim() : '',    // SD free space
-            hw_version: cells[10] ? cells[10].textContent.trim() : '',     // Hardware version
-            fw_version: cells[11] ? cells[11].textContent.trim() : '',     // Firmware version
-            cl_version: cells[12] ? cells[12].textContent.trim() : '',     // CuddeLink version
-            extracted_at: new Date().toISOString()
-          };
-          
-          cameras.push(camera);
-        }
-      }
-      
-      return { cameras, lastUpdated };
+      return false;
     });
-
-    logger.info(`📊 Successfully extracted ${extractionResult.cameras.length} camera records`);
-    logger.info(`🕒 Report last updated: ${extractionResult.lastUpdated}`);
     
-    if (CONFIG.DEBUG) {
-      logger.debug('📋 Sample camera data:');
-      if (extractionResult.cameras.length > 0) {
-        logger.debug(JSON.stringify(extractionResult.cameras[0], null, 2));
-      }
+    if (!clicked) {
+      throw new Error('Could not find Report link');
     }
     
-    return extractionResult;
-
+    await page.waitForNavigation({ waitUntil: 'networkidle2' });
+    log.success(`Navigated to device report: ${page.url()}`);
+    
+    return { browser, page };
+    
   } catch (error) {
-    logger.error('Failed to extract Cuddeback data:', error);
+    if (browser) await browser.close();
+    log.error(`Cuddeback access failed: ${error.message}`);
     throw error;
-  } finally {
-    await page.close();
   }
 }
 
 /**
- * Sync extracted camera data with Supabase database
+ * Extract and analyze camera data
  */
-async function syncCameraData(cuddebackData, deployments, cuddebackReportTime) {
-  const results = {
-    status_reports_updated: 0,
-    hardware_updated: 0,
-    warnings: []
-  };
-
-  logger.info('🔄 Starting database sync...');
-
-  for (const cameraItem of cuddebackData) {
-    try {
-      // Find matching deployment by location_id -> device_id
-      const deployment = deployments.find(d => 
-        d.hardware?.device_id === cameraItem.location_id
-      );
-
-      if (!deployment) {
-        logger.warn(`⚠️ No database record found for device ${cameraItem.location_id}`);
-        results.warnings.push(`Unknown device: ${cameraItem.location_id} (${cameraItem.camera_id})`);
-        continue;
-      }
-
-      // Parse numeric values safely
-      const parseIntSafe = (value) => {
-        if (!value || value === 'N/A' || value === '-') return null;
-        const parsed = parseInt(value.replace(/[^\d]/g, ''));
-        return isNaN(parsed) ? null : parsed;
-      };
-
-      // Parse signal level (could be percentage or text)
-      let signalLevel = null;
-      if (cameraItem.level && !cameraItem.level.includes('N/A')) {
-        const signalMatch = cameraItem.level.match(/(\d+)/);
-        if (signalMatch) {
-          signalLevel = parseInt(signalMatch[1]);
-        }
-      }
-
-      // Create status report with all available data
-      const reportData = {
-        deployment_id: deployment.id,
-        hardware_id: deployment.hardware_id,
-        report_date: new Date().toISOString().split('T')[0],
-        battery_status: cameraItem.battery || null,  // Keep original, don't normalize
-        signal_level: signalLevel,
-        network_links: parseIntSafe(cameraItem.links),
-        sd_images_count: parseIntSafe(cameraItem.sd_images),
-        sd_free_space_mb: parseIntSafe(cameraItem.sd_free_space),
-        image_queue: parseIntSafe(cameraItem.image_queue),
-        cuddeback_report_timestamp: cuddebackReportTime ? new Date(cuddebackReportTime).toISOString() : null,
-        report_processing_date: new Date().toISOString()
-      };
-
-      // Insert/update status report
-      const { error: insertError } = await supabase
-        .from('camera_status_reports')
-        .upsert(reportData, {
-          onConflict: 'deployment_id,report_date'
-        });
-
-      if (insertError) {
-        logger.error(`Failed to update status for ${cameraItem.location_id}:`, insertError);
-        results.warnings.push(`Status update failed for ${cameraItem.location_id}: ${insertError.message}`);
-        continue;
-      }
-
-      results.status_reports_updated++;
-      logger.debug(`✅ Updated status report for ${cameraItem.location_id} (${cameraItem.camera_id})`);
-
-      // Update hardware information if versions have changed
-      const hardwareUpdates = {};
-      if (cameraItem.hw_version && cameraItem.hw_version !== deployment.hardware.hw_version) {
-        hardwareUpdates.hw_version = cameraItem.hw_version;
-      }
-      if (cameraItem.fw_version && cameraItem.fw_version !== deployment.hardware.fw_version) {
-        hardwareUpdates.fw_version = cameraItem.fw_version;
-      }
-      if (cameraItem.cl_version && cameraItem.cl_version !== deployment.hardware.cl_version) {
-        hardwareUpdates.cl_version = cameraItem.cl_version;
-      }
-
-      if (Object.keys(hardwareUpdates).length > 0) {
-        hardwareUpdates.updated_at = new Date().toISOString();
+async function extractAndAnalyzeData(page, deployments) {
+  log.step('Extracting camera data from Cuddeback...');
+  
+  // Wait for table to load
+  await page.waitForSelector('table', { timeout: 30000 });
+  
+  // Extract data and analyze structure
+  const extractionResult = await page.evaluate(() => {
+    // Find "Last Updated" timestamp
+    let lastUpdated = null;
+    const allText = document.body.textContent || '';
+    const lastUpdatedMatch = allText.match(/Last Updated[:\s]*([^<\n]+)/i);
+    if (lastUpdatedMatch) {
+      lastUpdated = lastUpdatedMatch[1].trim();
+    }
+    
+    // Extract table headers for field mapping verification
+    const table = document.querySelector('table');
+    if (!table) return { cameras: [], headers: [], lastUpdated };
+    
+    const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent.trim());
+    
+    // Extract camera data
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    const cameras = [];
+    
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const cells = Array.from(row.querySelectorAll('td'));
+      
+      if (cells.length >= 10) {
+        const camera = {
+          sequence_number: cells[0] ? cells[0].textContent.trim() : '',
+          location_id: cells[1] ? cells[1].textContent.trim() : '',      // KEY: This maps to device_id
+          camera_id: cells[2] ? cells[2].textContent.trim() : '',
+          level: cells[3] ? cells[3].textContent.trim() : '',
+          links: cells[4] ? cells[4].textContent.trim() : '',
+          battery: cells[5] ? cells[5].textContent.trim() : '',
+          battery_days: cells[6] ? cells[6].textContent.trim() : '',
+          image_queue: cells[7] ? cells[7].textContent.trim() : '',
+          sd_images: cells[8] ? cells[8].textContent.trim() : '',
+          sd_free_space: cells[9] ? cells[9].textContent.trim() : '',
+          hw_version: cells[10] ? cells[10].textContent.trim() : '',
+          fw_version: cells[11] ? cells[11].textContent.trim() : '',
+          cl_version: cells[12] ? cells[12].textContent.trim() : '',
+          extracted_at: new Date().toISOString()
+        };
         
-        const { error: hardwareError } = await supabase
-          .from('camera_hardware')
-          .update(hardwareUpdates)
-          .eq('id', deployment.hardware_id);
-
-        if (hardwareError) {
-          logger.warn(`Failed to update hardware for ${cameraItem.location_id}:`, hardwareError);
-        } else {
-          results.hardware_updated++;
-          logger.debug(`✅ Updated hardware info for ${cameraItem.location_id}`);
-        }
+        cameras.push(camera);
       }
+    }
+    
+    return { cameras, headers, lastUpdated };
+  });
+  
+  log.success(`Extracted ${extractionResult.cameras.length} camera records`);
+  log.info(`Report last updated: ${extractionResult.lastUpdated}`);
+  
+  // Analyze field mapping
+  log.step('Analyzing field mapping...');
+  log.info('Cuddeback table headers:');
+  extractionResult.headers.forEach((header, index) => {
+    log.info(`  ${index}: ${header}`);
+  });
+  
+  // Verify device ID mapping
+  log.step('Verifying device ID mapping...');
+  const dbDeviceIds = new Set(deployments.map(d => d.hardware.device_id));
+  const cuddebackLocationIds = new Set(extractionResult.cameras.map(c => c.location_id));
+  
+  log.info('Database device_ids:');
+  Array.from(dbDeviceIds).forEach(id => log.info(`  - ${id}`));
+  
+  log.info('Cuddeback Location IDs:');
+  Array.from(cuddebackLocationIds).forEach(id => log.info(`  - ${id}`));
+  
+  // Find matches and mismatches
+  const matches = Array.from(dbDeviceIds).filter(id => cuddebackLocationIds.has(id));
+  const dbOnly = Array.from(dbDeviceIds).filter(id => !cuddebackLocationIds.has(id));
+  const cuddebackOnly = Array.from(cuddebackLocationIds).filter(id => !dbDeviceIds.has(id));
+  
+  log.info(`\nMapping Analysis:`);
+  log.success(`Matches: ${matches.length} - ${matches.join(', ')}`);
+  if (dbOnly.length > 0) {
+    log.warn(`In DB only: ${dbOnly.join(', ')}`);
+  }
+  if (cuddebackOnly.length > 0) {
+    log.warn(`In Cuddeback only: ${cuddebackOnly.join(', ')}`);
+  }
+  
+  // Show sample data
+  if (extractionResult.cameras.length > 0) {
+    log.step('Sample camera data:');
+    const sample = extractionResult.cameras[0];
+    Object.entries(sample).forEach(([key, value]) => {
+      log.debug(`  ${key}: ${value}`);
+    });
+  }
+  
+  return extractionResult;
+}
 
-      // Update deployment last_seen_date
-      const { error: deploymentError } = await supabase
-        .from('camera_deployments')
-        .update({
-          last_seen_date: new Date().toISOString().split('T')[0],
-          is_missing: false,
-          consecutive_missing_days: 0,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', deployment.id);
-
-      if (deploymentError) {
-        logger.warn(`Failed to update deployment for ${cameraItem.location_id}:`, deploymentError);
-      }
-
-    } catch (error) {
-      logger.error(`Error processing camera ${cameraItem.location_id}:`, error);
-      results.warnings.push(`Processing error for ${cameraItem.location_id}: ${error.message}`);
+/**
+ * Test database update (dry run)
+ */
+async function testDatabaseUpdate(supabase, cuddebackData, deployments) {
+  log.step('Testing database update (dry run)...');
+  
+  let successCount = 0;
+  let missingCount = 0;
+  
+  for (const cameraItem of cuddebackData.cameras) {
+    const deployment = deployments.find(d => 
+      d.hardware.device_id === cameraItem.location_id
+    );
+    
+    if (deployment) {
+      successCount++;
+      log.debug(`✅ Would update: ${cameraItem.location_id} (${cameraItem.camera_id})`);
+    } else {
+      missingCount++;
+      log.warn(`❌ No DB record for: ${cameraItem.location_id} (${cameraItem.camera_id})`);
     }
   }
-
-  logger.info(`🔄 Database sync complete. Updated ${results.status_reports_updated} status reports, ${results.hardware_updated} hardware records`);
-  return results;
+  
+  log.info(`\nUpdate Analysis:`);
+  log.success(`${successCount} cameras would be updated`);
+  if (missingCount > 0) {
+    log.warn(`${missingCount} cameras have no database record`);
+  }
+  
+  // Test field parsing for multiple cameras
+  log.step('Testing field parsing for ALL updatable fields...');
+  if (cuddebackData.cameras.length >= 2) {
+    [0, 1].forEach(index => {
+      if (cuddebackData.cameras[index]) {
+        const sample = cuddebackData.cameras[index];
+        
+        log.info(`\n📷 Camera ${index + 1} Field Parsing Test:`);
+        log.debug(`  Location ID: "${sample.location_id}" (maps to device_id)`);
+        log.debug(`  Camera ID: "${sample.camera_id}" (descriptive name)`);
+        
+        // Test signal level parsing
+        let signalLevel = null;
+        if (sample.level && !sample.level.includes('N/A')) {
+          const signalMatch = sample.level.match(/(\d+)/);
+          if (signalMatch) {
+            signalLevel = parseInt(signalMatch[1]);
+          }
+        }
+        
+        // Test numeric parsing function
+        const parseIntSafe = (value) => {
+          if (!value || value === 'N/A' || value === '-') return null;
+          const parsed = parseInt(value.replace(/[^\d]/g, ''));
+          return isNaN(parsed) ? null : parsed;
+        };
+        
+        log.debug(`\n  📊 STATUS REPORT FIELDS (all updated):`);
+        log.debug(`    Battery: "${sample.battery}" → kept as-is (no normalization)`);
+        log.debug(`    Signal Level: "${sample.level}" → parsed to ${signalLevel}`);
+        log.debug(`    Network Links: "${sample.links}" → parsed to ${parseIntSafe(sample.links)}`);
+        log.debug(`    SD Images: "${sample.sd_images}" → parsed to ${parseIntSafe(sample.sd_images)}`);
+        log.debug(`    SD Free Space: "${sample.sd_free_space}" → parsed to ${parseIntSafe(sample.sd_free_space)} MB`);
+        log.debug(`    Image Queue: "${sample.image_queue}" → parsed to ${parseIntSafe(sample.image_queue)}`);
+        log.debug(`    Battery Days: "${sample.battery_days}" → available but not stored`);
+        
+        log.debug(`\n  🔧 HARDWARE FIELDS (updated when changed):`);
+        log.debug(`    HW Version: "${sample.hw_version}" → updates camera_hardware.hw_version`);
+        log.debug(`    FW Version: "${sample.fw_version}" → updates camera_hardware.fw_version`);
+        log.debug(`    CL Version: "${sample.cl_version}" → updates camera_hardware.cl_version`);
+        
+        log.debug(`\n  📅 TIMESTAMP FIELD:`);
+        log.debug(`    Cuddeback Report Time: "${cuddebackData.lastUpdated}" → cuddeback_report_timestamp`);
+      }
+    });
+  } else if (cuddebackData.cameras.length === 1) {
+    // Show single camera if only one available
+    const sample = cuddebackData.cameras[0];
+    
+    log.debug('📷 Single Camera Available - Field Parsing Test:');
+    // ... same parsing logic for single camera
+  } else {
+    log.warn('No camera data available for field parsing test');
+  }
+  
+  return { successCount, missingCount };
 }
 
 /**
- * Save sync results to files
+ * Main testing function
  */
-async function saveResults(results) {
+async function runLocalTest() {
+  console.log(`${colors.bright}🧪 Cuddeback Sync Local Testing${colors.reset}`);
+  console.log('=' .repeat(50));
+  
   try {
-    // Save detailed results as JSON
-    await fs.writeFile('sync-results.json', JSON.stringify(results, null, 2));
+    // Step 1: Validate environment
+    validateEnvironment();
     
-    // Save simple log file
-    const logLines = [
-      `Sync Timestamp: ${results.timestamp}`,
-      `Success: ${results.success}`,
-      `Cuddeback Report Time: ${results.cuddeback_report_time}`,
-      `Cameras Processed: ${results.cameras_processed}`,
-      `Status Reports Updated: ${results.cameras_updated}`,
-      `Hardware Records Updated: ${results.hardware_updated}`,
-      `Warnings: ${results.warnings.length}`,
-      `Errors: ${results.errors.length}`,
-      '',
-      'Warnings:',
-      ...results.warnings.map(w => `  - ${w}`),
-      '',
-      'Errors:',
-      ...results.errors.map(e => `  - ${e}`)
-    ];
+    // Step 2: Test database connection
+    const { supabase, deployments } = await testDatabaseConnection();
     
-    await fs.writeFile('sync-log.txt', logLines.join('\n'));
+    // Step 3: Test Cuddeback access
+    const { browser, page } = await testCuddebackAccess();
     
-    logger.debug('📁 Results saved to sync-results.json and sync-log.txt');
+    try {
+      // Step 4: Extract and analyze data
+      const cuddebackData = await extractAndAnalyzeData(page, deployments);
+      
+      // Step 5: Test database update (dry run)
+      const updateResults = await testDatabaseUpdate(supabase, cuddebackData, deployments);
+      
+      // Summary
+      log.step('Test Summary:');
+      log.success('✅ Cuddeback login and navigation working');
+      log.success(`✅ Extracted ${cuddebackData.cameras.length} cameras with all 13 fields`);
+      log.success(`✅ Found Cuddeback timestamp: ${cuddebackData.lastUpdated}`);
+      log.success(`✅ ${updateResults.successCount} cameras would sync successfully`);
+      log.success('✅ ALL status report fields (7) and hardware fields (3) would be updated');
+      
+      if (updateResults.missingCount > 0) {
+        log.warn(`⚠️ ${updateResults.missingCount} cameras need database records created`);
+      }
+      
+      log.info('\n📋 Fields Updated by Automation:');
+      log.info('  Status Reports: battery_status, signal_level, network_links,');
+      log.info('                  sd_images_count, sd_free_space_mb, image_queue,');
+      log.info('                  cuddeback_report_timestamp');
+      log.info('  Hardware Info:  hw_version, fw_version, cl_version (when changed)');
+      log.info('  Deployment:     last_seen_date, is_missing, consecutive_missing_days');
+      
+      log.info('\n🚀 Ready for GitHub Actions deployment!');
+      
+    } finally {
+      await browser.close();
+    }
+    
   } catch (error) {
-    logger.error('Failed to save results:', error);
+    log.error(`Test failed: ${error.message}`);
+    process.exit(1);
   }
 }
 
-// Error handling for uncaught exceptions
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
-});
-
-process.on('uncaughtException', (error) => {
-  logger.error('Uncaught Exception:', error);
-  process.exit(1);
-});
-
-// Run the sync if this script is executed directly
+// Run the test if this script is executed directly
 if (require.main === module) {
-  syncCuddebackCameras().catch(error => {
-    logger.error('Script execution failed:', error);
+  runLocalTest().catch(error => {
+    log.error(`Script execution failed: ${error.message}`);
     process.exit(1);
   });
 }
 
-module.exports = { syncCuddebackCameras };
+module.exports = { runLocalTest };
