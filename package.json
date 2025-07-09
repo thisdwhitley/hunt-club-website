@@ -7,11 +7,17 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+
     "_comment": "=== Secure Database Management ===",
     "db:sync": "npm run db:export && echo '✅ Schema synced! Manual type generation needed if schema changed.'",
     "db:export": "./scripts/db-export.sh",
     "db:commit": "git add supabase/ src/types/ docs/ && git commit -m 'db: schema update' && git push",
-    "db:test": "./scripts/db-test.sh"
+    "db:test": "./scripts/db-test.sh",
+
+    "_comment": "=== Cuddeback Report Sync ===",
+    "cuddeback:sync": "node scripts/sync-cuddeback-cameras.js",
+    "cuddeback:test": "DEBUG_MODE=true node scripts/sync-cuddeback-cameras.js",
+    "cuddeback:local": "node test-cuddeback-sync.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
@@ -42,6 +48,7 @@
     "supabase": "^2.30.4",
     "tailwindcss": "^4",
     "tsx": "^4.7.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "puppeteer": "^21.0.0"
   }
 }
