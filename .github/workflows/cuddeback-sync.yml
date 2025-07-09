@@ -67,13 +67,15 @@ jobs:
         with:
           script: |
             const title = '🚨 Cuddeback Sync Failed';
-            const body = `
-            **Failed Run:** [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            **Time:** ${{ steps.extract_data.outputs.sync_time || 'Unknown' }}
+            const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
+            const runNumber = '${{ github.run_number }}';
+            const syncTime = '${{ steps.extract_data.outputs.sync_time }}' || 'Unknown';
+            
+            const body = `**Failed Run:** [#${runNumber}](${runUrl})
+            **Time:** ${syncTime}
             **Error:** Check the action logs for details
             
-            This is an automated alert from the daily Cuddeback camera sync.
-            `;
+            This is an automated alert from the daily Cuddeback camera sync.`;
             
             github.rest.issues.create({
               owner: context.repo.owner,
