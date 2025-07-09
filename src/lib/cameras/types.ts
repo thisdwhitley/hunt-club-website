@@ -75,7 +75,7 @@ export interface CameraDeployment {
 
 /**
  * Daily camera status report with automatic alerts
- * Maps to: camera_status_reports table (14 fields)
+ * Maps to: camera_status_reports table (15 fields)
  */
 export interface CameraStatusReport {
   id: string;
@@ -91,6 +91,7 @@ export interface CameraStatusReport {
   needs_attention: boolean;
   alert_reason: string | null;
   report_processing_date: string;    // When we processed the report
+  cuddeback_report_timestamp: string | null;
   created_at: string;
 }
 

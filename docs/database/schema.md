@@ -31,17 +31,33 @@ Where cameras are currently placed with missing detection
   - consecutive_missing_days (integer)
 - created_at, updated_at
 
-### camera_status_reports (14 fields)
-Daily email report data with automatic alerts
+### camera_status_reports (15 fields) ⭐ UPDATED
+Daily camera status data from Cuddeback web scraping automation
 - id (uuid, PK)  
 - deployment_id (FK to camera_deployments)
 - hardware_id (FK to camera_hardware)
 - report_date (date)
-- battery_status, signal_level, network_links
-- sd_images_count, sd_free_space_mb, image_queue
-- needs_attention (boolean), alert_reason (text)
-- report_processing_date - When we processed the report
-- created_at
+- battery_status (varchar) - Original Cuddeback values (e.g., "Ext OK", "Low")
+- signal_level (integer) - Parsed from Cuddeback "Level" column  
+- network_links (integer) - CuddeLink network connections
+- sd_images_count (integer) - Images stored on SD card
+- sd_free_space_mb (integer) - Available SD card space
+- image_queue (integer) - Images waiting to upload
+- needs_attention (boolean) - Auto-generated alerts
+- alert_reason (text) - Detailed alert description
+- report_processing_date (timestamptz) - When we processed the report
+- cuddeback_report_timestamp (timestamptz) ⭐ NEW - When Cuddeback generated the report
+- created_at (timestamptz)
+
+**Data Source**: Automated web scraping from Cuddeback device report page
+**Update Frequency**: Daily at 6 AM EST via GitHub Actions
+**Field Mapping**: 13 columns from Cuddeback table → database fields
+**Key Features**: 
+- Original Cuddeback values preserved (no normalization)
+- Automatic alert generation via triggers
+- Missing camera detection integration
+- Complete historical tracking
+
 
 ### Key Relationships
 - camera_hardware → camera_deployments (one-to-many)

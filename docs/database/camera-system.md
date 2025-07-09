@@ -206,3 +206,122 @@ ORDER BY cd.season_year DESC, ch.device_id;
 - Backup table `trail_cameras_backup` can be dropped after 7 days
 - Old status reports archived after 2 years
 - Inactive deployments preserved for historical analysis
+
+# Camera System Detailed Documentation - UPDATED
+
+## Overview
+Three-table system designed for seasonal camera management with **automated web scraping** from Cuddeback.
+
+## Web Scraping Automation (Replaces Email Processing)
+
+### Daily Processing Workflow
+1. **GitHub Actions Trigger**: Runs daily at 6 AM EST automatically
+2. **Cuddeback Login**: Automated browser login to camp.cuddeback.com
+3. **Navigate to Report**: Dynamic navigation to device report page
+4. **Extract All Data**: Scrape all 13 columns from report table
+5. **Database Sync**: Update camera_status_reports with fresh data
+6. **Missing Detection**: Run detect_missing_cameras() function automatically
+7. **Alert Generation**: Automatic alerts via database triggers
+
+### Web Scraping vs Email Processing
+
+| Feature | Email Processing (OLD) | Web Scraping (NEW) |
+|---------|----------------------|-------------------|
+| **Data Source** | HTML emails | Direct Cuddeback access |
+| **Reliability** | Depends on email delivery | Direct API-like access |
+| **Timing** | Wait for email arrival | On-demand/scheduled |
+| **Data Completeness** | Limited by email format | All 13 fields available |
+| **Timestamp Accuracy** | Email send time | Cuddeback "Last Updated" |
+| **Debugging** | Complex email parsing | Clear web automation |
+| **Automation** | Manual email forwarding | Full GitHub Actions |
+
+### Field Mapping from Cuddeback
+
+| Cuddeback Column | Database Field | Notes |
+|------------------|----------------|--------|
+| # | sequence_number | Row number (not stored) |
+| Location ID | device_id | **KEY MAPPING** to camera_hardware |
+| Camera ID | notes field | Camera identifier/name |
+| Level | signal_level | Parsed to integer percentage |
+| Links | network_links | CuddeLink network connections |
+| Battery | battery_status | **Kept as original** (no normalization) |
+| Battery Days | not stored | Available but not currently used |
+| Image Queue | image_queue | Images waiting to upload |
+| SD Images | sd_images_count | Total images on SD card |
+| SD Free Space | sd_free_space_mb | Available storage |
+| HW Version | hw_version | Updates camera_hardware table |
+| FW Version | fw_version | Updates camera_hardware table |
+| CL Version | cl_version | Updates camera_hardware table |
+
+### Missing Camera Detection Logic
+
+**Trigger Logic**: Camera appeared in yesterday's web scraping but not in today's
+**Grace Period**: 1 day (no alert on first missing day)
+**Alert Threshold**: 2+ consecutive missing days
+**Reset**: Camera reappears → reset missing flags automatically
+
+### Investigation Workflow
+1. **Alert Generated**: "Camera missing from reports for X day(s)"
+2. **Check Physical**: Visit camera location
+3. **Common Issues**: Dead battery, SD card full, theft, damage, connectivity
+4. **Resolution**: Fix issue OR mark as deactivated if permanent
+
+## Automation Configuration
+
+### GitHub Actions Workflow
+- **Schedule**: Daily at 6 AM EST (11:00 AM UTC)
+- **Manual Trigger**: Available for testing and emergency runs
+- **Timeout**: 15 minutes maximum execution time
+- **Retry Logic**: 3 attempts on failure
+- **Monitoring**: Automatic GitHub issue creation on failures
+
+### Required Secrets
+- `CUDDEBACK_EMAIL`: Login email for Cuddeback account
+- `CUDDEBACK_PASSWORD`: Account password
+- `SUPABASE_URL`: Database connection URL
+- `SUPABASE_SERVICE_ROLE_KEY`: Database service role key
+
+### Local Testing
+- Use `test-cuddeback-sync.js` for local debugging
+- Verify field mapping before deploying
+- Test database connectivity and permissions
+- Validate device ID mapping accuracy
+
+## Alert Priority System (UPDATED)
+1. **Missing Cameras** (Critical) - No report received for 2+ days
+2. **Battery Low** (High) - Battery status shows "Low" or "Critical"  
+3. **Storage Full** (Medium) - SD card space < 500MB
+4. **Connectivity Issues** (Low) - Poor signal or network problems
+5. **Solar Panel Issues** (Medium) - Battery shows "OK" instead of "Ext OK"
+
+## Seasonal Workflow (No Changes)
+1. **Season End**: Deactivate deployments (active = false)
+2. **Camera Retrieval**: Update location notes with storage info
+3. **Season Start**: Create new deployments for camera moves
+4. **Historical Data**: Previous deployments preserved for analysis
+
+## Benefits of Web Scraping Approach
+
+### Reliability
+- Direct access to Cuddeback data
+- No dependency on email delivery
+- Handles session tokens automatically
+- Robust error handling and retries
+
+### Completeness
+- All 13 fields from Cuddeback report
+- Original data format preserved
+- Cuddeback's actual timestamp captured
+- Hardware version updates when changed
+
+### Automation
+- Fully automated daily sync
+- No manual intervention required
+- GitHub Actions monitoring and alerting
+- Local testing capability for debugging
+
+### Scalability
+- Can run multiple times daily if needed
+- Easy to adjust schedule or add manual triggers
+- Minimal infrastructure requirements (GitHub Actions)
+- Clear logging and monitoring

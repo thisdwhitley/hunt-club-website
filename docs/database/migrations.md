@@ -35,7 +35,62 @@
 
 ---
 
-### 2025-06-07: Camera Management System
+### 2025-07-09: Web Scraping Automation - Cuddeback Report Timestamp
+
+**Type**: Schema Modification  
+**Affected Tables**: camera_status_reports  
+**Breaking Changes**: No  
+**Rollback Available**: Yes (simple column drop)
+
+**Purpose**: Add field to store Cuddeback's "Last Updated" timestamp for web scraping automation. This replaces Phase 5 email parsing with direct web scraping from Cuddeback device reports.
+
+**Changes Made**:
+- **Added**: `cuddeback_report_timestamp` field to camera_status_reports (now 15 fields)
+- **Added**: Performance index for cuddeback timestamp queries
+- **Updated**: Documentation to reflect web scraping approach
+- **Replaced**: Phase 5 email parsing with GitHub Actions web scraping
+
+**Migration SQL**: 
+```sql
+-- Add field to store when Cuddeback generated the report
+ALTER TABLE camera_status_reports 
+ADD COLUMN cuddeback_report_timestamp timestamptz;
+
+-- Add index for performance
+CREATE INDEX idx_camera_status_reports_cuddeback_timestamp 
+ON camera_status_reports(cuddeback_report_timestamp DESC);
+
+-- Update table comment
+COMMENT ON TABLE camera_status_reports 
+IS 'Daily camera status reports (15 fields) - web scraped from Cuddeback';
+```
+
+**Verification Steps**:
+- [ ] New field exists in camera_status_reports table
+- [ ] Index created successfully
+- [ ] Field count updated to 15 in documentation
+- [ ] Local test script can populate the field
+- [ ] GitHub Actions workflow can access the field
+
+**Files Modified**:
+- supabase/schema.sql (export after migration)
+- docs/database/SCHEMA.md (field count and description updates)
+- docs/database/camera-system.md (Phase 5 replacement documentation)
+- docs/implementation/camera-system-implementation.md (updated roadmap)
+- src/lib/cameras/types.ts (TypeScript interface update)
+
+**Claude Context**: This migration enables web scraping automation to replace email parsing. Include when asking Claude about automated camera data sync, Cuddeback integration, or Phase 5 implementation.
+
+**Web Scraping Details**:
+- **Data Source**: Cuddeback device report page (13 columns)
+- **Automation**: GitHub Actions daily at 6 AM EST
+- **Mapping**: Location ID → camera_hardware.device_id
+- **Timestamp**: Captures Cuddeback's "Last Updated" time
+- **Benefits**: Real-time access, all fields, reliable automation
+
+---
+
+### 2025-07-07: Camera Management System
 
 **Type**: Schema Addition  
 **Affected Tables**: camera_hardware, camera_deployments, camera_status_reports  

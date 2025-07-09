@@ -22,13 +22,29 @@ camera_deployments (17 fields)
 ├── Solar panel configuration
 └── Missing camera detection fields
 
-camera_status_reports (14 fields)
-├── Daily email report data
+camera_status_reports (15 fields)
+├── Daily web scraping data (NOT email parsing)
 ├── Battery, signal, storage status
 ├── Automatic alert generation
 ├── Historical tracking
-└── Report presence tracking
+├── Cuddeback report timestamp
+└── All 13 Cuddeback data fields
 ```
+
+## Enhanced Schema for Web Scraping
+
+### NEW Field Added:
+
+**camera_status_reports table addition**:
+- `cuddeback_report_timestamp` (timestamptz) - When Cuddeback generated the report (from "Last Updated" on their page)
+
+### Web Scraping Logic:
+1. **Daily Automation**: GitHub Actions runs at 6 AM EST
+2. **Dynamic Navigation**: Follows "Report" link (handles session tokens)
+3. **Complete Data Extraction**: All 13 fields from Cuddeback table
+4. **Timestamp Capture**: Gets Cuddeback's "Last Updated" time
+5. **Smart Mapping**: Uses "Location ID" → `device_id` mapping
+6. **Missing Detection**: Runs after successful sync
 
 ## Enhanced Schema for Missing Camera Detection
 
@@ -97,7 +113,7 @@ git push origin --delete feature/camera-management-system
 - ✅ **After Phase 2**: TypeScript foundation ready for development  
 - ✅ **After Phase 3**: Components working, can display cameras on map
 - ✅ **After Phase 4**: Full camera management system functional
-- ✅ **After Phase 5**: Email processing implemented (future)
+- ✅ **After Phase 5**: Report processing (from Cudde) implemented (future)
 
 ### **Resuming Work Sessions**
 1. **Check your git branch**: `git status` and `git log --oneline -5`
@@ -140,12 +156,12 @@ git push origin --delete feature/camera-management-system
 - [x] **Step 4.4**: Verify filtering and stats
 - [x] **Step 4.5**: Commit and merge to main
 
-### Phase 5: Email Processing 🔄 FUTURE
-- [ ] **Step 5.1**: Build email parsing logic
-- [ ] **Step 5.2**: Create manual upload interface
-- [ ] **Step 5.3**: Implement smart alerts
-- [ ] **Step 5.4**: Add error handling
-- [ ] **Step 5.5**: Commit and merge to main
+### Phase 5: Web Scraping Automation 🔄 REPLACING EMAIL PARSING
+- [ ] **Step 5.1**: Add cuddeback_report_timestamp field to database
+- [ ] **Step 5.2**: Create and test local sync script
+- [ ] **Step 5.3**: Set up GitHub Actions workflow
+- [ ] **Step 5.4**: Configure GitHub Secrets
+- [ ] **Step 5.5**: Deploy and monitor automation
 
 ### Phase 6: Testing & Refinement 🔄 FUTURE
 - [ ] **Step 6.1**: End-to-end testing
@@ -235,8 +251,8 @@ docs/
 ```
 
 **Verification Steps**:
-- [ ] Verification step 1
-- [ ] Verification step 2
+- [x] Verification step 1
+- [x] Verification step 2
 
 **Files Modified**:
 - supabase/schema.sql (exported)
@@ -1219,23 +1235,206 @@ git checkout feature/camera-management-system
 
 ---
 
-### Phase 5: Email Processing (Future)
+### Phase 5: Web Scraping Automation
+- **Direct Cuddeback access**: Login and scrape report page
+- **All 13 data fields**: Complete data extraction
+- **Real-time capability**: Can run on-demand or scheduled
+- **Cuddeback timestamps**: Gets "Last Updated" from report
+- **Reliable mapping**: Uses "Location ID" → `device_id`
+- **GitHub Actions**: Fully automated daily sync
+- **Enhanced debugging**: Local testing script provided
 
-#### Step 5.1: Build Email Parsing Logic
-**How to prompt Claude**:
-> "Ready to implement email parsing. Please create the email parsing logic based on the strategy document."
+#### Step 5.1: Database Schema Update
+**Add new field for Cuddeback report timestamp**
 
-#### Step 5.2: Create Manual Upload Interface
-**How to prompt Claude**:
-> "Email parsing logic ready. Please create a manual upload interface for HTML email files."
+**Pre-requisites**:
+```bash
+# Ensure you're on the camera feature branch
+git checkout feature/camera-management-system
+git status  # Verify you're on the right branch
+```
 
-#### Step 5.3: Implement Smart Alerts
-**How to prompt Claude**:
-> "Manual upload working. Please implement the smart alert logic for camera status reports."
+**Actions**:
+1. **Run SQL Migration** in Supabase SQL Editor:
+```sql
+-- Add field to store when Cuddeback generated the report
+ALTER TABLE camera_status_reports 
+ADD COLUMN cuddeback_report_timestamp timestamptz;
 
-#### Step 5.4: Add Error Handling
+-- Add index for performance
+CREATE INDEX idx_camera_status_reports_cuddeback_timestamp 
+ON camera_status_reports(cuddeback_report_timestamp DESC);
+
+-- Update field count documentation
+COMMENT ON TABLE camera_status_reports 
+IS 'Daily camera status reports (15 fields) - includes Cuddeback web scraping data';
+```
+
+2. **Export Updated Schema**:
+```bash
+npm run db:export
+```
+
+3. **Update Documentation** (use the provided updated docs)
+
+**Git commands**:
+```bash
+git add supabase/schema.sql docs/
+git commit -m "step-5.1: add cuddeback_report_timestamp field for web scraping
+
+- Add cuddeback_report_timestamp to camera_status_reports (now 15 fields)
+- Add performance index for timestamp queries
+- Update documentation for web scraping approach
+- Phase 5 now uses web scraping instead of email parsing"
+git push origin feature/camera-management-system
+```
+
 **How to prompt Claude**:
-> "Smart alerts working. Please add comprehensive error handling for email parsing edge cases."
+> "Added cuddeback_report_timestamp field to camera_status_reports. Database now has 15 fields for status reports. Schema exported and documentation updated. Ready for Step 5.2."
+
+#### Step 5.2: Local Testing and Verification
+**Create and test the sync script locally before GitHub Actions**
+
+**Actions**:
+1. **Install Dependencies**:
+```bash
+npm install puppeteer dotenv
+```
+
+2. **Create Environment File**:
+```bash
+# Create .env.local with your credentials (don't commit this file!)
+cp .env.local.example .env.local
+# Edit .env.local with your actual Cuddeback and Supabase credentials
+```
+
+3. **Create Test Script** (`test-cuddeback-sync.js` - use provided script)
+
+4. **Run Local Test**:
+```bash
+node test-cuddeback-sync.js
+```
+
+5. **Verify Results**:
+   - Cuddeback login and navigation successful
+   - All 13 fields extracted correctly
+   - Device ID mapping working (Location ID → device_id)
+   - Database connectivity confirmed
+   - Field parsing accurate
+
+**Git commands**:
+```bash
+git add test-cuddeback-sync.js .env.local.example package.json
+git commit -m "step-5.2: add local testing script for Cuddeback automation
+
+- Add comprehensive local test script with field mapping verification
+- Add .env.local.example template for credentials
+- Add puppeteer and dotenv dependencies
+- Verify all 13 Cuddeback fields extraction and database mapping"
+git push origin feature/camera-management-system
+```
+
+**How to prompt Claude**:
+> "Local testing complete. Script successfully extracts all 13 fields from Cuddeback and maps to database records. Device ID mapping verified. Puppeteer dependencies added. Ready for Step 5.3."
+
+#### Step 5.3: GitHub Actions Workflow
+**Deploy the automation workflow**
+
+**Actions**:
+1. **Create GitHub Actions Workflow** (`.github/workflows/cuddeback-sync.yml` - use provided workflow)
+2. **Create Production Sync Script** (`scripts/sync-cuddeback-cameras.js` - use provided script)
+3. **Update Package.json** (add scripts and ensure puppeteer is in devDependencies)
+
+**Git commands**:
+```bash
+mkdir -p .github/workflows scripts
+
+# Add all the workflow files (using artifacts provided)
+git add .github/workflows/cuddeback-sync.yml
+git add scripts/sync-cuddeback-cameras.js
+git add package.json
+
+git commit -m "step-5.3: add GitHub Actions workflow for daily Cuddeback sync
+
+- Add daily automation workflow (6 AM EST schedule)
+- Add production sync script with enhanced error handling
+- Include manual trigger capability for testing
+- Add artifact upload for debugging and monitoring
+- Supports all 13 Cuddeback fields with proper mapping"
+git push origin feature/camera-management-system
+```
+
+**How to prompt Claude**:
+> "GitHub Actions workflow files created and committed. Production sync script ready. Package.json updated with puppeteer dependency. Ready for Step 5.4."
+
+#### Step 5.4: Configure GitHub Secrets
+**Set up secure credential storage**
+
+**Actions** (via GitHub web interface):
+1. **Navigate to Repository Settings** > Secrets and variables > Actions
+2. **Add Required Secrets**:
+   - `CUDDEBACK_EMAIL` = your login email
+   - `CUDDEBACK_PASSWORD` = your account password
+   - `SUPABASE_URL` = your project URL (https://xxx.supabase.co)
+   - `SUPABASE_SERVICE_ROLE_KEY` = service role key (NOT anon key)
+
+**Git commands** (documentation update):
+```bash
+# Update setup documentation to include secrets configuration
+git add docs/automation/
+git commit -m "step-5.4: document GitHub Secrets configuration for automation
+
+- Add GitHub Secrets setup instructions
+- Document required environment variables
+- Include security best practices
+- Ready for production deployment"
+git push origin feature/camera-management-system
+```
+
+**How to prompt Claude**:
+> "GitHub Secrets configured successfully. All 4 required secrets added to repository. Documentation updated. Ready for Step 5.5."
+
+#### Step 5.5: Deploy and Monitor
+**Enable daily automation and verify**
+
+**Actions**:
+1. **Manual Test Run** in GitHub Actions:
+   - Go to Actions tab
+   - Run "Daily Cuddeback Camera Sync" workflow manually
+   - Enable debug logging
+   - Monitor execution logs
+
+2. **Verify Database Updates** in Supabase:
+   - Check camera_status_reports for new records
+   - Verify cuddeback_report_timestamp populated
+   - Confirm all 13 fields captured correctly
+
+3. **Enable Daily Schedule** (already configured in workflow)
+
+**Git commands**:
+```bash
+# Final documentation updates and merge to main
+git add docs/
+git commit -m "step-5.5: finalize web scraping automation deployment
+
+- Document deployment verification steps
+- Add monitoring and troubleshooting guide
+- Web scraping automation fully operational
+- All 13 Cuddeback fields synchronized daily"
+
+# Merge to main for production
+git checkout main
+git pull origin main
+git merge feature/camera-management-system
+git push origin main
+
+# Clean up feature branch
+git branch -d feature/camera-management-system
+git push origin --delete feature/camera-management-system
+```
+
+**How to prompt Claude**:
+> "Phase 5 complete. Web scraping automation deployed and working. Daily sync operational with all 13 Cuddeback fields being captured. Automation merged to main and feature branch cleaned up."
 
 ---
 
@@ -1314,7 +1513,7 @@ graph TD
 - [x] Phase 2: TypeScript Foundation  
 - [x] Phase 3: Core Components
 - [x] Phase 4: Management Interface
-- [ ] Phase 5: Email Processing
+- [ ] Phase 5: Web Scraping Processing
 - [ ] Phase 6: Testing & Refinement
 
 ### Update Instructions
@@ -1342,7 +1541,15 @@ git push origin main
 3. **Include context**: current step, error messages, relevant code
 4. **Never skip ahead** - each step builds on previous ones
 
+### Automation Troubleshooting
+1. **Check GitHub Actions logs** for workflow failures
+2. **Use local test script** to debug issues
+3. **Review sync artifacts** for detailed error information
+4. **Verify GitHub Secrets** are correctly configured
+5. **Check Cuddeback site changes** that might break scraping
+
 ### Rollback Procedures
+- **Automation**: Disable GitHub Actions workflow
 - **Database**: Use Supabase backup/restore
 - **Code**: Use git to revert to last working state
 - **Components**: Comment out new code until issues resolved
@@ -1361,7 +1568,7 @@ If you lose track of where you are:
 **Phase 2 Complete When**: TypeScript compiles successfully with all camera types and services
 **Phase 3 Complete When**: CameraCard displays correctly in PropertyMap with popups
 **Phase 4 Complete When**: Full camera management interface works with CRUD operations
-**Phase 5 Complete When**: Email reports can be parsed and imported successfully
+**Phase 5 Complete When**: Online report data be automatically parsed and imported successfully
 **Phase 6 Complete When**: System is production-ready with full testing coverage
 
 ---
