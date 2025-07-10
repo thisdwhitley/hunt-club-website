@@ -84,6 +84,13 @@ export interface Database {
           longitude: number | null
           created_at: string
           updated_at: string
+          last_hunted: string | null
+          total_hunts: number | null
+          total_harvests: number | null
+          last_harvest: string | null
+          success_rate: number | null
+          last_hunted_by: string | null
+          last_harvest_by: string | null
         }
         Insert: {
           id?: string
@@ -95,6 +102,13 @@ export interface Database {
           longitude?: number | null
           created_at?: string
           updated_at?: string
+          last_hunted?: string | null
+          total_hunts?: number | null
+          total_harvests?: number | null
+          last_harvest?: string | null
+          success_rate?: number | null
+          last_hunted_by?: string | null
+          last_harvest_by?: string | null
         }
         Update: {
           id?: string
@@ -106,6 +120,13 @@ export interface Database {
           longitude?: number | null
           created_at?: string
           updated_at?: string
+          last_hunted?: string | null
+          total_hunts?: number | null
+          total_harvests?: number | null
+          last_harvest?: string | null
+          success_rate?: number | null
+          last_hunted_by?: string | null
+          last_harvest_by?: string | null
         }
       }
       // =====================================================

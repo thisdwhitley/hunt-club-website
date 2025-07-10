@@ -242,6 +242,55 @@ $$;
 ALTER FUNCTION public.update_camera_alert_status() OWNER TO postgres;
 
 --
+-- Name: update_stand_activity_on_hunt(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.update_stand_activity_on_hunt() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    -- Only update if hunt has a stand assigned
+    IF NEW.stand_id IS NOT NULL THEN
+        -- Always update last hunted info and increment hunt count
+        UPDATE public.stands 
+        SET 
+            last_hunted = NEW.hunt_date,
+            last_hunted_by = NEW.member_id,
+            total_hunts = total_hunts + 1,
+            updated_at = NOW()
+        WHERE id = NEW.stand_id;
+        
+        -- If they had a harvest, update harvest stats too
+        IF NEW.had_harvest = true THEN
+            UPDATE public.stands 
+            SET 
+                total_harvests = total_harvests + 1,
+                last_harvest = NEW.hunt_date,
+                last_harvest_by = NEW.member_id,
+                updated_at = NOW()
+            WHERE id = NEW.stand_id;
+        END IF;
+        
+        -- Recalculate success rate (works for both harvest and no-harvest)
+        UPDATE public.stands 
+        SET 
+            success_rate = CASE 
+                WHEN total_hunts > 0 THEN 
+                    ROUND((total_harvests::NUMERIC / total_hunts::NUMERIC) * 100, 2)
+                ELSE 0 
+            END,
+            updated_at = NOW()
+        WHERE id = NEW.stand_id;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.update_stand_activity_on_hunt() OWNER TO postgres;
+
+--
 -- Name: update_stand_stats_from_hunt(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -737,11 +786,72 @@ CREATE TABLE public.stands (
     season_hunts integer DEFAULT 0,
     food_source public.food_source_type,
     archery_season boolean DEFAULT false,
-    trail_camera_name character varying(100)
+    trail_camera_name character varying(100),
+    last_hunted date,
+    last_harvest date,
+    last_hunted_by uuid,
+    last_harvest_by uuid,
+    success_rate numeric(5,2)
 );
 
 
 ALTER TABLE public.stands OWNER TO postgres;
+
+--
+-- Name: TABLE stands; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON TABLE public.stands IS 'Hunting stands with automatic activity tracking from hunt logs';
+
+
+--
+-- Name: COLUMN stands.total_hunts; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.stands.total_hunts IS 'Total number of hunts logged from this stand';
+
+
+--
+-- Name: COLUMN stands.total_harvests; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.stands.total_harvests IS 'Total number of successful harvests from this stand';
+
+
+--
+-- Name: COLUMN stands.last_hunted; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.stands.last_hunted IS 'Date someone last hunted from this stand';
+
+
+--
+-- Name: COLUMN stands.last_harvest; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.stands.last_harvest IS 'Date of last successful harvest from this stand';
+
+
+--
+-- Name: COLUMN stands.last_hunted_by; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.stands.last_hunted_by IS 'Member who last hunted from this stand';
+
+
+--
+-- Name: COLUMN stands.last_harvest_by; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.stands.last_harvest_by IS 'Member who had the last harvest from this stand';
+
+
+--
+-- Name: COLUMN stands.success_rate; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.stands.success_rate IS 'Percentage of hunts that resulted in harvest (total_harvests/total_hunts * 100)';
+
 
 --
 -- Name: trail_cameras_backup; Type: TABLE; Schema: public; Owner: postgres
@@ -1154,6 +1264,20 @@ CREATE INDEX idx_stands_active ON public.stands USING btree (active);
 
 
 --
+-- Name: idx_stands_last_hunted; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_stands_last_hunted ON public.stands USING btree (last_hunted DESC);
+
+
+--
+-- Name: idx_stands_last_hunted_by; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_stands_last_hunted_by ON public.stands USING btree (last_hunted_by);
+
+
+--
 -- Name: idx_stands_last_used; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1165,6 +1289,20 @@ CREATE INDEX idx_stands_last_used ON public.stands USING btree (last_used_date);
 --
 
 CREATE INDEX idx_stands_location ON public.stands USING btree (latitude, longitude);
+
+
+--
+-- Name: idx_stands_success_rate; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_stands_success_rate ON public.stands USING btree (success_rate DESC);
+
+
+--
+-- Name: idx_stands_total_hunts; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_stands_total_hunts ON public.stands USING btree (total_hunts DESC);
 
 
 --
@@ -1186,6 +1324,20 @@ CREATE TRIGGER trigger_camera_deployments_updated_at BEFORE UPDATE ON public.cam
 --
 
 CREATE TRIGGER trigger_camera_hardware_updated_at BEFORE UPDATE ON public.camera_hardware FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: hunt_logs trigger_update_stand_activity; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER trigger_update_stand_activity AFTER INSERT ON public.hunt_logs FOR EACH ROW EXECUTE FUNCTION public.update_stand_activity_on_hunt();
+
+
+--
+-- Name: hunt_logs trigger_update_stand_activity_on_update; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER trigger_update_stand_activity_on_update AFTER UPDATE OF hunt_date, stand_id, had_harvest ON public.hunt_logs FOR EACH ROW WHEN (((new.hunt_date IS DISTINCT FROM old.hunt_date) OR (new.stand_id IS DISTINCT FROM old.stand_id) OR (new.had_harvest IS DISTINCT FROM old.had_harvest))) EXECUTE FUNCTION public.update_stand_activity_on_hunt();
 
 
 --
@@ -1381,6 +1533,22 @@ ALTER TABLE ONLY public.members
 
 ALTER TABLE ONLY public.profiles
     ADD CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: stands stands_last_harvest_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.stands
+    ADD CONSTRAINT stands_last_harvest_by_fkey FOREIGN KEY (last_harvest_by) REFERENCES public.members(id);
+
+
+--
+-- Name: stands stands_last_hunted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.stands
+    ADD CONSTRAINT stands_last_hunted_by_fkey FOREIGN KEY (last_hunted_by) REFERENCES public.members(id);
 
 
 --
@@ -1810,6 +1978,15 @@ GRANT ALL ON FUNCTION public.handle_updated_at() TO service_role;
 GRANT ALL ON FUNCTION public.update_camera_alert_status() TO anon;
 GRANT ALL ON FUNCTION public.update_camera_alert_status() TO authenticated;
 GRANT ALL ON FUNCTION public.update_camera_alert_status() TO service_role;
+
+
+--
+-- Name: FUNCTION update_stand_activity_on_hunt(); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION public.update_stand_activity_on_hunt() TO anon;
+GRANT ALL ON FUNCTION public.update_stand_activity_on_hunt() TO authenticated;
+GRANT ALL ON FUNCTION public.update_stand_activity_on_hunt() TO service_role;
 
 
 --

@@ -35,6 +35,55 @@
 
 ---
 
+### 2025-07-10: Hunt Logging System Foundation
+
+**Type**: Schema Addition | Schema Modification  
+**Affected Tables**: hunt_logs, hunt_harvests, hunt_sightings, stands  
+**Breaking Changes**: No  
+**Rollback Available**: Yes (column drops, trigger removal)
+
+**Purpose**: Implement comprehensive hunt logging system with auto-populated weather/astronomical data and enhanced stand activity tracking with member identification.
+
+**Changes Made**:
+- **Enhanced**: hunt_logs table - Added 10 auto-population fields (hunt_type, moon_illumination, sunrise_time, sunset_time, hunting_season, property_sector, hunt_duration_minutes, had_harvest, weather_fetched_at, stand_coordinates)
+- **Added**: hunt_harvests table (22 fields) - Detailed harvest tracking when had_harvest = true
+- **Added**: hunt_sightings table (14 fields) - Animal observation logging during hunts  
+- **Enhanced**: stands table - Added 7 activity tracking fields (last_hunted, total_hunts, total_harvests, last_harvest, success_rate, last_hunted_by, last_harvest_by)
+- **Added**: Automatic stand activity triggers - Updates stand stats when hunts are logged
+- **Added**: Performance indexes for hunt queries and stand analytics
+- **Added**: Row Level Security (RLS) policies for all hunt tables
+- **Added**: Auto-update triggers for timestamp fields
+
+**Migration SQL**: 
+[Reference hunt_logging_migration and enhanced_stand_tracking artifacts]
+
+**Verification Steps**:
+- [x] hunt_logs enhanced with 10 auto-population fields  
+- [x] hunt_harvests and hunt_sightings tables created
+- [x] stands table enhanced with activity tracking
+- [x] Triggers update stand stats automatically
+- [x] Foreign key relationships working
+- [x] RLS policies active on all hunt tables
+- [x] Performance indexes created
+
+**Files Modified**:
+- supabase/schema.sql (exported after migration)
+- docs/database/SCHEMA.md (updated with hunt logging tables)
+- src/types/database.ts (hunt logging types to be added)
+
+**Claude Context**: Include this migration when asking Claude about hunt logging, weather auto-population, stand analytics, or harvest tracking. Essential for understanding the three-table hunt logging relationship and automatic stand activity updates.
+
+**Key Business Logic**:
+- Weather data auto-populated from stand coordinates using Visual Crossing API
+- Moon phase calculated using SunCalc library  
+- Stand activity updated automatically when hunts logged (Option 1: any hunt)
+- Success rate calculated as (total_harvests / total_hunts) * 100
+- RLS ensures users only see their own hunt data
+- Stand tracking includes member identification for last hunter/harvest
+- Harvest and sightings are optional extensions of basic hunt log
+
+---
+
 ### 2025-07-09: Web Scraping Automation - Cuddeback Report Timestamp
 
 **Type**: Schema Modification  
