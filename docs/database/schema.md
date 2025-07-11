@@ -1,5 +1,87 @@
 # Database Schema Documentation
 
+## Daily Snapshot System (Latest Addition - July 2025)
+
+### daily_weather_snapshots (20+ fields)
+Automated daily weather data collection from Visual Crossing API
+- id (uuid, PK)
+- date (date, unique) - Date for weather data
+- property_center_lat/lng (numeric) - Property coordinates (36.42723577, -79.51088069)
+- collection_timestamp (timestamptz) - When data was collected
+- api_source (text) - Data source identifier ('visual_crossing')
+- raw_weather_data (jsonb) - Complete API response for debugging
+- tempmax/tempmin/temp (numeric) - Temperature readings (°F)
+- temp_dawn/temp_dusk (numeric) - Interpolated hunting time temperatures
+- humidity (numeric) - Relative humidity percentage
+- precip/precipprob (numeric) - Precipitation amount and probability
+- windspeed/winddir (numeric) - Wind conditions
+- cloudcover/uvindex (numeric) - Sky conditions
+- moonphase (numeric) - Moon phase (0.0-1.0)
+- sunrise/sunset (time) - Daily sun times
+- data_quality_score (integer) - Automated quality assessment (0-100)
+- missing_fields (text[]) - Array of missing data fields
+- quality_notes (text) - Additional quality information
+- created_at/updated_at (timestamptz)
+
+### daily_camera_snapshots (19 fields)  
+Daily camera activity trends and location tracking
+- id (uuid, PK)
+- date (date) + camera_device_id (text) - Composite unique constraint
+- collection_timestamp (timestamptz) - When snapshot was created
+- battery_status (text) - Battery level from camera reports
+- signal_level (integer) - Cellular signal strength
+- temperature (integer) - Camera internal temperature
+- sd_images_count (integer) - Total images on SD card
+- last_image_timestamp (timestamptz) - Most recent image capture
+- current_coordinates (text) - Current GPS coordinates "lat,lng"
+- previous_coordinates (text) - Previous GPS coordinates for movement detection
+- location_changed (boolean) - Whether camera moved significantly
+- distance_moved_meters (numeric) - Distance moved if location changed
+- activity_score (integer) - Daily activity rating (0-100)
+- activity_trend (text) - Trend analysis (increasing/decreasing/stable/insufficient_data)
+- images_added_today (integer) - New images since yesterday
+- peak_activity_hour (integer) - Hour with most activity (0-23)
+- data_source_quality (integer) - Processing quality score
+- processing_notes (text) - Additional processing information
+- created_at/updated_at (timestamptz)
+
+### daily_collection_log (12 fields)
+System monitoring and error tracking for automated processes
+- id (uuid, PK)
+- collection_date (date) - Date of collection attempt
+- collection_type (text) - Type: 'weather', 'camera', 'analysis'
+- status (text) - Status: 'success', 'partial_success', 'failed', 'retrying'
+- started_at (timestamptz) - When collection process started
+- completed_at (timestamptz) - When collection process finished
+- processing_duration_ms (integer) - How long processing took
+- records_processed (integer) - Number of records successfully processed
+- errors_encountered (integer) - Number of errors during processing
+- data_completeness_score (integer) - Overall data quality (0-100)
+- alerts_generated (integer) - Number of alerts created
+- error_details (jsonb) - Detailed error information for debugging
+- processing_summary (text) - Human-readable status summary
+- created_at (timestamptz)
+
+### Database Functions Added
+- `calculate_weather_quality_score(jsonb)` - Automated weather data validation
+- `detect_camera_location_change(text, text, numeric)` - GPS-based movement detection  
+- `calculate_activity_trend(integer, integer, integer)` - Camera activity analysis
+- `calculate_activity_score(integer, numeric)` - Activity scoring (0-100)
+- `interpolate_dawn_dusk_temps(time, time, numeric, numeric, numeric)` - Hunting time temperatures
+- `validate_coordinates(text)` - GPS coordinate format validation
+- `update_updated_at_column()` - Automated timestamp updates
+
+### Indexes Added
+- Performance indexes on date, device_id, quality scores, and activity metrics
+- Composite indexes for common query patterns
+- Conditional indexes for error monitoring
+
+### Integration Points
+- **Visual Crossing API**: Historical weather data collection
+- **Existing Camera System**: Enhanced with snapshot creation
+- **Alert System**: Automated quality and anomaly detection
+- **Dashboard Widgets**: Real-time data quality monitoring
+
 ## Camera Management System (Latest)
 
 ### camera_hardware (13 fields)

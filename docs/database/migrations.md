@@ -35,6 +35,50 @@
 
 ---
 
+### 2025-07-11: Daily Snapshot System
+
+**Type**: Schema Addition  
+**Affected Tables**: daily_weather_snapshots, daily_camera_snapshots, daily_collection_log  
+**Breaking Changes**: No  
+**Rollback Available**: Yes
+
+**Purpose**: Implement automated daily data collection system for weather and camera activity tracking, enabling trend analysis and smart alerting for the 100-acre hunting property.
+
+**Changes Made**:
+- **Added**: daily_weather_snapshots table (20+ fields) - Visual Crossing API data storage
+- **Added**: daily_camera_snapshots table (19 fields) - Camera activity trends and location tracking  
+- **Added**: daily_collection_log table (12 fields) - System monitoring and error tracking
+- **Added**: Database functions for quality scoring, location change detection, activity trends
+- **Added**: Automated timestamp update triggers  
+- **Added**: Performance indexes for date, device, and quality queries
+- **Added**: Row Level Security policies
+
+**Migration SQL**: [Full SQL in daily-snapshot-system-implementation.md Phase 1]
+
+**Verification Steps**:
+- [x] All three snapshot tables created successfully
+- [x] Database functions operational (quality scoring, location detection, activity trends)
+- [x] Indexes created for optimal query performance  
+- [x] RLS policies active for security
+- [x] Sample data inserted and tested
+- [x] All automated triggers working
+
+**Files Modified**:
+- supabase/schema.sql (exported after migration)
+- docs/database/SCHEMA.md (updated with snapshot system)
+- docs/database/daily-snapshot-system.md (created)
+
+**Claude Context**: Include this migration when asking Claude about daily snapshots, weather data collection, camera trend analysis, or automated data processing workflows.
+
+**Key Business Logic**:
+- Weather data collected daily at 8 AM EST from Visual Crossing API
+- Camera snapshots track activity trends and location changes  
+- Quality scoring enables monitoring of data reliability
+- Collection log provides system health monitoring
+- All data preserved indefinitely for multi-season analysis
+
+---
+
 ### 2025-07-10: Hunt Logging System Foundation
 
 **Type**: Schema Addition | Schema Modification  
