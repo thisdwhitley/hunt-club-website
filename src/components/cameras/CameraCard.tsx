@@ -144,17 +144,30 @@ export default function CameraCard({
 
   // Determine alert status and color
   const getAlertStatus = () => {
-    if (camera.deployment?.is_missing) {
-      return { status: 'missing', color: '#DC2626', label: 'MISSING' }
-    }
-    if (camera.latest_report?.needs_attention) {
-      return { status: 'critical', color: '#DC2626', label: 'CRITICAL' }
-    }
-    if (camera.latest_report?.battery_status === 'Low' || camera.days_since_last_report && camera.days_since_last_report > 3) {
-      return { status: 'warning', color: '#D97706', label: 'WARNING' }
-    }
-    return { status: 'good', color: '#059669', label: 'GOOD' }
+  if (camera.deployment?.is_missing) {
+    return { status: 'missing', color: '#8B7355', label: 'MISSING' }  // Weathered Wood
   }
+  if (camera.latest_report?.needs_attention) {
+    return { status: 'critical', color: '#A0653A', label: 'CRITICAL' }  // Clay Earth
+  }
+  if (camera.latest_report?.battery_status === 'Low' || 
+      camera.days_since_last_report && camera.days_since_last_report > 3) {
+    return { status: 'warning', color: '#B9A44C', label: 'WARNING' }  // Muted Gold
+  }
+  return { status: 'good', color: '#566E3D', label: 'GOOD' }  // Olive Green
+}
+  // const getAlertStatus = () => {
+  //   if (camera.deployment?.is_missing) {
+  //     return { status: 'missing', color: '#DC2626', label: 'MISSING' }
+  //   }
+  //   if (camera.latest_report?.needs_attention) {
+  //     return { status: 'critical', color: '#DC2626', label: 'CRITICAL' }
+  //   }
+  //   if (camera.latest_report?.battery_status === 'Low' || camera.days_since_last_report && camera.days_since_last_report > 3) {
+  //     return { status: 'warning', color: '#D97706', label: 'WARNING' }
+  //   }
+  //   return { status: 'good', color: '#059669', label: 'GOOD' }
+  // }
 
   const alertStatus = getAlertStatus()
 
