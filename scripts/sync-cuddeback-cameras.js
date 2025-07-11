@@ -15,6 +15,9 @@
  * - DEBUG_MODE: Enable verbose logging (optional)
  */
 
+// Add this line for local testing
+require('dotenv').config({ path: '.env.local' });
+
 const puppeteer = require('puppeteer');
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs').promises;
@@ -56,6 +59,13 @@ const logger = {
     const timestamp = new Date().toISOString();
     console.warn(`[${timestamp}] WARN: ${msg}`);
   }
+};
+
+// Parse numeric values safely
+const parseIntSafe = (value) => {
+  if (!value || value === 'N/A' || value === '-') return null;
+    const parsed = parseInt(value.replace(/[^\d]/g, ''));
+    return isNaN(parsed) ? null : parsed;
 };
 
 /**
@@ -124,7 +134,12 @@ async function syncCuddebackCameras() {
     syncResults.hardware_updated = updateResults.hardware_updated;
     syncResults.warnings = updateResults.warnings;
 
-    // 4. Run missing camera detection
+    // 4. NEW: Create daily snapshots 
+    const snapshotsCreated = await createDailySnapshots(extractionResult.cameras, deployments || []);
+    syncResults.snapshots_created = snapshotsCreated;  // Add this tracking
+    logger.info(`📸 Created ${snapshotsCreated} daily camera snapshots`);
+
+    // 5. Run missing camera detection
     logger.info('🔍 Running missing camera detection...');
     const { error: detectionError } = await supabase.rpc('detect_missing_cameras', {
       check_date: new Date().toISOString().split('T')[0]
@@ -150,7 +165,7 @@ async function syncCuddebackCameras() {
     }
   }
 
-  // 5. Save results and exit
+  // 6. Save results and exit
   await saveResults(syncResults);
   
   if (!syncResults.success) {
@@ -449,12 +464,12 @@ async function syncCameraData(cuddebackData, deployments, cuddebackReportTime) {
         continue;
       }
 
-      // Parse numeric values safely
-      const parseIntSafe = (value) => {
-        if (!value || value === 'N/A' || value === '-') return null;
-        const parsed = parseInt(value.replace(/[^\d]/g, ''));
-        return isNaN(parsed) ? null : parsed;
-      };
+      // // Parse numeric values safely
+      // const parseIntSafe = (value) => {
+      //   if (!value || value === 'N/A' || value === '-') return null;
+      //   const parsed = parseInt(value.replace(/[^\d]/g, ''));
+      //   return isNaN(parsed) ? null : parsed;
+      // };
 
       // Parse signal level (could be percentage or text)
       let signalLevel = null;
@@ -567,6 +582,103 @@ async function syncCameraData(cuddebackData, deployments, cuddebackReportTime) {
 
   logger.info(`🔄 Database sync complete. Updated ${results.status_reports_updated} status reports, ${results.hardware_updated} hardware records`);
   return results;
+}
+
+/**
+ * Create simple daily camera snapshots using ACTUAL Cuddeback fields
+ */
+async function createDailySnapshots(cuddebackData, deployments) {
+  const today = new Date().toISOString().split('T')[0];
+  let snapshotsCreated = 0;
+  
+  logger.info('📸 Creating daily camera snapshots...');
+  
+  for (const cameraItem of cuddebackData) {
+    try {
+      // Find matching deployment
+      const deployment = deployments.find(d => 
+        d.hardware?.device_id === cameraItem.location_id
+      );
+      
+      if (!deployment) {
+        continue; // Skip unknown devices
+      }
+      
+      const deviceId = cameraItem.location_id;
+      const currentImages = parseIntSafe(cameraItem.sd_images);
+      
+      // Get yesterday's image count for comparison
+      const { data: previousSnapshot } = await supabase
+        .from('daily_camera_snapshots')
+        .select('sd_images_count')
+        .eq('camera_device_id', deviceId)
+        .lt('date', today)
+        .order('date', { ascending: false })
+        .limit(1)
+        .single();
+      
+      const previousImages = previousSnapshot?.sd_images_count || null;
+      const imagesAddedToday = (currentImages && previousImages) ? 
+        Math.max(0, currentImages - previousImages) : 0;
+      
+      // Simple trend calculation
+      let activityTrend = 'insufficient_data';
+      if (currentImages && previousImages) {
+        const difference = currentImages - previousImages;
+        if (difference > 5) activityTrend = 'increasing';
+        else if (difference < -2) activityTrend = 'decreasing';  
+        else activityTrend = 'stable';
+      }
+      
+      // Create snapshot record using ONLY available Cuddeback fields
+      const snapshotData = {
+        date: today,
+        camera_device_id: deviceId,
+        collection_timestamp: new Date().toISOString(),
+        
+        // ACTUAL Cuddeback fields:
+        battery_status: cameraItem.battery || null,
+        signal_level: parseIntSafe(cameraItem.level),
+        temperature: null,                    // NOT available from Cuddeback
+        sd_images_count: currentImages,
+        last_image_timestamp: null,           // NOT available from Cuddeback
+        
+        // No GPS/location tracking (as requested):
+        current_coordinates: null,
+        previous_coordinates: null,
+        location_changed: false,
+        distance_moved_meters: null,
+        
+        // Simple activity tracking:
+        activity_score: null,                 // Not using scoring system
+        activity_trend: activityTrend,
+        images_added_today: imagesAddedToday,
+        peak_activity_hour: null,             // Not calculating
+        data_source_quality: 100,
+        processing_notes: null
+      };
+      
+      // Upsert snapshot (PostgreSQL/Supabase supports this)
+      const { error } = await supabase
+        .from('daily_camera_snapshots')
+        .upsert(snapshotData, { 
+          onConflict: 'date,camera_device_id',
+          ignoreDuplicates: false 
+        });
+      
+      if (error) {
+        logger.error(`Failed to create snapshot for device ${deviceId}: ${error.message}`);
+      } else {
+        snapshotsCreated++;
+        logger.debug(`✅ Snapshot created for ${deviceId}: ${imagesAddedToday} images added (${activityTrend})`);
+      }
+      
+    } catch (error) {
+      logger.error(`Error creating snapshot for ${cameraItem.location_id}:`, error);
+    }
+  }
+  
+  return snapshotsCreated;
 }
 
 /**
