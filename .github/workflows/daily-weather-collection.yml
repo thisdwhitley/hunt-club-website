@@ -1,0 +1,314 @@
+name: Daily Weather Collection
+
+on:
+  schedule:
+    # 8:00 AM EST = 1:00 PM UTC (EST is UTC-5)
+    # Run Monday through Sunday for continuous data collection
+    - cron: '0 13 * * *'
+  
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: 'Target date for collection (YYYY-MM-DD). Leave empty for yesterday.'
+        required: false
+        type: string
+      force_collection:
+        description: 'Force collection even if data already exists'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  NODE_VERSION: '18'
+  TZ: 'America/New_York'  # Set timezone to EST
+
+jobs:
+  collect-weather:
+    name: Collect Daily Weather Data
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: |
+          npm ci --production
+          # Install only the packages needed for weather collection
+          npm install @supabase/supabase-js
+          
+      - name: Set target date
+        id: date
+        run: |
+          if [ -n "${{ github.event.inputs.target_date }}" ]; then
+            echo "target_date=${{ github.event.inputs.target_date }}" >> $GITHUB_OUTPUT
+          else
+            # Get yesterday's date in EST timezone
+            echo "target_date=$(date -d 'yesterday' '+%Y-%m-%d')" >> $GITHUB_OUTPUT
+          fi
+          echo "collection_timestamp=$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+          
+      - name: Display collection info
+        run: |
+          echo "🌤️ Starting weather collection for: ${{ steps.date.outputs.target_date }}"
+          echo "⏰ Collection timestamp: ${{ steps.date.outputs.collection_timestamp }}"
+          echo "🔧 Force collection: ${{ github.event.inputs.force_collection || 'false' }}"
+          echo "📍 Property location: 36.42723577, -79.51088069"
+          
+      - name: Test API connectivity
+        env:
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "🧪 Testing Visual Crossing API connectivity..."
+          node -e "
+          const { WeatherCollectionService } = require('./src/lib/weather/weather-service.js');
+          
+          async function testConnectivity() {
+            try {
+              const service = new WeatherCollectionService();
+              const result = await service.testApiConnectivity();
+              
+              if (result.success) {
+                console.log('✅ API connectivity test passed');
+                console.log('📊 Response time:', result.responseTime + 'ms');
+              } else {
+                console.log('❌ API connectivity test failed:', result.message);
+                process.exit(1);
+              }
+            } catch (error) {
+              console.error('❌ Connectivity test error:', error.message);
+              process.exit(1);
+            }
+          }
+          
+          testConnectivity();
+          "
+          
+      - name: Collect weather data
+        id: collection
+        env:
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "🌤️ Starting weather data collection..."
+          
+          # Create collection script
+          cat > collect_weather.js << 'EOF'
+          const { WeatherCollectionService } = require('./src/lib/weather/weather-service.js');
+          
+          async function collectWeather() {
+            const targetDate = process.argv[2];
+            const forceCollection = process.argv[3] === 'true';
+            
+            console.log(`📅 Target date: ${targetDate}`);
+            console.log(`🔧 Force collection: ${forceCollection}`);
+            
+            try {
+              const service = new WeatherCollectionService();
+              
+              // Check if data exists and handle force collection
+              if (!forceCollection) {
+                const existingData = await service.checkExistingData(targetDate);
+                if (existingData) {
+                  console.log(`⚠️ Data already exists for ${targetDate}`);
+                  console.log('✅ Skipping collection (use force_collection to override)');
+                  process.exit(0);
+                }
+              }
+              
+              const result = await service.collectDailyWeather(targetDate);
+              
+              if (result.success) {
+                console.log('✅ Weather collection completed successfully');
+                console.log(`📊 Quality score: ${result.dataQualityScore}`);
+                console.log(`⚡ API response time: ${result.apiResponseTime}ms`);
+                
+                if (result.weatherData) {
+                  console.log(`🌡️ Temperature range: ${result.weatherData.tempmin}°F - ${result.weatherData.tempmax}°F`);
+                  
+                  if (result.weatherData.temp_dawn) {
+                    console.log(`🌅 Dawn temperature: ${result.weatherData.temp_dawn}°F`);
+                  }
+                  if (result.weatherData.temp_dusk) {
+                    console.log(`🌆 Dusk temperature: ${result.weatherData.temp_dusk}°F`);
+                  }
+                }
+                
+                // Output for GitHub Actions
+                console.log('::set-output name=status::success');
+                console.log(`::set-output name=quality_score::${result.dataQualityScore}`);
+                console.log(`::set-output name=api_response_time::${result.apiResponseTime}`);
+              } else {
+                console.error('❌ Weather collection failed');
+                console.error('Errors:', result.errors);
+                
+                console.log('::set-output name=status::failed');
+                console.log(`::set-output name=errors::${result.errors?.join(', ') || 'Unknown error'}`);
+                process.exit(1);
+              }
+              
+            } catch (error) {
+              console.error('❌ Collection script error:', error.message);
+              console.log('::set-output name=status::error');
+              console.log(`::set-output name=errors::${error.message}`);
+              process.exit(1);
+            }
+          }
+          
+          collectWeather();
+          EOF
+          
+          # Run the collection
+          node collect_weather.js "${{ steps.date.outputs.target_date }}" "${{ github.event.inputs.force_collection || 'false' }}"
+          
+      - name: Verify data storage
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "💾 Verifying data storage..."
+          
+          node -e "
+          const { WeatherCollectionService } = require('./src/lib/weather/weather-service.js');
+          
+          async function verifyStorage() {
+            try {
+              const service = new WeatherCollectionService();
+              const data = await service.getWeatherData('${{ steps.date.outputs.target_date }}');
+              
+              console.log('✅ Data verification passed');
+              console.log('📄 Record ID:', data.id);
+              console.log('⏰ Collection timestamp:', data.collection_timestamp);
+              console.log('🏷️ API source:', data.api_source);
+              console.log('📊 Quality score:', data.data_quality_score || 'Not calculated');
+              
+              // Show some key weather data
+              console.log('🌡️ Temperature data:');
+              console.log('  - Max:', data.tempmax + '°F');
+              console.log('  - Min:', data.tempmin + '°F');
+              console.log('  - Avg:', data.temp + '°F');
+              
+              if (data.temp_dawn) console.log('  - Dawn:', data.temp_dawn + '°F');
+              if (data.temp_dusk) console.log('  - Dusk:', data.temp_dusk + '°F');
+              
+              console.log('💨 Wind:', data.windspeed + ' mph from ' + data.winddir + '°');
+              console.log('☁️ Cloud cover:', data.cloudcover + '%');
+              console.log('💧 Precipitation:', data.precip + 'in (' + data.precipprob + '% chance)');
+              
+            } catch (error) {
+              console.error('❌ Data verification failed:', error.message);
+              process.exit(1);
+            }
+          }
+          
+          verifyStorage();
+          "
+          
+      - name: Check collection logs
+        if: always()
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "📋 Checking collection logs..."
+          
+          node -e "
+          const { createClient } = require('@supabase/supabase-js');
+          
+          async function checkLogs() {
+            try {
+              const supabase = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL,
+                process.env.SUPABASE_SERVICE_ROLE_KEY
+              );
+              
+              const { data, error } = await supabase
+                .from('daily_collection_log')
+                .select('*')
+                .eq('collection_date', '${{ steps.date.outputs.target_date }}')
+                .eq('collection_type', 'weather')
+                .order('started_at', { ascending: false })
+                .limit(1);
+              
+              if (error) {
+                console.error('❌ Failed to fetch logs:', error.message);
+                return;
+              }
+              
+              if (data && data.length > 0) {
+                const log = data[0];
+                console.log('📋 Latest collection log:');
+                console.log('  Status:', log.status);
+                console.log('  Started:', log.started_at);
+                console.log('  Completed:', log.completed_at || 'Not completed');
+                console.log('  Duration:', log.processing_duration_ms ? log.processing_duration_ms + 'ms' : 'N/A');
+                console.log('  Records processed:', log.records_processed || 0);
+                console.log('  Errors encountered:', log.errors_encountered || 0);
+                console.log('  Data completeness:', log.data_completeness_score || 'N/A');
+                
+                if (log.processing_summary) {
+                  console.log('  Summary:', log.processing_summary);
+                }
+                
+                if (log.error_details) {
+                  console.log('  Error details:', JSON.stringify(log.error_details, null, 2));
+                }
+              } else {
+                console.log('⚠️ No collection logs found for this date');
+              }
+              
+            } catch (error) {
+              console.error('❌ Error checking logs:', error.message);
+            }
+          }
+          
+          checkLogs();
+          "
+          
+      - name: Cleanup temporary files
+        if: always()
+        run: |
+          rm -f collect_weather.js
+          
+      - name: Report success
+        if: success()
+        run: |
+          echo "🎉 Daily weather collection completed successfully!"
+          echo "📅 Date: ${{ steps.date.outputs.target_date }}"
+          echo "⏰ Completed at: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+          
+      - name: Report failure
+        if: failure()
+        run: |
+          echo "❌ Daily weather collection failed!"
+          echo "📅 Date: ${{ steps.date.outputs.target_date }}"
+          echo "⏰ Failed at: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+          echo ""
+          echo "🔧 Troubleshooting steps:"
+          echo "1. Check GitHub Secrets are properly configured"
+          echo "2. Verify Visual Crossing API key is valid"
+          echo "3. Check Supabase database connectivity"
+          echo "4. Review workflow logs above for specific errors"
+          
+  # Optional: Send notification on failure
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: collect-weather
+    if: failure()
+    
+    steps:
+      - name: Send failure notification
+        run: |
+          echo "📧 Weather collection failed for ${{ needs.collect-weather.outputs.target_date || 'unknown date' }}"
+          echo "This would send an email notification in a production setup"
+          echo "Consider integrating with GitHub's email notifications or a service like SendGrid"
