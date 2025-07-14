@@ -23,8 +23,8 @@ Automated daily weather data collection from Visual Crossing API
 - quality_notes (text) - Additional quality information
 - created_at/updated_at (timestamptz)
 
-### daily_camera_snapshots (19 fields)  
-Daily camera activity trends and location tracking
+### daily_camera_snapshots (25 fields)  
+Daily camera activity trends with advanced analytics
 - id (uuid, PK)
 - date (date) + camera_device_id (text) - Composite unique constraint
 - collection_timestamp (timestamptz) - When snapshot was created
@@ -44,6 +44,12 @@ Daily camera activity trends and location tracking
 - data_source_quality (integer) - Processing quality score
 - processing_notes (text) - Additional processing information
 - created_at/updated_at (timestamptz)
+- seven_day_average (numeric) - 7-day moving average of daily image additions
+- weekly_image_change (integer) - Total image change vs 1 week ago
+- days_since_last_activity (integer) - Days since last significant activity (>5 images)
+- anomaly_detected (boolean) - Statistical anomaly detected
+- anomaly_type (text) - 'spike' or 'drop' if anomaly
+- anomaly_severity (text) - 'moderate' or 'high' if anomaly
 
 ### daily_collection_log (12 fields)
 System monitoring and error tracking for automated processes

@@ -35,6 +35,54 @@
 
 ---
 
+### 2025-07-11 (cont.): Enhanced Camera Activity Trends
+
+**Type**: Schema Modification  
+**Affected Tables**: daily_camera_snapshots  
+**Breaking Changes**: No  
+**Rollback Available**: Yes
+
+**Purpose**: Add enhanced trend analysis fields for 7-day averages, anomaly detection, and activity tracking
+
+**Changes Made**:
+- Added columns: seven_day_average, weekly_image_change, days_since_last_activity
+- Added columns: anomaly_detected, anomaly_type, anomaly_severity  
+- Enhanced activity trend calculations
+- Improved logging and analysis capabilities
+
+**Migration SQL**: 
+
+```
+-- Add enhanced trend analysis columns to daily_camera_snapshots
+ALTER TABLE daily_camera_snapshots 
+  ADD COLUMN seven_day_average numeric(5,1),
+  ADD COLUMN weekly_image_change integer,
+  ADD COLUMN days_since_last_activity integer,
+  ADD COLUMN anomaly_detected boolean DEFAULT false,
+  ADD COLUMN anomaly_type text CHECK (anomaly_type IN ('spike', 'drop')),
+  ADD COLUMN anomaly_severity text CHECK (anomaly_severity IN ('moderate', 'high'));
+
+-- Add indexes for performance on new analytics fields
+CREATE INDEX idx_daily_camera_snapshots_anomaly 
+ON daily_camera_snapshots(anomaly_detected, date DESC) 
+WHERE anomaly_detected = true;
+
+CREATE INDEX idx_daily_camera_snapshots_activity 
+ON daily_camera_snapshots(days_since_last_activity DESC) 
+WHERE days_since_last_activity > 3;
+
+-- Update table comment
+COMMENT ON TABLE daily_camera_snapshots 
+IS 'Daily camera activity snapshots with enhanced trend analysis (25 fields)';
+```
+
+**Files Modified**:
+- supabase/schema.sql (exported)
+- docs/database/SCHEMA.md (updated with new fields)
+- scripts/sync-cuddeback-cameras.js (enhanced calculations)
+
+**Claude Context**: Include this migration when asking Claude about camera activity trends, anomaly detection, or enhanced analytics
+
 ### 2025-07-11: Daily Snapshot System
 
 **Type**: Schema Addition  

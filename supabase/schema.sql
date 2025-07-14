@@ -809,11 +809,26 @@ CREATE TABLE "public"."daily_camera_snapshots" (
     "processing_notes" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
-    CONSTRAINT "daily_camera_snapshots_activity_trend_check" CHECK (("activity_trend" = ANY (ARRAY['increasing'::"text", 'decreasing'::"text", 'stable'::"text", 'insufficient_data'::"text"])))
+    "seven_day_average" numeric(5,1),
+    "weekly_image_change" integer,
+    "days_since_last_activity" integer,
+    "anomaly_detected" boolean DEFAULT false,
+    "anomaly_type" "text",
+    "anomaly_severity" "text",
+    CONSTRAINT "daily_camera_snapshots_activity_trend_check" CHECK (("activity_trend" = ANY (ARRAY['increasing'::"text", 'decreasing'::"text", 'stable'::"text", 'insufficient_data'::"text"]))),
+    CONSTRAINT "daily_camera_snapshots_anomaly_severity_check" CHECK (("anomaly_severity" = ANY (ARRAY['moderate'::"text", 'high'::"text"]))),
+    CONSTRAINT "daily_camera_snapshots_anomaly_type_check" CHECK (("anomaly_type" = ANY (ARRAY['spike'::"text", 'drop'::"text"])))
 );
 
 
 ALTER TABLE "public"."daily_camera_snapshots" OWNER TO "postgres";
+
+--
+-- Name: TABLE "daily_camera_snapshots"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON TABLE "public"."daily_camera_snapshots" IS 'Daily camera activity snapshots with enhanced trend analysis (25 fields)';
+
 
 --
 -- Name: daily_collection_log; Type: TABLE; Schema: public; Owner: postgres
@@ -1579,6 +1594,20 @@ CREATE INDEX "idx_collection_log_errors" ON "public"."daily_collection_log" USIN
 --
 
 CREATE INDEX "idx_collection_log_status" ON "public"."daily_collection_log" USING "btree" ("status", "started_at" DESC);
+
+
+--
+-- Name: idx_daily_camera_snapshots_activity; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "idx_daily_camera_snapshots_activity" ON "public"."daily_camera_snapshots" USING "btree" ("days_since_last_activity" DESC) WHERE ("days_since_last_activity" > 3);
+
+
+--
+-- Name: idx_daily_camera_snapshots_anomaly; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "idx_daily_camera_snapshots_anomaly" ON "public"."daily_camera_snapshots" USING "btree" ("anomaly_detected", "date" DESC) WHERE ("anomaly_detected" = true);
 
 
 --

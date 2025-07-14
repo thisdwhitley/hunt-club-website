@@ -37,6 +37,153 @@ const supabase = createClient(
 );
 
 /**
+ * Get historical snapshots for a camera (last N days)
+ */
+async function getHistoricalSnapshots(deviceId, days = 14) {
+  try {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    const today = new Date().toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .from('daily_camera_snapshots')
+      .select('date, sd_images_count, images_added_today, collection_timestamp')
+      .eq('camera_device_id', deviceId)
+      .gte('date', startDate.toISOString().split('T')[0])
+      .lt('date', today)  // ADD THIS LINE - exclude today
+      .order('date', { ascending: true });
+      
+    if (error) {
+      logger.warn(`Error fetching historical data for ${deviceId}: ${error.message}`);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    logger.warn(`Failed to get historical snapshots for ${deviceId}: ${error.message}`);
+    return [];
+  }
+}
+
+/**
+ * Calculate 7-day moving average of daily image additions
+ */
+function calculate7DayAverage(historicalSnapshots) {
+  if (historicalSnapshots.length < 2) return null;
+  
+  // Get daily image additions for last 7 days
+  const dailyAdditions = [];
+  for (let i = 1; i < Math.min(historicalSnapshots.length, 8); i++) {
+    const today = historicalSnapshots[i].sd_images_count || 0;
+    const yesterday = historicalSnapshots[i - 1].sd_images_count || 0;
+    const added = Math.max(0, today - yesterday);
+    dailyAdditions.push(added);
+  }
+  
+  if (dailyAdditions.length === 0) return null;
+  
+  const average = dailyAdditions.reduce((sum, val) => sum + val, 0) / dailyAdditions.length;
+  return Math.round(average * 10) / 10; // Round to 1 decimal
+}
+
+/**
+ * Detect activity anomalies compared to recent history
+ */
+function detectActivityAnomaly(todaysImages, historicalSnapshots, averageDaily) {
+  if (!todaysImages || !averageDaily || historicalSnapshots.length < 7) {
+    return { isAnomaly: false, type: null, severity: null };
+  }
+  
+  // Calculate standard deviation of recent daily additions
+  const recentAdditions = [];
+  for (let i = 1; i < Math.min(historicalSnapshots.length, 8); i++) {
+    const today = historicalSnapshots[i].sd_images_count || 0;
+    const yesterday = historicalSnapshots[i - 1].sd_images_count || 0;
+    recentAdditions.push(Math.max(0, today - yesterday));
+  }
+  
+  if (recentAdditions.length < 3) return { isAnomaly: false, type: null, severity: null };
+  
+  const mean = averageDaily;
+  const variance = recentAdditions.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / recentAdditions.length;
+  const stdDev = Math.sqrt(variance);
+  
+  // Determine if today's activity is anomalous
+  const deviations = Math.abs(todaysImages - mean) / (stdDev + 1); // +1 to avoid division by zero
+  
+  if (deviations > 2.5) {
+    return {
+      isAnomaly: true,
+      type: todaysImages > mean ? 'spike' : 'drop',
+      severity: deviations > 4 ? 'high' : 'moderate'
+    };
+  }
+  
+  return { isAnomaly: false, type: null, severity: null };
+}
+
+/**
+ * Calculate days since last significant activity
+ */
+function calculateDaysSinceLastActivity(historicalSnapshots, activityThreshold = 5) {
+  if (historicalSnapshots.length < 2) return null;
+  
+  // Look backwards from most recent to find last day with significant activity
+  for (let i = historicalSnapshots.length - 1; i >= 1; i--) {
+    const today = historicalSnapshots[i].sd_images_count || 0;
+    const yesterday = historicalSnapshots[i - 1].sd_images_count || 0;
+    const added = Math.max(0, today - yesterday);
+    
+    if (added >= activityThreshold) {
+      // Found last active day, calculate days since
+      const lastActiveDate = new Date(historicalSnapshots[i].date);
+      const now = new Date();
+      const daysDiff = Math.floor((now - lastActiveDate) / (1000 * 60 * 60 * 24));
+      return daysDiff;
+    }
+  }
+  
+  // No significant activity found in available history
+  return historicalSnapshots.length >= 14 ? 14 : null;
+}
+
+/**
+ * Determine enhanced activity trend with more nuance
+ */
+function calculateEnhancedTrend(todaysImages, averageDaily, historicalSnapshots) {
+  if (!todaysImages || !averageDaily || historicalSnapshots.length < 7) {
+    return 'insufficient_data';
+  }
+  
+  // Compare today to 7-day average
+  const percentageChange = ((todaysImages - averageDaily) / (averageDaily + 1)) * 100;
+  
+  // Look at trend over last few days
+  const recentDays = Math.min(3, historicalSnapshots.length - 1);
+  let recentTrend = 0;
+  
+  for (let i = historicalSnapshots.length - recentDays; i < historicalSnapshots.length - 1; i++) {
+    const today = historicalSnapshots[i + 1].sd_images_count || 0;
+    const yesterday = historicalSnapshots[i].sd_images_count || 0;
+    const change = today - yesterday;
+    recentTrend += change;
+  }
+  
+  // Determine trend based on both today's change and recent pattern
+  if (percentageChange > 50 || (percentageChange > 20 && recentTrend > 10)) {
+    return 'strongly_increasing';
+  } else if (percentageChange > 15 || (percentageChange > 5 && recentTrend > 5)) {
+    return 'increasing';
+  } else if (percentageChange < -30 || (percentageChange < -15 && recentTrend < -10)) {
+    return 'decreasing';
+  } else if (Math.abs(percentageChange) <= 15 && Math.abs(recentTrend) <= 5) {
+    return 'stable';
+  } else {
+    return 'variable';
+  }
+}
+
+/**
  * Logging utilities
  */
 const logger = {
@@ -585,13 +732,13 @@ async function syncCameraData(cuddebackData, deployments, cuddebackReportTime) {
 }
 
 /**
- * Create simple daily camera snapshots using ACTUAL Cuddeback fields
+ * Enhanced createDailySnapshots with advanced trend calculations
  */
 async function createDailySnapshots(cuddebackData, deployments) {
   const today = new Date().toISOString().split('T')[0];
   let snapshotsCreated = 0;
   
-  logger.info('📸 Creating daily camera snapshots...');
+  logger.info('📸 Creating daily camera snapshots with enhanced trend analysis...');
   
   for (const cameraItem of cuddebackData) {
     try {
@@ -606,62 +753,81 @@ async function createDailySnapshots(cuddebackData, deployments) {
       
       const deviceId = cameraItem.location_id;
       const currentImages = parseIntSafe(cameraItem.sd_images);
+
+
       
-      // Get yesterday's image count for comparison
-      const { data: previousSnapshot } = await supabase
-        .from('daily_camera_snapshots')
-        .select('sd_images_count')
-        .eq('camera_device_id', deviceId)
-        .lt('date', today)
-        .order('date', { ascending: false })
-        .limit(1)
-        .single();
+      // Get historical data for trend analysis
+      const historicalSnapshots = await getHistoricalSnapshots(deviceId, 14);
+      console.log(`DEBUG ${deviceId}: Found ${historicalSnapshots.length} historical records`);
+
       
+      // Calculate basic metrics
+      const previousSnapshot = historicalSnapshots.length > 0 ? 
+        historicalSnapshots[historicalSnapshots.length - 1] : null;
       const previousImages = previousSnapshot?.sd_images_count || null;
       const imagesAddedToday = (currentImages && previousImages) ? 
         Math.max(0, currentImages - previousImages) : 0;
       
-      // Simple trend calculation
-      let activityTrend = 'insufficient_data';
-      if (currentImages && previousImages) {
-        const difference = currentImages - previousImages;
-        if (difference > 5) activityTrend = 'increasing';
-        else if (difference < -2) activityTrend = 'decreasing';  
-        else activityTrend = 'stable';
-      }
+      console.log(`DEBUG ${deviceId}: currentImages=${currentImages}, previousImages=${previousImages}, calculated=${imagesAddedToday}`);
+
+      // Calculate enhanced metrics
+      const averageDaily = calculate7DayAverage(historicalSnapshots);
+      const anomaly = detectActivityAnomaly(imagesAddedToday, historicalSnapshots, averageDaily);
+      const daysSinceLastActivity = calculateDaysSinceLastActivity(historicalSnapshots);
+      const enhancedTrend = calculateEnhancedTrend(imagesAddedToday, averageDaily, historicalSnapshots);
       
-      // Create snapshot record using ONLY available Cuddeback fields
+      // Weekly comparison
+      const weekAgoSnapshot = historicalSnapshots.length >= 7 ? 
+        historicalSnapshots[historicalSnapshots.length - 7] : null;
+      const weeklyImageChange = (currentImages && weekAgoSnapshot?.sd_images_count) ?
+        currentImages - weekAgoSnapshot.sd_images_count : null;
+      
+      // Create enhanced snapshot record
       const snapshotData = {
         date: today,
         camera_device_id: deviceId,
         collection_timestamp: new Date().toISOString(),
         
-        // ACTUAL Cuddeback fields:
+        // Basic Cuddeback fields
         battery_status: cameraItem.battery || null,
         signal_level: parseIntSafe(cameraItem.level),
-        temperature: null,                    // NOT available from Cuddeback
+        temperature: null,
         sd_images_count: currentImages,
-        last_image_timestamp: null,           // NOT available from Cuddeback
+        last_image_timestamp: null,
         
-        // No GPS/location tracking (as requested):
+        // No GPS/location tracking
         current_coordinates: null,
         previous_coordinates: null,
         location_changed: false,
         distance_moved_meters: null,
         
-        // Simple activity tracking:
-        activity_score: null,                 // Not using scoring system
-        activity_trend: activityTrend,
+        // Enhanced activity analysis
+        activity_score: null, // Still not using scoring
+        activity_trend: enhancedTrend,
         images_added_today: imagesAddedToday,
-        peak_activity_hour: null,             // Not calculating
+        peak_activity_hour: null,
         data_source_quality: 100,
-        processing_notes: null
+        processing_notes: anomaly.isAnomaly ? 
+          `${anomaly.type} anomaly detected (${anomaly.severity})` : null
       };
       
-      // Upsert snapshot (PostgreSQL/Supabase supports this)
+      // Add custom fields to the database record (you may need to add these columns)
+      // These would be additional fields in your daily_camera_snapshots table:
+      const enhancedData = {
+        ...snapshotData,
+        // Add these as new columns if you want them stored:
+        seven_day_average: averageDaily,
+        weekly_image_change: weeklyImageChange,
+        days_since_last_activity: daysSinceLastActivity,
+        anomaly_detected: anomaly.isAnomaly,
+        anomaly_type: anomaly.type,
+        anomaly_severity: anomaly.severity
+      };
+      
+      // Upsert snapshot
       const { error } = await supabase
         .from('daily_camera_snapshots')
-        .upsert(snapshotData, { 
+        .upsert(enhancedData, {  // Use snapshotData for now, enhancedData if you add columns
           onConflict: 'date,camera_device_id',
           ignoreDuplicates: false 
         });
@@ -670,11 +836,24 @@ async function createDailySnapshots(cuddebackData, deployments) {
         logger.error(`Failed to create snapshot for device ${deviceId}: ${error.message}`);
       } else {
         snapshotsCreated++;
-        logger.debug(`✅ Snapshot created for ${deviceId}: ${imagesAddedToday} images added (${activityTrend})`);
+        
+        // Enhanced logging
+        let logMsg = `✅ Snapshot created for ${deviceId}: ${imagesAddedToday} images added (${enhancedTrend})`;
+        if (averageDaily !== null) {
+          logMsg += `, 7-day avg: ${averageDaily}`;
+        }
+        if (daysSinceLastActivity !== null && daysSinceLastActivity > 3) {
+          logMsg += `, ${daysSinceLastActivity} days since active`;
+        }
+        if (anomaly.isAnomaly) {
+          logMsg += ` 🚨 ${anomaly.type} anomaly (${anomaly.severity})`;
+        }
+        
+        logger.debug(logMsg);
       }
       
     } catch (error) {
-      logger.error(`Error creating snapshot for ${cameraItem.location_id}:`, error);
+      logger.error(`Error creating enhanced snapshot for ${cameraItem.location_id}:`, error);
     }
   }
   
