@@ -1,0 +1,285 @@
+name: 🎯 Enhanced Cuddeback Camera Sync with Snapshots
+
+on:
+  schedule:
+    # Run daily at 7:30 AM EST (12:30 PM UTC) - before weather collection
+    - cron: '30 12 * * *'
+  workflow_dispatch:
+    # Allow manual triggers for testing
+    inputs:
+      debug_mode:
+        description: 'Enable debug logging'
+        required: false
+        default: 'false'
+        type: boolean
+      create_test_data:
+        description: 'Create test historical data (for development)'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  NODE_VERSION: '18'
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  CUDDEBACK_EMAIL: ${{ secrets.CUDDEBACK_EMAIL }}
+  CUDDEBACK_PASSWORD: ${{ secrets.CUDDEBACK_PASSWORD }}
+
+jobs:
+  enhanced-camera-sync:
+    name: 🔄 Enhanced Camera Sync with Trend Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    # Security: Only allow repository owner to manually trigger
+    if: github.event_name == 'schedule' || github.actor == github.repository_owner
+    
+    steps:
+      - name: 📥 Checkout Repository  
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: |
+          npm ci
+
+      - name: 📊 Log Collection Start
+        id: log_start
+        run: |
+          echo "collection_id=$(date +%Y%m%d_%H%M%S)" >> $GITHUB_OUTPUT
+          echo "start_time=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)" >> $GITHUB_OUTPUT
+          echo "🚀 Starting enhanced camera sync at $(date)"
+
+      - name: 🧪 Create Test Data (Development Only)
+        if: github.event.inputs.create_test_data == 'true'
+        run: |
+          echo "🧪 Creating test historical data for development testing..."
+          node -e "
+            const { createClient } = require('@supabase/supabase-js');
+            const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+            
+            // Simple test data creation for manual workflow runs
+            console.log('Test data creation would run here in development mode');
+          "
+
+      - name: 🎯 Enhanced Cuddeback Sync
+        id: enhanced_sync
+        run: |
+          echo "🔍 Starting enhanced Cuddeback sync with trend analysis..."
+          
+          # Set debug mode based on input
+          if [ "${{ github.event.inputs.debug_mode }}" = "true" ]; then
+            export DEBUG_MODE=true
+            echo "🐛 Debug mode enabled"
+          fi
+          
+          # Run the enhanced sync script
+          node scripts/sync-cuddeback-cameras.js
+          
+          echo "✅ Enhanced sync completed"
+        env:
+          DEBUG_MODE: ${{ github.event.inputs.debug_mode || 'false' }}
+
+      - name: 📝 Log Collection Results
+        if: always()
+        run: |
+          # Create collection log entry in database
+          node -e "
+            const { createClient } = require('@supabase/supabase-js');
+            const fs = require('fs');
+            
+            async function logResults() {
+              const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+              
+              let syncResults = {};
+              try {
+                if (fs.existsSync('sync-results*.json')) {
+                  const files = fs.readdirSync('.').filter(f => f.startsWith('sync-results') && f.endsWith('.json'));
+                  if (files.length > 0) {
+                    syncResults = JSON.parse(fs.readFileSync(files[0], 'utf8'));
+                  }
+                }
+              } catch (error) {
+                console.log('Could not read sync results:', error.message);
+              }
+              
+              const logEntry = {
+                collection_date: new Date().toISOString().split('T')[0],
+                collection_type: 'camera',
+                status: '${{ job.status }}' === 'success' ? 'success' : 'failed',
+                started_at: '${{ steps.log_start.outputs.start_time }}',
+                completed_at: new Date().toISOString(),
+                processing_duration_ms: Math.floor((Date.now() - new Date('${{ steps.log_start.outputs.start_time }}').getTime())),
+                records_processed: syncResults.cameras_processed || 0,
+                errors_encountered: syncResults.errors?.length || 0,
+                data_completeness_score: syncResults.success ? 100 : 50,
+                alerts_generated: 0, // Enhanced script handles its own alerting
+                error_details: syncResults.errors?.length > 0 ? { errors: syncResults.errors, warnings: syncResults.warnings } : null,
+                processing_summary: \`Enhanced sync: \${syncResults.cameras_updated || 0} status reports, \${syncResults.snapshots_created || 0} snapshots created\`
+              };
+              
+              const { error } = await supabase
+                .from('daily_collection_log')
+                .insert(logEntry);
+                
+              if (error) {
+                console.error('Failed to log collection results:', error.message);
+              } else {
+                console.log('✅ Collection results logged to database');
+                console.log('Summary:', logEntry.processing_summary);
+              }
+            }
+            
+            logResults().catch(console.error);
+          "
+
+      - name: 📊 Generate Enhanced Summary
+        if: always()
+        run: |
+          echo "📊 Enhanced Camera Sync Summary"
+          echo "================================"
+          echo "Run ID: ${{ steps.log_start.outputs.collection_id }}"
+          echo "Status: ${{ job.status }}"
+          echo "Debug Mode: ${{ github.event.inputs.debug_mode || 'false' }}"
+          echo ""
+          
+          # Try to read and display sync results
+          if ls sync-results*.json 1> /dev/null 2>&1; then
+            echo "📈 Sync Results:"
+            node -e "
+              const fs = require('fs');
+              const files = fs.readdirSync('.').filter(f => f.startsWith('sync-results') && f.endsWith('.json'));
+              if (files.length > 0) {
+                const results = JSON.parse(fs.readFileSync(files[0], 'utf8'));
+                console.log(\`  Cameras Processed: \${results.cameras_processed || 0}\`);
+                console.log(\`  Status Reports Updated: \${results.cameras_updated || 0}\`);
+                console.log(\`  Hardware Records Updated: \${results.hardware_updated || 0}\`);
+                console.log(\`  Snapshots Created: \${results.snapshots_created || 0}\`);
+                console.log(\`  Warnings: \${results.warnings?.length || 0}\`);
+                console.log(\`  Errors: \${results.errors?.length || 0}\`);
+                if (results.cuddeback_report_time) {
+                  console.log(\`  Cuddeback Report Time: \${results.cuddeback_report_time}\`);
+                }
+              }
+            "
+          else
+            echo "  No sync results file found"
+          fi
+
+      - name: 🚨 Check for Anomalies and Alerts
+        if: success()
+        run: |
+          echo "🔍 Checking for camera anomalies and alerts..."
+          node -e "
+            const { createClient } = require('@supabase/supabase-js');
+            
+            async function checkAnomalies() {
+              const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+              
+              // Check for anomalies detected today
+              const { data: anomalies } = await supabase
+                .from('daily_camera_snapshots')
+                .select('camera_device_id, anomaly_type, anomaly_severity, processing_notes')
+                .eq('date', new Date().toISOString().split('T')[0])
+                .eq('anomaly_detected', true);
+              
+              // Check for cameras with high days_since_last_activity  
+              const { data: quietCameras } = await supabase
+                .from('daily_camera_snapshots')
+                .select('camera_device_id, days_since_last_activity')
+                .eq('date', new Date().toISOString().split('T')[0])
+                .gte('days_since_last_activity', 5);
+                
+              if (anomalies?.length > 0) {
+                console.log('🚨 ANOMALIES DETECTED:');
+                anomalies.forEach(a => {
+                  console.log(\`  Camera \${a.camera_device_id}: \${a.anomaly_type} (\${a.anomaly_severity})\`);
+                });
+              }
+              
+              if (quietCameras?.length > 0) {
+                console.log('😴 QUIET CAMERAS:');
+                quietCameras.forEach(c => {
+                  console.log(\`  Camera \${c.camera_device_id}: \${c.days_since_last_activity} days since activity\`);
+                });
+              }
+              
+              if (!anomalies?.length && !quietCameras?.length) {
+                console.log('✅ No anomalies or concerning patterns detected');
+              }
+            }
+            
+            checkAnomalies().catch(console.error);
+          "
+
+      - name: 📄 Upload Enhanced Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: enhanced-camera-sync-${{ steps.log_start.outputs.collection_id }}
+          path: |
+            sync-results*.json
+            sync-log*.txt
+          retention-days: 7
+
+      - name: 🎉 Success Notification
+        if: success()
+        run: |
+          echo "🎉 Enhanced camera sync completed successfully!"
+          echo "✅ Camera status reports updated"
+          echo "📸 Daily snapshots created with trend analysis"
+          echo "📊 7-day averages and anomaly detection complete"
+          echo "💾 Results logged to daily_collection_log"
+
+      - name: ❌ Failure Notification
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Enhanced Camera Sync Failed - ${new Date().toISOString().split('T')[0]}`,
+              body: `## Enhanced Camera Sync Failure
+              
+              **Workflow Run:** ${{ github.run_id }}
+              **Time:** ${new Date().toISOString()}
+              **Status:** ${{ job.status }}
+              
+              ### Details
+              - The enhanced camera sync workflow failed during execution
+              - Both camera status reports and daily snapshots may be affected
+              - Check the workflow logs for detailed error information
+              
+              ### Next Steps
+              1. Review workflow logs in Actions tab
+              2. Check Cuddeback website accessibility
+              3. Verify database connection
+              4. Manual sync may be required
+              
+              ### Monitoring
+              - Camera trend analysis paused until resolution
+              - Anomaly detection may have gaps
+              - Check sync-results artifacts for partial data
+              
+              **Auto-generated by GitHub Actions**`,
+              labels: ['bug', 'automation', 'camera-sync']
+            })
+
+  # Optional: Add dependency to run after this workflow completes
+  trigger-weather-collection:
+    name: 🌤️ Trigger Weather Collection
+    needs: enhanced-camera-sync
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'schedule'
+    
+    steps:
+      - name: 📅 Schedule Weather Collection
+        run: |
+          echo "📅 Enhanced camera sync completed, weather collection will run at 8:00 AM EST"
+          echo "🔗 Camera snapshot data available for weather correlation analysis"
