@@ -1,9 +1,13 @@
 # Daily Snapshot System Implementation Roadmap
 
-**Status**: 🚧 IN PROGRESS - Phase 2 Complete, Ready for Phase 3
+**Status**: 🚧 IN PROGRESS - Phase 3 Complete, Ready for Phase 5 (UI Integration)
 **Started**: July 11, 2025  
-**Current Phase**: ✅ Phase 1 Complete | ✅ Phase 2 Complete | 🔄 Phase 3 Starting | Phase 4 | Phase 5 | Phase 6  
-**Next Action**: Phase 3, Step 3.1 - Enhance existing camera scraping
+**Current Phase**: ✅ Phase 1 Complete | ✅ Phase 2 Complete | ✅ Phase 3 Complete | **🔄 Phase 5 Starting** | Phase 4 | Phase 6  
+**Next Action**: Phase 5, Step 5.1 - Create daily highlights widget
+
+## ⚠️ **Implementation Order Change**
+**Phase 5 (UI Integration) will be completed before Phase 4 (Background Processing)**  
+This allows for better testing of UI components before building the automation layer.
 
 ## Overview
 
@@ -37,7 +41,7 @@ Daily Collection Schedule (EST):
 
 ## Progress Tracking
 
-**Current Phase**: ✅ Phase 1 Complete | ✅ Phase 2 Complete | 🔄 Phase 3 Starting | Phase 4 | Phase 5 | Phase 6  
+**Current Phase**: ✅ Phase 1 Complete | ✅ Phase 2 Complete | ✅ Phase 3 Complete | **🔄 Phase 5 Starting** | Phase 4 | Phase 6  
 
 ### Phase 1: Database Foundation ✅ COMPLETED (July 11, 2025)
 - [x] Step 1.1: Create three new snapshot tables
@@ -53,25 +57,31 @@ Daily Collection Schedule (EST):
 - [x] **Step 2.4**: Create GitHub Actions workflow 
 - [x] **Step 2.5**: Test historical data collection 
 
-### Phase 3: Camera Data Integration ⬜ (2-3 days)
-- [ ] Step 3.1: Enhance existing camera scraping
-- [ ] Step 3.2: Implement activity trend calculations
-- [ ] Step 3.3: Add location change detection
-- [ ] Step 3.4: Create camera snapshot workflow
-- [ ] Step 3.5: Test integration with existing system
+### ✅ **Phase 3: Camera Data Integration** - COMPLETE (July 14, 2025)
+- [x] **Step 3.1**: Enhance existing camera scraping
+- [x] **Step 3.2**: Implement activity trend calculations
+- [x] **Step 3.3**: ~~Add location change detection~~ (SKIPPED - limited value with daily camera reports)
+- [x] **Step 3.4**: Create camera snapshot workflow
+- [x] **Step 3.5**: Test integration with existing system
 
-### Phase 4: Background Processing ⬜ (1-2 days)
+**Note**: Step 3.3 (location change detection) was skipped because the daily camera reports from Cuddeback provide limited location precision and the GPS coordinates in the reports are not reliable enough for meaningful location change detection.
+
+### 🔄 **Phase 5: UI Integration** - IN PROGRESS (3-4 days)
+**Objective**: Add daily snapshot data to user interface
+
+- [ ] **Step 5.1**: Create daily highlights widget
+- [ ] **Step 5.2**: Enhance camera cards with trends
+- [ ] **Step 5.3**: Build activity trend charts
+- [ ] **Step 5.4**: Add alert notifications display
+- [ ] **Step 5.5**: Test UI components
+
+### Phase 4: Background Processing ⬜ (1-2 days) - **WILL BE DONE AFTER PHASE 5**
+**Objective**: Coordinate daily jobs and implement monitoring
+
 - [ ] Step 4.1: Create analysis and alerting workflow
 - [ ] Step 4.2: Implement collection monitoring
 - [ ] Step 4.3: Add retry and error handling
 - [ ] Step 4.4: Test complete daily workflow
-
-### Phase 5: UI Integration ⬜ (3-4 days)
-- [ ] Step 5.1: Create daily highlights widget
-- [ ] Step 5.2: Enhance camera cards with trends
-- [ ] Step 5.3: Build activity trend charts
-- [ ] Step 5.4: Add alert notifications display
-- [ ] Step 5.5: Test UI components
 
 ### Phase 6: Analytics & Alerting ⬜ (2-3 days)
 - [ ] Step 6.1: Implement email notification system
@@ -162,7 +172,7 @@ CREATE TABLE daily_weather_snapshots (
   -- Data Quality Scoring
   data_quality_score integer DEFAULT 100,
   missing_fields text[],
-  data_source_notes text,
+  processing_notes text,
   
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
@@ -172,45 +182,49 @@ CREATE TABLE daily_weather_snapshots (
 CREATE TABLE daily_camera_snapshots (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   
-  -- Reference Data
+  -- Foreign Keys
+  camera_deployment_id uuid REFERENCES camera_deployments(id) ON DELETE CASCADE,
+  
+  -- Date and Metadata
   date date NOT NULL,
-  camera_device_id text NOT NULL,
+  device_id text NOT NULL,
+  device_name text,
+  deployment_name text,
   
-  -- Snapshot of camera_status_reports fields
-  deployment_id uuid,
-  hardware_id uuid,
-  battery_status text,
-  signal_level integer,
-  network_links integer,
+  -- Complete Status Fields (preserving all data)
+  battery_level integer,
   sd_images_count integer,
-  sd_free_space_mb integer,
+  sd_videos_count integer,
+  sd_available_gb numeric(6,2),
+  signal_strength_bars integer,
+  temperature_f integer,
+  last_communication_at timestamptz,
+  firmware_version text,
+  cellular_carrier text,
   image_queue integer,
-  last_photo_timestamp timestamptz,
-  temp_f integer,
-  cellular_status text,
-  gps_coordinates text,
-  device_time timestamptz,
+  last_image_at timestamptz,
+  gps_latitude numeric(10,8),
+  gps_longitude numeric(11,8),
+  status_notes text,
+  cuddeback_report_timestamp timestamptz,
   
-  -- Trend Analysis Fields
-  activity_score integer DEFAULT 0,
-  activity_trend text, -- 'increasing', 'decreasing', 'stable', 'new'
+  -- Activity Analysis (calculated fields)
   images_added_today integer DEFAULT 0,
+  activity_score integer DEFAULT 0,
   days_since_last_activity integer DEFAULT 0,
+  seven_day_average_images numeric(5,1) DEFAULT 0,
+  activity_trend text DEFAULT 'stable',
+  activity_anomaly boolean DEFAULT false,
   
-  -- Location Change Detection
-  location_changed boolean DEFAULT false,
-  previous_coordinates text,
-  location_change_distance_meters numeric(10,2),
-  
-  -- Alert Flags
-  needs_attention boolean DEFAULT false,
-  alert_reasons text[],
+  -- Data Quality
+  data_quality_score integer DEFAULT 100,
+  missing_fields text[],
   
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now(),
   
-  -- Constraints
-  UNIQUE(date, camera_device_id)
+  -- Composite unique constraint
+  UNIQUE(date, device_id)
 );
 
 -- daily_collection_log table
@@ -220,505 +234,119 @@ CREATE TABLE daily_collection_log (
   -- Collection Metadata
   collection_date date NOT NULL,
   collection_type text NOT NULL, -- 'weather', 'cameras', 'analysis'
-  collection_timestamp timestamptz DEFAULT now(),
+  started_at timestamptz DEFAULT now(),
+  completed_at timestamptz,
+  status text NOT NULL DEFAULT 'running', -- 'running', 'success', 'failed', 'partial'
   
-  -- Status Tracking
-  status text NOT NULL DEFAULT 'pending', -- 'pending', 'success', 'partial', 'failed'
+  -- Processing Details
   records_processed integer DEFAULT 0,
+  records_created integer DEFAULT 0,
+  records_updated integer DEFAULT 0,
   records_failed integer DEFAULT 0,
-  processing_duration_ms integer,
   
-  -- Error Tracking
+  -- Error Handling
   error_message text,
   error_details jsonb,
   retry_count integer DEFAULT 0,
   
-  -- Data Quality
+  -- Quality Metrics
   data_quality_issues text[],
-  data_completeness_score integer,
+  performance_metrics jsonb,
   
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
-
--- Indexes for performance
-CREATE INDEX idx_weather_snapshots_date ON daily_weather_snapshots(date);
-CREATE INDEX idx_weather_snapshots_quality ON daily_weather_snapshots(data_quality_score);
-CREATE INDEX idx_camera_snapshots_date ON daily_camera_snapshots(date);
-CREATE INDEX idx_camera_snapshots_device ON daily_camera_snapshots(camera_device_id);
-CREATE INDEX idx_camera_snapshots_activity ON daily_camera_snapshots(activity_score);
-CREATE INDEX idx_collection_log_date_type ON daily_collection_log(collection_date, collection_type);
-CREATE INDEX idx_collection_log_status ON daily_collection_log(status);
-
--- Enable Row Level Security
-ALTER TABLE daily_weather_snapshots ENABLE ROW LEVEL SECURITY;
-ALTER TABLE daily_camera_snapshots ENABLE ROW LEVEL SECURITY;
-ALTER TABLE daily_collection_log ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies (authenticated users can read/write)
-CREATE POLICY "Users can view weather snapshots" ON daily_weather_snapshots FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Users can insert weather snapshots" ON daily_weather_snapshots FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Users can update weather snapshots" ON daily_weather_snapshots FOR UPDATE USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Users can view camera snapshots" ON daily_camera_snapshots FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Users can insert camera snapshots" ON daily_camera_snapshots FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Users can update camera snapshots" ON daily_camera_snapshots FOR UPDATE USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Users can view collection log" ON daily_collection_log FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Users can insert collection log" ON daily_collection_log FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Users can update collection log" ON daily_collection_log FOR UPDATE USING (auth.role() = 'authenticated');
 ```
 
-**Git commands**:
+**Git commands** (after running migration):
 ```bash
 git add supabase/
 git commit -m "step-1.1: create daily snapshot database tables
 
-- Add daily_weather_snapshots table with Visual Crossing API fields
-- Add daily_camera_snapshots table with trend analysis
-- Add daily_collection_log table for monitoring
-- Include indexes for performance
-- Add RLS policies for security"
+- Add daily_weather_snapshots table (20 fields + quality scoring)
+- Add daily_camera_snapshots table (30 fields including activity analysis)
+- Add daily_collection_log table for monitoring and debugging
+- Include comprehensive indexes for performance
+- Database foundation ready for daily snapshot system"
 git push origin feature/daily-snapshot-system
 ```
 
 **How to prompt Claude**:
-> "Created snapshot database tables. Migration executed successfully in Supabase. All three tables exist with proper indexes and RLS policies. Ready for Step 1.2."
+> "Starting Phase 1. Database migration complete. Three snapshot tables created in Supabase. Ready for Step 1.2."
 
 ### Step 1.2: Add Database Functions and Triggers
 
-**Action**: Create database functions for automated data processing
+**Files to create**: Additional Supabase SQL for functions
 
-**Additional SQL to execute**:
-```sql
--- Function to calculate weather data quality score
-CREATE OR REPLACE FUNCTION calculate_weather_quality_score(weather_data jsonb)
-RETURNS TABLE(quality_score integer, missing_fields text[]) 
-LANGUAGE plpgsql AS $$
-DECLARE
-  score integer := 100;
-  missing text[] := '{}';
-  required_fields text[] := ARRAY['tempmax', 'tempmin', 'temp', 'humidity', 'precip', 'windspeed', 'sunrise', 'sunset'];
-  field text;
-BEGIN
-  -- Check each required field
-  FOREACH field IN ARRAY required_fields LOOP
-    IF weather_data->field IS NULL OR weather_data->>field = '' THEN
-      score := score - 10;
-      missing := array_append(missing, field);
-    END IF;
-  END LOOP;
-  
-  -- Additional quality checks
-  IF (weather_data->>'tempmax')::numeric < (weather_data->>'tempmin')::numeric THEN
-    score := score - 15;
-    missing := array_append(missing, 'temp_logic_error');
-  END IF;
-  
-  IF (weather_data->>'humidity')::numeric > 100 OR (weather_data->>'humidity')::numeric < 0 THEN
-    score := score - 10;
-    missing := array_append(missing, 'humidity_range_error');
-  END IF;
-  
-  RETURN QUERY SELECT GREATEST(score, 0), missing;
-END;
-$$;
-
--- Function to detect camera location changes
-CREATE OR REPLACE FUNCTION detect_camera_location_change(
-  current_coordinates text,
-  previous_coordinates text,
-  threshold_meters numeric DEFAULT 50.0
-)
-RETURNS TABLE(changed boolean, distance_meters numeric)
-LANGUAGE plpgsql AS $$
-DECLARE
-  distance numeric;
-  current_lat numeric;
-  current_lng numeric;
-  prev_lat numeric;
-  prev_lng numeric;
-BEGIN
-  -- Parse coordinates (format: "lat,lng")
-  IF current_coordinates IS NULL OR previous_coordinates IS NULL THEN
-    RETURN QUERY SELECT false, 0.0;
-    RETURN;
-  END IF;
-  
-  -- Extract lat/lng from coordinate strings
-  current_lat := split_part(current_coordinates, ',', 1)::numeric;
-  current_lng := split_part(current_coordinates, ',', 2)::numeric;
-  prev_lat := split_part(previous_coordinates, ',', 1)::numeric;
-  prev_lng := split_part(previous_coordinates, ',', 2)::numeric;
-  
-  -- Calculate distance using Haversine formula (simplified for small distances)
-  distance := 111320 * sqrt(
-    power(current_lat - prev_lat, 2) + 
-    power((current_lng - prev_lng) * cos(radians(current_lat)), 2)
-  );
-  
-  RETURN QUERY SELECT distance > threshold_meters, distance;
-END;
-$$;
-
--- Function to calculate activity trends
-CREATE OR REPLACE FUNCTION calculate_activity_trend(
-  current_images integer,
-  previous_images integer,
-  days_back integer DEFAULT 7
-)
-RETURNS text
-LANGUAGE plpgsql AS $$
-DECLARE
-  trend text := 'stable';
-  image_diff integer;
-  change_threshold integer := 10; -- Minimum change to consider significant
-BEGIN
-  IF previous_images IS NULL OR current_images IS NULL THEN
-    RETURN 'new';
-  END IF;
-  
-  image_diff := current_images - previous_images;
-  
-  IF image_diff > change_threshold THEN
-    trend := 'increasing';
-  ELSIF image_diff < -change_threshold THEN
-    trend := 'decreasing';
-  ELSE
-    trend := 'stable';
-  END IF;
-  
-  RETURN trend;
-END;
-$$;
-
--- Trigger to auto-update timestamps
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = now();
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- Add update triggers to all snapshot tables
-CREATE TRIGGER update_weather_snapshots_updated_at BEFORE UPDATE ON daily_weather_snapshots 
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_camera_snapshots_updated_at BEFORE UPDATE ON daily_camera_snapshots 
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_collection_log_updated_at BEFORE UPDATE ON daily_collection_log 
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-```
-
-**Git commands**:
-```bash
-git add supabase/
-git commit -m "step-1.2: add database functions and triggers
-
-- Add calculate_weather_quality_score function
-- Add detect_camera_location_change function  
-- Add calculate_activity_trend function
-- Add auto-update timestamp triggers
-- Functions enable automated data processing"
-git push origin feature/daily-snapshot-system
-```
+**Action**: Create helper functions for data quality and activity calculations
 
 **How to prompt Claude**:
-> "Database functions and triggers created successfully. All automated processing functions are working. Ready for Step 1.3."
+> "Step 1.1 complete. Need database functions and triggers. Requirements:
+> - Data quality scoring function for weather snapshots
+> - Activity trend calculation functions for camera snapshots
+> - Location change detection using GPS coordinates  
+> - Anomaly detection triggers
+> - Updated_at triggers for all snapshot tables"
+
+**Expected deliverables**:
+- Quality scoring algorithms
+- Activity calculation functions
+- GPS distance calculations
+- Automated triggers
+- Database performance indexes
 
 ### Step 1.3: Create Sample Data and Testing
 
-**Action**: Insert test data and verify database functionality
+**File**: `scripts/create-sample-snapshot-data.js`
 
-**Test data SQL**:
-```sql
--- Insert sample weather data
-INSERT INTO daily_weather_snapshots (
-  date, 
-  raw_weather_data,
-  tempmax, tempmin, temp, temp_dawn, temp_dusk,
-  humidity, precip, precipprob, windspeed, winddir,
-  cloudcover, uvindex, moonphase, sunrise, sunset,
-  data_quality_score
-) VALUES (
-  '2025-07-10',
-  '{"tempmax":85.2,"tempmin":62.1,"temp":73.5,"humidity":68.4,"precip":0.0,"windspeed":8.2,"sunrise":"06:15:00","sunset":"20:10:00"}',
-  85.2, 62.1, 73.5, 64.8, 78.2,
-  68.4, 0.0, 15, 8.2, 225,
-  25, 7.2, 0.25, '06:15:00', '20:10:00',
-  100
-);
-
--- Insert sample camera data
-INSERT INTO daily_camera_snapshots (
-  date,
-  camera_device_id,
-  battery_status,
-  signal_level,
-  sd_images_count,
-  activity_score,
-  activity_trend,
-  images_added_today
-) VALUES (
-  '2025-07-10',
-  '002',
-  'OK',
-  85,
-  1247,
-  75,
-  'increasing',
-  23
-);
-
--- Insert sample collection log
-INSERT INTO daily_collection_log (
-  collection_date,
-  collection_type,
-  status,
-  records_processed,
-  processing_duration_ms,
-  data_completeness_score
-) VALUES (
-  '2025-07-10',
-  'weather',
-  'success',
-  1,
-  1250,
-  100
-);
-
--- Test database functions
-SELECT * FROM calculate_weather_quality_score(
-  '{"tempmax":85.2,"tempmin":62.1,"temp":73.5,"humidity":68.4,"precip":0.0,"windspeed":8.2,"sunrise":"06:15:00","sunset":"20:10:00"}'::jsonb
-);
-
-SELECT * FROM detect_camera_location_change(
-  '36.4272,-79.5109',
-  '36.4275,-79.5112',
-  50.0
-);
-
-SELECT calculate_activity_trend(1247, 1224, 7);
-```
-
-**Verification queries**:
-```sql
--- Verify table structure
-SELECT table_name, column_name, data_type 
-FROM information_schema.columns 
-WHERE table_name IN ('daily_weather_snapshots', 'daily_camera_snapshots', 'daily_collection_log')
-ORDER BY table_name, ordinal_position;
-
--- Test data retrieval
-SELECT count(*) as weather_records FROM daily_weather_snapshots;
-SELECT count(*) as camera_records FROM daily_camera_snapshots;  
-SELECT count(*) as log_records FROM daily_collection_log;
-
--- Test indexes
-SELECT schemaname, tablename, indexname, indexdef
-FROM pg_indexes 
-WHERE tablename LIKE 'daily_%'
-ORDER BY tablename, indexname;
-```
-
-**Git commands**:
-```bash
-git add docs/database/
-git commit -m "step-1.3: add sample data and testing
-
-- Insert sample weather, camera, and log data
-- Test all database functions work correctly
-- Verify table structures and indexes
-- Database foundation fully functional"
-git push origin feature/daily-snapshot-system
-```
+**Action**: Generate realistic test data for development
 
 **How to prompt Claude**:
-> "Sample data inserted and tested successfully. All database functions working. Indexes verified. Database foundation is complete. Ready for Step 1.4."
+> "Database functions ready. Need sample data generation script. Requirements:
+> - Create 30 days of sample weather snapshots
+> - Generate daily camera snapshots for all 6 cameras
+> - Include realistic activity trends and anomalies
+> - Add collection log entries for testing
+> - Verify all database functions work correctly"
+
+**Expected deliverables**:
+- Sample data generation script
+- Realistic test scenarios
+- Function verification
+- Data quality validation
+- Performance testing
 
 ### Step 1.4: Update Documentation
 
-**Files to create/update**:
-- `docs/database/migrations.md`
+**Files to update**:
 - `docs/database/SCHEMA.md`
 - `docs/database/daily-snapshot-system.md`
 
-**Update migrations.md**:
-```markdown
-### Daily Snapshot System - July 2025
+**Action**: Document new database structure comprehensively
 
-**Type**: Schema Addition  
-**Affected Tables**: daily_weather_snapshots, daily_camera_snapshots, daily_collection_log  
-**Breaking Changes**: No  
-**Rollback Available**: Yes
+**How to prompt Claude**:
+> "Sample data created successfully. Need documentation updates. Please update database schema documentation to include the three new snapshot tables, their relationships, and the new functions."
 
-**Purpose**: Implement automated daily data collection system for weather and camera activity tracking, enabling trend analysis and smart alerting.
+**Expected deliverables**:
+- Updated schema documentation
+- Table relationship diagrams
+- Function documentation
+- Usage examples
+- Migration procedures
 
-**Changes Made**:
-- **Added**: daily_weather_snapshots table (20 fields) - Visual Crossing API data storage
-- **Added**: daily_camera_snapshots table (19 fields) - Camera activity trends and location tracking
-- **Added**: daily_collection_log table (12 fields) - System monitoring and error tracking
-- **Added**: Database functions for quality scoring, location change detection, activity trends
-- **Added**: Automated timestamp update triggers
-- **Added**: Performance indexes for date, device, and quality queries
-- **Added**: Row Level Security policies
-
-**Migration SQL**: [Full SQL in daily-snapshot-system-implementation.md Phase 1]
-
-**Verification Steps**:
-- [X] All three snapshot tables created successfully
-- [X] Database functions operational (quality scoring, location detection, activity trends)
-- [X] Indexes created for optimal query performance
-- [X] RLS policies active for security
-- [X] Sample data inserted and tested
-- [X] All automated triggers working
-
-**Files Modified**:
-- supabase/schema.sql (exported after migration)
-- docs/database/SCHEMA.md (updated with snapshot system)
-- docs/database/daily-snapshot-system.md (created)
-
-**Claude Context**: Include this migration when asking Claude about daily snapshots, weather data collection, camera trend analysis, or automated data processing workflows.
-
-**Key Business Logic**:
-- Weather data collected daily at 8 AM EST from Visual Crossing API
-- Camera snapshots track activity trends and location changes
-- Quality scoring enables monitoring of data reliability
-- Collection log provides system health monitoring
-- All data preserved indefinitely for multi-season analysis
-```
-
-**Create daily-snapshot-system.md**:
-```markdown
-# Daily Snapshot System Documentation
-
-## Overview
-Automated daily data collection system for weather and camera activity monitoring, enabling trend analysis and hunting pattern identification.
-
-## System Architecture
-
-### Data Collection Schedule
-- **7:30 AM EST**: Camera data snapshot creation
-- **8:00 AM EST**: Weather data collection from Visual Crossing API
-- **8:30 AM EST**: Analysis and alerting workflow
-
-### Database Tables
-
-#### daily_weather_snapshots
-Complete weather data for property center coordinates with quality scoring.
-
-**Key Fields**:
-- Date, coordinates, API source metadata
-- Raw JSON response for future flexibility
-- Extracted metrics: temperatures, humidity, precipitation, wind, etc.
-- Dawn/dusk temperatures interpolated from hourly data
-- Data quality score (0-100) with missing field tracking
-
-#### daily_camera_snapshots  
-Daily snapshot of camera status with trend analysis.
-
-**Key Fields**:
-- Camera device ID and snapshot date
-- All camera status report fields preserved
-- Activity scoring and trend calculation
-- Location change detection with distance measurement
-- Alert flags for attention-needed cameras
-
-#### daily_collection_log
-System monitoring and error tracking for data collection workflows.
-
-**Key Fields**:
-- Collection type (weather/cameras/analysis) and timestamps
-- Success/failure status with error details
-- Processing metrics and data quality scores
-- Retry tracking and troubleshooting information
-
-## Data Processing Logic
-
-### Weather Quality Scoring
-- **100 points**: Perfect data with all required fields
-- **-10 points**: Each missing required field
-- **-15 points**: Temperature logic errors (max < min)
-- **-10 points**: Humidity out of range (0-100%)
-
-### Camera Activity Trends
-- **"increasing"**: >10 more images than previous period
-- **"decreasing"**: >10 fewer images than previous period  
-- **"stable"**: Within 10 image threshold
-- **"new"**: No previous data available
-
-### Location Change Detection
-- Uses Haversine formula for GPS coordinate comparison
-- **50-meter threshold**: Default for significant location changes
-- Tracks distance moved and flags for investigation
-
-## Automation Workflows
-
-### GitHub Actions Integration
-- **Weather Collection**: Runs at 8:00 AM EST daily
-- **Camera Processing**: Runs at 7:30 AM EST daily
-- **Analysis & Alerts**: Runs at 8:30 AM EST daily
-- **Error Handling**: Retry logic with exponential backoff
-
-### Alert Generation
-1. **Missing Data**: Weather/camera data not collected by expected time
-2. **Quality Issues**: Data quality score below 80%
-3. **Location Changes**: Camera moved >50 meters
-4. **Activity Anomalies**: Significant activity pattern changes
-
-## API Integration
-
-### Visual Crossing Weather API
-- **Endpoint**: Historical weather data for previous day
-- **Cost**: $0.0001 per record (~$0.04/year)
-- **Data Availability**: Complete by 6-8 AM following day
-- **Coordinates**: Property center (36.42723577, -79.51088069)
-
-### Error Handling
-- **Retry Logic**: 3 attempts with exponential backoff
-- **Fallback**: Preserve data gaps rather than interpolate
-- **Monitoring**: Collection success tracked in daily_collection_log
-- **Alerting**: Email notifications for collection failures
-
-## Performance Considerations
-
-### Database Optimization
-- **Indexes**: Date, device ID, activity score, quality score
-- **Query Patterns**: Dashboard widgets <500ms target
-- **Data Growth**: ~2MB/year total storage
-- **Retention**: Indefinite (data becomes more valuable over time)
-
-### Monitoring & Maintenance
-- **Success Rate Target**: 99%+ daily collection
-- **Quality Score Target**: 95%+ average
-- **Alert Response**: <2 hours for critical issues
-- **Performance**: Dashboard queries <500ms
-```
+### Step 1.5: Commit and Merge to Main
 
 **Git commands**:
 ```bash
 git add docs/
-git commit -m "step-1.4: update documentation for daily snapshot system
+git commit -m "step-1.4: complete database foundation documentation
 
-- Add migration entry to migrations.md
-- Update SCHEMA.md with new tables
-- Create daily-snapshot-system.md with detailed docs
-- Document all business logic and automation workflows"
-git push origin feature/daily-snapshot-system
-```
+- Update SCHEMA.md with daily snapshot tables
+- Add daily-snapshot-system.md database guide  
+- Document functions, triggers, and relationships
+- Include usage examples and migration procedures
+- Database foundation complete and documented"
 
-**How to prompt Claude**:
-> "Documentation updated for daily snapshot system. All database changes documented. Ready for Step 1.5."
-
-### Step 1.5: Commit and Merge to Main
-
-**Action**: Merge Phase 1 to main so Claude can see database foundation
-
-**Commands**:
-```bash
-# Merge to main so Claude can see progress
 git checkout main
 git pull origin main
 git merge feature/daily-snapshot-system
@@ -737,137 +365,129 @@ git checkout feature/daily-snapshot-system
 
 ### Step 2.1: Create Weather Collection Service
 
-**File**: `src/lib/weather/weather-service.ts`
+**File**: `src/lib/weather/snapshot-service.ts`
 
-**Action**: Create comprehensive weather data collection service
+**Action**: Build core weather data collection service
 
 **How to prompt Claude**:
-> "Starting Phase 2. Need to create weather collection service. Attach files:
-> - docs/implementation/daily-snapshot-system-design.md  
-> - docs/database/daily-snapshot-system.md
-> 
-> Please create src/lib/weather/weather-service.ts with:
-> - Visual Crossing API integration
-> - Error handling and retries
-> - Data quality scoring using database function
-> - Dawn/dusk temperature interpolation from hourly data
-> - Complete TypeScript types for all responses"
+> "Starting Phase 2. Need weather collection service. Requirements:
+> - Visual Crossing API integration for historical weather data
+> - Fetch data for property center coordinates (36.42723577, -79.51088069)
+> - Parse and extract all weather metrics for daily_weather_snapshots
+> - Calculate dawn/dusk temperatures using sunrise/sunset interpolation
+> - Implement data quality scoring based on field completeness
+> - Full error handling and logging"
 
 **Expected deliverables**:
-- Weather service with API integration
-- TypeScript interfaces for Visual Crossing API
-- Error handling with exponential backoff
-- Data quality validation
-- Test functions for API connectivity
+- Weather API service
+- Data parsing and transformation
+- Quality scoring implementation
+- Error handling system
+- TypeScript type definitions
 
 ### Step 2.2: Implement Visual Crossing API Integration
 
-**Files**: 
-- `src/lib/weather/visual-crossing-client.ts`
-- `src/lib/weather/types.ts`
+**File**: `src/lib/weather/visual-crossing-client.ts`
 
-**Action**: Create dedicated API client with comprehensive error handling
+**Action**: Create robust API client with error handling
 
 **How to prompt Claude**:
-> "Weather service created. Now need Visual Crossing API client. Requirements:
-> - Dedicated client class for Visual Crossing Historical API
-> - Handle rate limiting and HTTP errors
-> - Parse response and extract all required fields
-> - Support for date range queries (for backfilling historical data)
-> - Environment variable configuration for API key
-> - TypeScript types matching Visual Crossing response format"
+> "Weather service created. Need Visual Crossing API client. Requirements:
+> - Authentication with API key from environment variables
+> - Proper request rate limiting and retry logic
+> - Response validation and error handling
+> - Support for historical weather queries by date
+> - Parse all fields needed for daily_weather_snapshots table
+> - Comprehensive logging for debugging"
 
 **Expected deliverables**:
-- Visual Crossing API client
-- Complete TypeScript interfaces
-- Configuration management
-- Rate limiting handling
+- API client implementation
+- Authentication handling
+- Rate limiting system
 - Response validation
+- Retry logic implementation
 
 ### Step 2.3: Add Data Processing and Quality Scoring
 
-**Files**:
-- `src/lib/weather/data-processor.ts`
-- `src/lib/weather/quality-validator.ts`
+**File**: `src/lib/weather/data-processor.ts`
 
-**Action**: Implement data processing pipeline with quality validation
+**Action**: Implement sophisticated data processing pipeline
 
 **How to prompt Claude**:
-> "API client ready. Need data processing pipeline. Requirements:
-> - Process Visual Crossing response into database format
-> - Calculate dawn/dusk temperatures using sunrise/sunset times
-> - Call database quality scoring function
+> "API client ready. Need data processing and quality scoring. Requirements:
+> - Process Visual Crossing response into daily_weather_snapshots format
+> - Calculate dawn/dusk temperatures from hourly data + sunrise/sunset times
+> - Implement quality scoring (0-100) based on missing fields and data validity
 > - Handle missing or invalid data gracefully
-> - Extract all 15 weather fields from raw JSON
-> - Validate coordinate accuracy and API source tracking"
+> - Store both raw JSON and processed fields
+> - Add processing metadata and timestamps"
 
 **Expected deliverables**:
-- Data processing pipeline
-- Quality validation logic
-- Temperature interpolation functions
-- Database integration helpers
-- Error handling for malformed data
+- Data transformation pipeline
+- Quality scoring algorithms
+- Dawn/dusk temperature calculation
+- Missing data handling
+- Metadata generation
 
 ### Step 2.4: Create GitHub Actions Workflow
 
-**File**: `.github/workflows/daily-weather-collection.yml`
+**File**: `.github/workflows/daily-weather-snapshots.yml`
 
 **Action**: Set up automated daily weather collection
 
 **How to prompt Claude**:
 > "Data processing complete. Need GitHub Actions automation. Requirements:
-> - Daily schedule at 8:00 AM EST
+> - Schedule daily at 8:00 AM EST (after Visual Crossing data is available)
+> - Use existing Supabase and Visual Crossing environment secrets
 > - Run weather collection for previous day
-> - Handle timezone conversions properly
-> - Store logs in daily_collection_log table  
-> - Email notifications on failures
-> - Support manual triggering for testing
-> - Environment variables for API keys and database credentials"
+> - Include error handling and notification on failure
+> - Log detailed execution information
+> - Support manual triggering for testing"
 
 **Expected deliverables**:
 - GitHub Actions workflow
-- Environment variable configuration
-- Error notification setup
+- Environment configuration
+- Error notification system
 - Manual trigger support
-- Logging integration
+- Execution logging
 
 ### Step 2.5: Test Historical Data Collection
 
 **File**: `scripts/test-weather-collection.js`
 
-**Action**: Create testing script and validate with historical data
+**Action**: Validate weather collection with historical dates
 
 **How to prompt Claude**:
-> "Automation workflow created. Need testing script. Requirements:
-> - Test script to collect historical weather data for validation
-> - Support date range collection for backfilling
-> - Verify API response format matches expectations
-> - Test quality scoring with various data scenarios
-> - Validate database insertions work correctly
-> - Generate report of data quality over test period"
+> "Automation workflow created. Need historical testing script. Requirements:
+> - Test weather collection for past 7 days
+> - Validate all data fields are populated correctly
+> - Verify quality scoring is working
+> - Test error handling with invalid dates
+> - Confirm database inserts are successful
+> - Generate performance metrics"
 
 **Expected deliverables**:
-- Testing script for manual execution
-- Historical data validation
-- Quality scoring verification
-- Database integration testing
-- Documentation for testing procedures
+- Historical testing script
+- Data validation tests
+- Error scenario testing
+- Performance metrics
+- Success verification
 
 **Git commands** (after all steps):
 ```bash
 git add src/lib/weather/ .github/workflows/ scripts/
 git commit -m "phase-2: complete weather data collection system
 
-- Add Visual Crossing API integration with error handling
-- Implement data processing and quality scoring  
-- Create GitHub Actions workflow for daily automation
-- Add testing scripts for historical data validation
-- Weather collection system fully operational"
+- Add Visual Crossing API integration with comprehensive error handling
+- Implement data processing with dawn/dusk temperature calculation
+- Create quality scoring system for data validation
+- Add GitHub Actions workflow for daily automation
+- Historical testing confirms system reliability"
 git push origin feature/daily-snapshot-system
 
 # Merge to main
 git checkout main
-git pull origin main  
+git pull origin main
 git merge feature/daily-snapshot-system
 git push origin main
 git checkout feature/daily-snapshot-system
@@ -932,27 +552,9 @@ git checkout feature/daily-snapshot-system
 - Scoring system implementation
 - Historical comparison tools
 
-### Step 3.3: Add Location Change Detection
+### Step 3.3: Add Location Change Detection ~~(SKIPPED)~~
 
-**File**: `src/lib/cameras/location-detector.ts`
-
-**Action**: Implement GPS-based location change detection
-
-**How to prompt Claude**:
-> "Activity analysis complete. Need location change detection. Requirements:
-> - Parse GPS coordinates from camera status reports  
-> - Use Haversine formula for distance calculations
-> - 50-meter threshold for significant location changes
-> - Track distance moved and direction
-> - Generate alerts for location changes
-> - Handle missing or invalid GPS data gracefully"
-
-**Expected deliverables**:
-- GPS coordinate parsing
-- Distance calculation functions  
-- Location change detection
-- Alert generation for moves
-- Error handling for invalid coordinates
+**Reasoning**: This step was skipped because the daily camera reports from Cuddeback provide limited GPS precision and the location data is not reliable enough for meaningful change detection. The daily reports are primarily status updates rather than precise location tracking.
 
 ### Step 3.4: Create Camera Snapshot Workflow
 
@@ -961,7 +563,7 @@ git checkout feature/daily-snapshot-system
 **Action**: Set up automated camera snapshot creation
 
 **How to prompt Claude**:
-> "Location detection ready. Need camera snapshot automation. Requirements:
+> "Activity analysis complete. Need camera snapshot automation. Requirements:
 > - Daily schedule at 7:30 AM EST (before weather collection)
 > - Integrate with existing Cuddeback scraping
 > - Create camera snapshots for all active devices
@@ -1019,7 +621,148 @@ git checkout feature/daily-snapshot-system
 ```
 
 **How to prompt Claude**:
-> "Phase 3 complete. Camera data integration merged to main. Ready for Phase 4, Step 4.1."
+> "Phase 3 complete. Camera data integration merged to main. Ready for Phase 5, Step 5.1."
+
+---
+
+## Phase 5: UI Integration (3-4 days)
+
+**Objective**: Add daily snapshot data to user interface
+
+### Step 5.1: Create Daily Highlights Widget
+
+**File**: `src/components/dashboard/DailyHighlights.tsx`
+
+**Action**: Create dashboard widget showing daily snapshot summary
+
+**How to prompt Claude**:
+> "Starting Phase 5. Need daily highlights dashboard widget. Requirements:
+> - Show today's weather summary with key metrics
+> - Display camera activity highlights (most active, alerts)
+> - Show data collection status and quality scores
+> - Include yesterday's comparison for trends
+> - Responsive design for mobile and desktop
+> - Real-time updates when new data arrives"
+
+**Expected deliverables**:
+- Daily highlights React component
+- Weather summary display
+- Camera activity highlights
+- Collection status indicators
+- Responsive design implementation
+
+### Step 5.2: Enhance Camera Cards with Trends
+
+**Files to modify**:
+- `src/components/cameras/CameraCard.tsx` (existing)
+- Create: `src/components/cameras/ActivityTrendChart.tsx`
+
+**Action**: Add trend indicators and activity charts to camera cards
+
+**How to prompt Claude**:
+> "Daily highlights widget created. Need to enhance camera cards. Attach current CameraCard.tsx. Requirements:
+> - Add activity trend indicators to existing camera cards
+> - Show 7-day activity scores and trends
+> - Display activity anomaly alerts when detected
+> - Add mini trend charts showing recent activity
+> - Maintain existing card design and functionality
+> - Responsive design for mobile and desktop"
+
+**Expected deliverables**:
+- Enhanced CameraCard component
+- Activity trend indicators
+- Mini trend charts
+- Anomaly alert display
+- Responsive design updates
+
+### Step 5.3: Build Activity Trend Charts
+
+**File**: `src/components/cameras/ActivityTrendChart.tsx`
+
+**Action**: Create comprehensive activity visualization
+
+**How to prompt Claude**:
+> "Camera cards enhanced. Need activity trend charts. Requirements:
+> - Build detailed activity trend chart component
+> - Show daily activity scores over time (30+ days)
+> - Include weather overlay for correlation analysis
+> - Interactive tooltips with detailed information
+> - Support for different time ranges (7, 14, 30, 90 days)
+> - Export functionality for sharing/printing"
+
+**Expected deliverables**:
+- Activity trend chart component
+- Weather correlation overlay
+- Interactive features
+- Time range selection
+- Export functionality
+
+### Step 5.4: Add Alert Notifications Display
+
+**File**: `src/components/dashboard/AlertNotifications.tsx`
+
+**Action**: Create centralized alert display system
+
+**How to prompt Claude**:
+> "Trend charts complete. Need alert notification system. Requirements:
+> - Display alerts from daily snapshot data collection
+> - Show camera activity anomalies and issues
+> - Weather data quality alerts
+> - Collection system health notifications
+> - Dismissible alert management
+> - Mobile-friendly notification display"
+
+**Expected deliverables**:
+- Alert notification component
+- Alert categorization and prioritization
+- Dismissal management
+- Mobile-optimized display
+- Real-time alert updates
+
+### Step 5.5: Test UI Components
+
+**File**: `src/__tests__/daily-snapshots.test.tsx`
+
+**Action**: Comprehensive testing of all UI components
+
+**How to prompt Claude**:
+> "Alert system complete. Need comprehensive UI testing. Requirements:
+> - Unit tests for all daily snapshot components
+> - Integration tests with Supabase data
+> - Responsive design testing across devices
+> - Accessibility testing for screen readers
+> - Performance testing with large datasets
+> - User interaction testing"
+
+**Expected deliverables**:
+- Complete test suite for UI components
+- Integration testing
+- Accessibility validation
+- Performance testing
+- User interaction tests
+
+**Git commands** (after all steps):
+```bash
+git add src/components/ src/__tests__/
+git commit -m "phase-5: complete UI integration for daily snapshots
+
+- Add daily highlights dashboard widget
+- Enhance camera cards with trend indicators
+- Create activity trend visualization charts
+- Implement alert notification system
+- Comprehensive UI testing and validation"
+git push origin feature/daily-snapshot-system
+
+# Merge to main
+git checkout main
+git pull origin main
+git merge feature/daily-snapshot-system
+git push origin main
+git checkout feature/daily-snapshot-system
+```
+
+**How to prompt Claude**:
+> "Phase 5 complete. UI integration merged to main. Ready for Phase 4, Step 4.1."
 
 ---
 
@@ -1136,148 +879,7 @@ git checkout feature/daily-snapshot-system
 ```
 
 **How to prompt Claude**:
-> "Phase 4 complete. Background processing system merged to main. Ready for Phase 5, Step 5.1."
-
----
-
-## Phase 5: UI Integration (3-4 days)
-
-**Objective**: Add daily snapshot data to user interface
-
-### Step 5.1: Create Daily Highlights Widget
-
-**File**: `src/components/dashboard/DailyHighlights.tsx`
-
-**Action**: Create dashboard widget showing daily snapshot summary
-
-**How to prompt Claude**:
-> "Starting Phase 5. Need daily highlights dashboard widget. Requirements:
-> - Show today's weather summary with key metrics
-> - Display camera activity highlights (most active, alerts)
-> - Show data collection status and quality scores
-> - Include yesterday's comparison for trends
-> - Responsive design for mobile and desktop
-> - Real-time updates when new data arrives"
-
-**Expected deliverables**:
-- Daily highlights React component
-- Weather summary display
-- Camera activity highlights
-- Collection status indicators
-- Responsive design implementation
-
-### Step 5.2: Enhance Camera Cards with Trends
-
-**Files to modify**:
-- `src/components/cameras/CameraCard.tsx` (existing)
-- Create: `src/components/cameras/ActivityTrendChart.tsx`
-
-**Action**: Add trend indicators and activity charts to camera cards
-
-**How to prompt Claude**:
-> "Daily highlights widget created. Need to enhance camera cards. Attach current CameraCard.tsx. Requirements:
-> - Add activity trend indicators (up/down/stable arrows)
-> - Show 7-day activity sparkline chart
-> - Display last activity date and image count changes
-> - Add location change alerts when GPS coordinates change
-> - Include data quality indicators
-> - Maintain existing card functionality and design"
-
-**Expected deliverables**:
-- Enhanced camera card component
-- Activity trend chart component
-- Trend indicators and sparklines
-- Location change alerts
-- Data quality indicators
-
-### Step 5.3: Build Activity Trend Charts
-
-**File**: `src/components/analytics/ActivityTrendChart.tsx`
-
-**Action**: Create comprehensive activity visualization component
-
-**How to prompt Claude**:
-> "Camera cards enhanced. Need detailed activity trend charts. Requirements:
-> - Line chart showing camera activity over time (7/30/90 day views)
-> - Overlay weather data for correlation analysis
-> - Interactive tooltips with detailed information
-> - Ability to compare multiple cameras
-> - Export functionality for sharing data
-> - Mobile-optimized touch interactions"
-
-**Expected deliverables**:
-- Activity trend chart component
-- Weather correlation overlay
-- Interactive chart features
-- Multi-camera comparison
-- Export functionality
-
-### Step 5.4: Add Alert Notifications Display
-
-**File**: `src/components/alerts/AlertNotifications.tsx`
-
-**Action**: Create alert display and management system
-
-**How to prompt Claude**:
-> "Activity charts complete. Need alert notification system. Requirements:
-> - Display active alerts from daily snapshot analysis
-> - Categorize alerts by priority (critical, high, medium, low)
-> - Show alert details and recommended actions
-> - Mark alerts as acknowledged or resolved
-> - Real-time notifications for new alerts
-> - Alert history and trends"
-
-**Expected deliverables**:
-- Alert notification component
-- Alert categorization system
-- Alert management features
-- Real-time notifications
-- Alert history tracking
-
-### Step 5.5: Test UI Components
-
-**File**: `src/__tests__/components/daily-snapshots.test.tsx`
-
-**Action**: Comprehensive testing of all UI components
-
-**How to prompt Claude**:
-> "Alert system ready. Need comprehensive UI testing. Requirements:
-> - Unit tests for all daily snapshot components
-> - Integration tests with Supabase data
-> - Responsive design testing across devices
-> - Accessibility testing for screen readers
-> - Performance testing with large datasets
-> - User interaction testing"
-
-**Expected deliverables**:
-- Complete test suite for UI components
-- Integration testing
-- Accessibility validation
-- Performance testing
-- User interaction tests
-
-**Git commands** (after all steps):
-```bash
-git add src/components/ src/__tests__/
-git commit -m "phase-5: complete UI integration for daily snapshots
-
-- Add daily highlights dashboard widget
-- Enhance camera cards with trend indicators
-- Create activity trend visualization charts
-- Implement alert notification system
-- Comprehensive UI testing and validation"
-git push origin feature/daily-snapshot-system
-
-# Merge to main
-git checkout main
-git pull origin main
-git merge feature/daily-snapshot-system
-git push origin main
-git checkout feature/daily-snapshot-system
-```
-
-**How to prompt Claude**:
-> "Phase 5 complete. UI integration merged to main. Ready for Phase 6, Step 6.1."
+> "Phase 4 complete. Background processing system merged to main. Ready for Phase 6, Step 6.1."
 
 ---
 
@@ -1317,73 +919,71 @@ git checkout feature/daily-snapshot-system
 
 **How to prompt Claude**:
 > "Email system ready. Need advanced anomaly detection. Requirements:
-> - Statistical anomaly detection for weather patterns
-> - Machine learning-based camera activity anomalies
-> - Seasonal pattern recognition and adjustments
-> - Multi-variable correlation analysis (weather + camera activity)
-> - Configurable sensitivity thresholds
-> - Historical trend analysis for pattern identification"
+> - Statistical anomaly detection for camera activity patterns
+> - Weather-based hunting condition analysis
+> - Seasonal trend analysis and predictions
+> - Multi-variable correlation detection
+> - Machine learning-inspired pattern recognition
+> - Configurable sensitivity thresholds"
 
 **Expected deliverables**:
-- Anomaly detection algorithms
-- Statistical analysis functions
-- Pattern recognition system
+- Advanced anomaly detection algorithms
+- Pattern recognition systems
 - Correlation analysis tools
-- Configurable thresholds
+- Seasonal trend analysis
+- Configurable detection thresholds
 
 ### Step 6.3: Add Performance Optimization
 
 **Files**:
 - `src/lib/database/query-optimizer.ts`
-- `src/lib/cache/redis-cache.ts`
+- `src/lib/cache/snapshot-cache.ts`
 
 **Action**: Optimize system performance for production use
 
 **How to prompt Claude**:
-> "Anomaly detection complete. Need performance optimization. Requirements:
+> "Anomaly detection ready. Need performance optimization. Requirements:
 > - Database query optimization for large datasets
-> - Redis caching for frequently accessed data
-> - API response caching with smart invalidation
-> - Background job queue for heavy processing
-> - Database connection pooling and management
-> - Performance monitoring and alerting"
+> - Caching layer for frequently accessed snapshot data
+> - Pagination for UI components with large datasets
+> - Background job optimization and resource management
+> - Memory usage optimization for long-running processes
+> - Database connection pooling and optimization"
 
 **Expected deliverables**:
-- Query optimization system
+- Query optimization strategies
 - Caching implementation
-- Background job processing
-- Connection pool management
-- Performance monitoring
+- Pagination systems
+- Resource management
+- Memory optimization
 
-### Step 6.4: Build Administrative Monitoring Tools
+### Step 6.4: Build Admin Monitoring Tools
 
-**File**: `src/components/admin/SystemMonitoring.tsx`
+**File**: `src/components/admin/SnapshotSystemMonitor.tsx`
 
-**Action**: Create admin interface for system monitoring
+**Action**: Create administrative monitoring interface
 
 **How to prompt Claude**:
-> "Performance optimization ready. Need admin monitoring tools. Requirements:
+> "Performance optimization complete. Need admin monitoring tools. Requirements:
 > - System health dashboard for administrators
-> - Data collection status and quality metrics
-> - API usage and quota monitoring
-> - Error log analysis and trending
-> - Performance metrics and optimization suggestions
-> - Manual trigger capabilities for emergency situations"
+> - Collection status monitoring and manual triggers
+> - Data quality metrics and trend analysis
+> - Error log viewer and troubleshooting tools
+> - Performance metrics and resource usage display
+> - Administrative controls for system management"
 
 **Expected deliverables**:
-- Admin monitoring dashboard
-- System health metrics
-- Error analysis tools
+- Administrative monitoring dashboard
+- System health indicators
+- Manual control interfaces
+- Error troubleshooting tools
 - Performance monitoring
-- Manual override capabilities
 
 ### Step 6.5: Conduct User Acceptance Testing
 
-**Files**:
-- `docs/testing/user-acceptance-test-plan.md`
-- `scripts/user-acceptance-tests.js`
+**File**: `docs/testing/user-acceptance-test-plan.md`
 
-**Action**: Final testing and validation with club members
+**Action**: Comprehensive system testing with end users
 
 **How to prompt Claude**:
 > "Admin tools complete. Need user acceptance testing. Requirements:
@@ -1443,23 +1043,23 @@ git push origin --delete feature/daily-snapshot-system
 - [x] Data quality scoring functional and reliable (80+ scores)
 - [x] Historical data testing completed successfully (July 2025 data)
 
-### Phase 3 Complete When:
-- [ ] Camera scraping enhanced without breaking existing functionality
-- [ ] Activity trend calculations working accurately
-- [ ] Location change detection operational
-- [ ] Camera snapshot automation integrated with existing system
-
-### Phase 4 Complete When:
-- [ ] Complete daily workflow automation functional
-- [ ] Robust error handling and retry logic operational
-- [ ] System monitoring and health checks working
-- [ ] End-to-end testing completed successfully
+### Phase 3 Complete When: ✅ ACHIEVED
+- [x] Camera scraping enhanced without breaking existing functionality
+- [x] Activity trend calculations working accurately
+- [x] ~~Location change detection operational~~ (SKIPPED)
+- [x] Camera snapshot automation integrated with existing system
 
 ### Phase 5 Complete When:
 - [ ] Daily highlights widget integrated into dashboard
 - [ ] Camera cards enhanced with trend indicators
 - [ ] Activity trend charts functional and responsive
 - [ ] Alert notification system operational
+
+### Phase 4 Complete When:
+- [ ] Complete daily workflow automation functional
+- [ ] Robust error handling and retry logic operational
+- [ ] System monitoring and health checks working
+- [ ] End-to-end testing completed successfully
 
 ### Phase 6 Complete When:
 - [ ] Email notification system delivering alerts reliably
