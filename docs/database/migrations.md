@@ -35,6 +35,61 @@
 
 ---
 
+### 2025-07-28: Legal Hunting Times for Hunt Logging
+
+**Type**: Schema Modification  
+**Affected Tables**: daily_weather_snapshots  
+**Breaking Changes**: No  
+**Rollback Available**: Yes
+
+**Purpose**: Add NC hunting regulation compliance fields to support hunt logging system with legal hunting time validation (sunrise ±30 minutes).
+
+**Changes Made**:
+- **Added**: `legal_hunting_start` (time) - NC legal hunting start (sunrise - 30 min)
+- **Added**: `legal_hunting_end` (time) - NC legal hunting end (sunset + 30 min)  
+- **Added**: Performance index for legal time queries
+- **Updated**: All existing records with calculated legal times based on NC regulations
+- **Added**: Column comments for clarity
+
+**Migration SQL**: 
+```sql
+-- Add legal hunting time columns
+ALTER TABLE daily_weather_snapshots 
+ADD COLUMN legal_hunting_start time,
+ADD COLUMN legal_hunting_end time;
+
+-- Add performance index
+CREATE INDEX idx_daily_weather_snapshots_legal_times 
+ON daily_weather_snapshots(date, legal_hunting_start, legal_hunting_end);
+
+-- Update existing records with NC regulations
+UPDATE daily_weather_snapshots 
+SET legal_hunting_start = sunrise - interval '30 minutes',
+    legal_hunting_end = sunset + interval '30 minutes'
+WHERE legal_hunting_start IS NULL;
+```
+
+**Verification Steps**:
+- [x] Legal hunting time columns added successfully
+- [x] Existing records updated with calculated times  
+- [x] Performance index created
+- [x] Column constraints working (if any)
+- [x] Verification query returns expected results
+
+**Files Modified**:
+- supabase/schema.sql (will be exported after migration)
+- docs/database/migrations.md (this entry)
+- docs/database/SCHEMA.md (will be updated to reflect new fields)
+
+**Claude Context**: Include this migration when asking Claude about hunt logging, legal hunting times, weather enrichment, or hunt validation features.
+
+**NC Hunting Regulations Applied**:
+- Legal hunting starts 30 minutes before sunrise
+- Legal hunting ends 30 minutes after sunset
+- Times calculated daily based on actual sunrise/sunset for the property location
+
+---
+
 ### 2025-07-11 (cont.): Enhanced Camera Activity Trends
 
 **Type**: Schema Modification  

@@ -2,7 +2,7 @@
 
 ## Daily Snapshot System (Latest Addition - July 2025)
 
-### daily_weather_snapshots (20+ fields)
+### daily_weather_snapshots (22+ fields)
 Automated daily weather data collection from Visual Crossing API
 - id (uuid, PK)
 - date (date, unique) - Date for weather data
@@ -21,6 +21,8 @@ Automated daily weather data collection from Visual Crossing API
 - data_quality_score (integer) - Automated quality assessment (0-100)
 - missing_fields (text[]) - Array of missing data fields
 - quality_notes (text) - Additional quality information
+- legal_hunting_start (time) - NC legal hunting start (sunrise - 30 min)
+- legal_hunting_end (time) - NC legal hunting end (sunset + 30 min)  
 - created_at/updated_at (timestamptz)
 
 ### daily_camera_snapshots (25 fields)  

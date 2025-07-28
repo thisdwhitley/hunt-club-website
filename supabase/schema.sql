@@ -815,7 +815,7 @@ CREATE TABLE "public"."daily_camera_snapshots" (
     "anomaly_detected" boolean DEFAULT false,
     "anomaly_type" "text",
     "anomaly_severity" "text",
-    CONSTRAINT "daily_camera_snapshots_activity_trend_check" CHECK (("activity_trend" = ANY (ARRAY['increasing'::"text", 'decreasing'::"text", 'stable'::"text", 'insufficient_data'::"text"]))),
+    CONSTRAINT "daily_camera_snapshots_activity_trend_check" CHECK (("activity_trend" = ANY (ARRAY['increasing'::"text", 'decreasing'::"text", 'stable'::"text", 'insufficient_data'::"text", 'strongly_increasing'::"text", 'variable'::"text"]))),
     CONSTRAINT "daily_camera_snapshots_anomaly_severity_check" CHECK (("anomaly_severity" = ANY (ARRAY['moderate'::"text", 'high'::"text"]))),
     CONSTRAINT "daily_camera_snapshots_anomaly_type_check" CHECK (("anomaly_type" = ANY (ARRAY['spike'::"text", 'drop'::"text"])))
 );
@@ -887,11 +887,27 @@ CREATE TABLE "public"."daily_weather_snapshots" (
     "missing_fields" "text"[],
     "quality_notes" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "legal_hunting_start" time without time zone,
+    "legal_hunting_end" time without time zone
 );
 
 
 ALTER TABLE "public"."daily_weather_snapshots" OWNER TO "postgres";
+
+--
+-- Name: COLUMN "daily_weather_snapshots"."legal_hunting_start"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN "public"."daily_weather_snapshots"."legal_hunting_start" IS 'NC legal hunting start time (sunrise - 30 minutes)';
+
+
+--
+-- Name: COLUMN "daily_weather_snapshots"."legal_hunting_end"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN "public"."daily_weather_snapshots"."legal_hunting_end" IS 'NC legal hunting end time (sunset + 30 minutes)';
+
 
 --
 -- Name: food_plots; Type: TABLE; Schema: public; Owner: postgres
@@ -1608,6 +1624,13 @@ CREATE INDEX "idx_daily_camera_snapshots_activity" ON "public"."daily_camera_sna
 --
 
 CREATE INDEX "idx_daily_camera_snapshots_anomaly" ON "public"."daily_camera_snapshots" USING "btree" ("anomaly_detected", "date" DESC) WHERE ("anomaly_detected" = true);
+
+
+--
+-- Name: idx_daily_weather_snapshots_legal_times; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "idx_daily_weather_snapshots_legal_times" ON "public"."daily_weather_snapshots" USING "btree" ("date", "legal_hunting_start", "legal_hunting_end");
 
 
 --
