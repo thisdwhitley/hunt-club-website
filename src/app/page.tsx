@@ -24,13 +24,16 @@ import {
   ClipboardList,
   LogIn,
   Eye,
-  Lock
+  Lock,
+  Plus
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { CalendarView } from "@/components/CalendarView";
 import Link from "next/link";
 import PropertyMap from '@/components/map/PropertyMap';
+import { useModal } from '@/components/modals/ModalSystem'
+import { createClient } from '@/lib/supabase/client'
 
 export default function MainPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -38,6 +41,88 @@ export default function MainPage() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [showWipBanner, setShowWipBanner] = useState(true);
   const { user, signOut, loading } = useAuth();
+  // NEW: Add modal system hook
+  const { showModal } = useModal();
+
+  // NEW: Add data state for real stats
+  const [stands, setStands] = useState([]);
+  const [hunts, setHunts] = useState([]);
+  const [sightings, setSightings] = useState([]);
+  const [harvests, setHarvests] = useState([]);
+
+  const supabase = createClient()
+
+  // NEW: Load real data
+  useEffect(() => {
+    if (user) {
+      loadData()
+    }
+  }, [user])
+
+  const loadData = async () => {
+    try {
+      // Load stands
+      const { data: standsData } = await supabase
+        .from('stands')
+        .select('*')
+        .order('name')
+      setStands(standsData || [])
+
+      // Load hunts
+      const { data: huntsData } = await supabase
+        .from('hunt_logs')
+        .select(`
+          id,
+          hunt_date,
+          start_time,
+          end_time,
+          hunt_type,
+          harvest_count,
+          notes,
+          created_at,
+          stands (name, type)
+        `)
+        .eq('member_id', user.id)
+        .order('hunt_date', { ascending: false })
+        .limit(50)
+      setHunts(huntsData || [])
+
+      // Load sightings
+      const { data: sightingsData } = await supabase
+        .from('hunt_sightings')
+        .select(`
+          id,
+          animal_type,
+          count,
+          gender,
+          behavior,
+          time_observed,
+          hunt_logs!inner (
+            hunt_date,
+            member_id,
+            stands (name)
+          )
+        `)
+        .eq('hunt_logs.member_id', user.id)
+        .order('hunt_logs.hunt_date', { ascending: false })
+        .limit(100)
+      
+      const formattedSightings = sightingsData?.map(sighting => ({
+        id: sighting.id,
+        animal_type: sighting.animal_type,
+        count: sighting.count,
+        gender: sighting.gender,
+        behavior: sighting.behavior,
+        time_observed: sighting.time_observed,
+        hunt_date: sighting.hunt_logs.hunt_date,
+        stand_name: sighting.hunt_logs.stands?.name || 'Unknown'
+      })) || []
+      setSightings(formattedSightings)
+
+    } catch (err) {
+      console.error('Error loading data:', err)
+    }
+  }
 
   // Show all navigation items, but indicate which require auth
   const navigationItems = [
@@ -101,7 +186,172 @@ export default function MainPage() {
     }
   };
 
-  const renderDashboard = () => (
+  // const renderDashboard = () => (
+  //   <div className="space-y-6">
+  //     {/* Welcome Section */}
+  //     <div className="bg-white rounded-lg club-shadow p-6">
+  //       <div className="flex items-center justify-between">
+  //         <div>
+  //           <h2 className="text-2xl font-bold text-forest-shadow">
+  //             Welcome to Caswell County Yacht Club
+  //           </h2>
+  //           <p className="text-weathered-wood mt-2">
+  //             {user 
+  //               ? `Welcome back, ${user.email}! Here's what's happening at the club.`
+  //               : "A premier hunting club in North Carolina. Sign in to access member features."
+  //             }
+  //           </p>
+  //         </div>
+  //         {!user && (
+  //           <Link
+  //             href="/login"
+  //             className="flex items-center px-4 py-2 bg-olive-green text-white rounded-lg hover:bg-pine-needle transition-colors"
+  //           >
+  //             <LogIn size={16} className="mr-2" />
+  //             Sign In
+  //           </Link>
+  //         )}
+  //       </div>
+  //     </div>
+
+  //     {/* Stats Grid */}
+  //     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+  //       {(user ? huntingStats : publicStats).map((stat, index) => (
+  //         <div key={index} className="bg-white rounded-lg club-shadow p-6">
+  //           <div className="flex items-center justify-between">
+  //             <div>
+  //               <p className="text-sm font-medium text-weathered-wood">{stat.label}</p>
+  //               <p className="text-2xl font-bold text-forest-shadow">{stat.value}</p>
+  //               {stat.change && (
+  //                 <span className={`text-sm font-medium ${
+  //                   stat.change.startsWith('+') ? 'text-bright-orange' : 
+  //                   stat.change.startsWith('-') ? 'text-clay-earth' : 
+  //                   'text-weathered-wood'
+  //                 }`}>
+  //                   {stat.change}
+  //                 </span>
+  //               )}
+  //             </div>
+  //             <div className="w-12 h-12 bg-morning-mist rounded-lg flex items-center justify-center">
+  //               <stat.icon size={24} className="text-olive-green" />
+  //             </div>
+  //           </div>
+  //         </div>
+  //       ))}
+  //     </div>
+
+  //     {user ? (
+  //       // Authenticated user content
+  //       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  //         {/* Recent Hunts */}
+  //         <div className="bg-white rounded-lg club-shadow">
+  //           <div className="p-6 border-b border-morning-mist">
+  //             <h3 className="text-lg font-semibold text-forest-shadow">Recent Hunts</h3>
+  //           </div>
+  //           <div className="p-6">
+  //             <div className="space-y-4">
+  //               {recentHunts.map((hunt, index) => (
+  //                 <div key={index} className="flex items-center space-x-4">
+  //                   <div className="w-10 h-10 bg-olive-green/10 rounded-lg flex items-center justify-center">
+  //                     <Target size={20} className="text-olive-green" />
+  //                   </div>
+  //                   <div className="flex-1 min-w-0">
+  //                     <p className="text-sm font-medium text-forest-shadow truncate">
+  //                       {hunt.hunter} - {hunt.game}
+  //                     </p>
+  //                     <p className="text-sm text-weathered-wood">{hunt.location} • {hunt.date}</p>
+  //                   </div>
+  //                   <ChevronRight size={16} className="text-muted-gold" />
+  //                 </div>
+  //               ))}
+  //             </div>
+  //           </div>
+  //         </div>
+
+  //         {/* Maintenance Tasks */}
+  //         <div className="bg-white rounded-lg club-shadow">
+  //           <div className="p-6 border-b border-morning-mist">
+  //             <h3 className="text-lg font-semibold text-forest-shadow">Maintenance Tasks</h3>
+  //           </div>
+  //           <div className="p-6">
+  //             <div className="space-y-4">
+  //               {maintenanceTasks.map((task, index) => (
+  //                 <div key={index} className="flex items-center space-x-4">
+  //                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+  //                     task.status === 'completed' ? 'bg-bright-orange/10' : 
+  //                     task.status === 'in-progress' ? 'bg-muted-gold/10' : 'bg-clay-earth/10'
+  //                   }`}>
+  //                     {task.status === 'completed' ? 
+  //                       <CheckCircle size={20} className="text-bright-orange" /> :
+  //                       task.status === 'in-progress' ?
+  //                       <Clock size={20} className="text-muted-gold" /> :
+  //                       <AlertTriangle size={20} className="text-clay-earth" />
+  //                     }
+  //                   </div>
+  //                   <div className="flex-1 min-w-0">
+  //                     <p className="text-sm font-medium text-forest-shadow truncate">
+  //                       {task.task}
+  //                     </p>
+  //                     <p className="text-sm text-weathered-wood">{task.assignee} • Due: {task.dueDate}</p>
+  //                   </div>
+  //                   <ChevronRight size={16} className="text-muted-gold" />
+  //                 </div>
+  //               ))}
+  //             </div>
+  //           </div>
+  //         </div>
+  //       </div>
+  //     ) : (
+  //       // Public content for non-authenticated users
+  //       <div className="bg-white rounded-lg club-shadow p-6">
+  //         <div className="text-center">
+  //           <div className="w-16 h-16 bg-olive-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+  //             <Eye size={32} className="text-olive-green" />
+  //           </div>
+  //           <h3 className="text-lg font-semibold text-forest-shadow mb-2">Public View</h3>
+  //           <p className="text-weathered-wood mb-4">
+  //             You're viewing the public information about Caswell County Yacht Club. 
+  //             Sign in to access member features including hunt logs, maintenance tracking, 
+  //             trail camera management, and more.
+  //           </p>
+  //           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md mx-auto">
+  //             <Link
+  //               href="/login"
+  //               className="flex items-center justify-center px-4 py-2 bg-olive-green text-white rounded-lg hover:bg-pine-needle transition-colors"
+  //             >
+  //               <LogIn size={16} className="mr-2" />
+  //               Sign In
+  //             </Link>
+  //             <button
+  //               onClick={() => setActiveSection('calendar')}
+  //               className="flex items-center justify-center px-4 py-2 border border-border text-weathered-wood rounded-lg hover:bg-morning-mist transition-colors"
+  //             >
+  //               <Calendar size={16} className="mr-2" />
+  //               View Calendar
+  //             </button>
+  //           </div>
+  //         </div>
+  //       </div>
+  //     )}
+  //   </div>
+  // );
+
+  // Add this renderHunts function to your src/app/page.tsx file
+// Insert it after the renderDashboard function
+
+const renderDashboard = () => {
+  // Calculate real stats from data
+  const totalHunts = hunts?.length || 0
+  const totalHarvests = hunts?.reduce((sum, hunt) => sum + hunt.harvest_count, 0) || 0
+  const totalSightings = sightings?.length || 0
+  const activeStands = stands?.filter(s => s.active).length || 0
+  const successRate = totalHunts > 0 ? Math.round((totalHarvests / totalHunts) * 100) : 0
+  
+  // Recent activity
+  const recentHunts = hunts?.slice(0, 3) || []
+  const recentSightings = sightings?.slice(0, 5) || []
+
+  return (
     <div className="space-y-6">
       {/* Welcome Section */}
       <div className="bg-white rounded-lg club-shadow p-6">
@@ -129,127 +379,619 @@ export default function MainPage() {
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* Clickable Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {(user ? huntingStats : publicStats).map((stat, index) => (
-          <div key={index} className="bg-white rounded-lg club-shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-weathered-wood">{stat.label}</p>
-                <p className="text-2xl font-bold text-forest-shadow">{stat.value}</p>
-                {stat.change && (
-                  <span className={`text-sm font-medium ${
-                    stat.change.startsWith('+') ? 'text-bright-orange' : 
-                    stat.change.startsWith('-') ? 'text-clay-earth' : 
-                    'text-weathered-wood'
-                  }`}>
-                    {stat.change}
+        {user ? (
+          <>
+            {/* Total Hunts - Clickable */}
+            <button
+              onClick={() => showModal('hunts')}
+              className="bg-white rounded-lg club-shadow p-6 text-left hover:bg-morning-mist/30 transition-colors group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-weathered-wood">Total Hunts</p>
+                  <p className="text-2xl font-bold text-forest-shadow">{totalHunts}</p>
+                  <span className="text-sm font-medium text-bright-orange">
+                    {successRate}% success rate
                   </span>
-                )}
+                </div>
+                <div className="w-12 h-12 bg-olive-green/10 rounded-lg flex items-center justify-center group-hover:bg-olive-green/20 transition-colors">
+                  <Target size={24} className="text-olive-green" />
+                </div>
               </div>
-              <div className="w-12 h-12 bg-morning-mist rounded-lg flex items-center justify-center">
-                <stat.icon size={24} className="text-olive-green" />
+              <div className="mt-2 text-xs text-weathered-wood">Click to view all hunts</div>
+            </button>
+
+            {/* Total Harvests - Clickable */}
+            <button
+              onClick={() => showModal('harvests')}
+              className="bg-white rounded-lg club-shadow p-6 text-left hover:bg-morning-mist/30 transition-colors group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-weathered-wood">Harvests</p>
+                  <p className="text-2xl font-bold text-forest-shadow">{totalHarvests}</p>
+                  <span className="text-sm font-medium text-burnt-orange">
+                    This season
+                  </span>
+                </div>
+                <div className="w-12 h-12 bg-burnt-orange/10 rounded-lg flex items-center justify-center group-hover:bg-burnt-orange/20 transition-colors">
+                  <Target size={24} className="text-burnt-orange" />
+                </div>
+              </div>
+              <div className="mt-2 text-xs text-weathered-wood">Click to view harvest details</div>
+            </button>
+
+            {/* Total Sightings - Clickable */}
+            <button
+              onClick={() => showModal('sightings')}
+              className="bg-white rounded-lg club-shadow p-6 text-left hover:bg-morning-mist/30 transition-colors group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-weathered-wood">Sightings</p>
+                  <p className="text-2xl font-bold text-forest-shadow">{totalSightings}</p>
+                  <span className="text-sm font-medium text-muted-gold">
+                    Wildlife activity
+                  </span>
+                </div>
+                <div className="w-12 h-12 bg-muted-gold/10 rounded-lg flex items-center justify-center group-hover:bg-muted-gold/20 transition-colors">
+                  <Eye size={24} className="text-muted-gold" />
+                </div>
+              </div>
+              <div className="mt-2 text-xs text-weathered-wood">Click to view all sightings</div>
+            </button>
+
+            {/* Active Stands - Clickable */}
+            <button
+              onClick={() => showModal('stands')}
+              className="bg-white rounded-lg club-shadow p-6 text-left hover:bg-morning-mist/30 transition-colors group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-weathered-wood">Active Stands</p>
+                  <p className="text-2xl font-bold text-forest-shadow">{activeStands}</p>
+                  <span className="text-sm font-medium text-dark-teal">
+                    Ready to hunt
+                  </span>
+                </div>
+                <div className="w-12 h-12 bg-dark-teal/10 rounded-lg flex items-center justify-center group-hover:bg-dark-teal/20 transition-colors">
+                  <MapPin size={24} className="text-dark-teal" />
+                </div>
+              </div>
+              <div className="mt-2 text-xs text-weathered-wood">Click to view stand details</div>
+            </button>
+          </>
+        ) : (
+          // Public stats for non-authenticated users
+          publicStats.map((stat, index) => (
+            <div key={index} className="bg-white rounded-lg club-shadow p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-weathered-wood">{stat.label}</p>
+                  <p className="text-2xl font-bold text-forest-shadow">{stat.value}</p>
+                </div>
+                <div className="w-12 h-12 bg-morning-mist rounded-lg flex items-center justify-center">
+                  <stat.icon size={24} className="text-olive-green" />
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {user ? (
-        // Authenticated user content
+        // Authenticated user content with real data
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Hunts */}
           <div className="bg-white rounded-lg club-shadow">
             <div className="p-6 border-b border-morning-mist">
-              <h3 className="text-lg font-semibold text-forest-shadow">Recent Hunts</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-forest-shadow">Recent Hunts</h3>
+                <button
+                  onClick={() => showModal('hunts')}
+                  className="text-olive-green hover:text-pine-needle text-sm font-medium"
+                >
+                  View All
+                </button>
+              </div>
             </div>
             <div className="p-6">
               <div className="space-y-4">
-                {recentHunts.map((hunt, index) => (
-                  <div key={index} className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-olive-green/10 rounded-lg flex items-center justify-center">
-                      <Target size={20} className="text-olive-green" />
+                {recentHunts.length > 0 ? (
+                  recentHunts.map((hunt) => (
+                    <div key={hunt.id} className="flex items-center space-x-4">
+                      <div className="w-10 h-10 bg-olive-green/10 rounded-lg flex items-center justify-center">
+                        <Target size={20} className="text-olive-green" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-forest-shadow truncate">
+                          {hunt.stands?.name || 'Unknown Stand'}
+                        </p>
+                        <p className="text-sm text-weathered-wood">
+                          {new Date(hunt.hunt_date).toLocaleDateString()} • {hunt.hunt_type || 'AM'}
+                        </p>
+                      </div>
+                      <div className="text-xs text-weathered-wood">
+                        <div className={`px-2 py-1 rounded ${
+                          hunt.harvest_count > 0 ? 'bg-burnt-orange/10 text-burnt-orange' : 'bg-morning-mist text-weathered-wood'
+                        }`}>
+                          {hunt.harvest_count > 0 ? 'Successful' : 'No harvest'}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-forest-shadow truncate">
-                        {hunt.hunter} - {hunt.game}
-                      </p>
-                      <p className="text-sm text-weathered-wood">{hunt.location} • {hunt.date}</p>
-                    </div>
-                    <ChevronRight size={16} className="text-muted-gold" />
+                  ))
+                ) : (
+                  <div className="text-center py-4 text-weathered-wood">
+                    <Target className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No hunts logged yet</p>
                   </div>
-                ))}
+                )}
+                
+                {/* Quick Log Hunt Button */}
+                <button 
+                  onClick={() => showModal('hunt-form')}
+                  className="flex items-center justify-center w-full p-3 border-2 border-dashed border-olive-green/30 text-olive-green rounded-lg hover:border-olive-green/50 hover:bg-olive-green/5 transition-colors"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Log New Hunt
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Maintenance Tasks */}
+          {/* Recent Sightings */}
           <div className="bg-white rounded-lg club-shadow">
             <div className="p-6 border-b border-morning-mist">
-              <h3 className="text-lg font-semibold text-forest-shadow">Maintenance Tasks</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-forest-shadow">Recent Sightings</h3>
+                <button
+                  onClick={() => showModal('sightings')}
+                  className="text-olive-green hover:text-pine-needle text-sm font-medium"
+                >
+                  View All
+                </button>
+              </div>
             </div>
             <div className="p-6">
-              <div className="space-y-4">
-                {maintenanceTasks.map((task, index) => (
-                  <div key={index} className="flex items-center space-x-4">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      task.status === 'completed' ? 'bg-bright-orange/10' : 
-                      task.status === 'in-progress' ? 'bg-muted-gold/10' : 'bg-clay-earth/10'
-                    }`}>
-                      {task.status === 'completed' ? 
-                        <CheckCircle size={20} className="text-bright-orange" /> :
-                        task.status === 'in-progress' ?
-                        <Clock size={20} className="text-muted-gold" /> :
-                        <AlertTriangle size={20} className="text-clay-earth" />
-                      }
+              <div className="space-y-3">
+                {recentSightings.length > 0 ? (
+                  recentSightings.map((sighting) => (
+                    <div key={sighting.id} className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-muted-gold/10 rounded-lg flex items-center justify-center">
+                        <Eye size={16} className="text-muted-gold" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-forest-shadow">
+                          {sighting.count} {sighting.animal_type}
+                        </p>
+                        <p className="text-xs text-weathered-wood">
+                          {sighting.stand_name} • {new Date(sighting.hunt_date).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-forest-shadow truncate">
-                        {task.task}
-                      </p>
-                      <p className="text-sm text-weathered-wood">{task.assignee} • Due: {task.dueDate}</p>
-                    </div>
-                    <ChevronRight size={16} className="text-muted-gold" />
+                  ))
+                ) : (
+                  <div className="text-center py-4 text-weathered-wood">
+                    <Eye className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No sightings recorded yet</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>
         </div>
       ) : (
         // Public content for non-authenticated users
-        <div className="bg-white rounded-lg club-shadow p-6">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-olive-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Eye size={32} className="text-olive-green" />
-            </div>
-            <h3 className="text-lg font-semibold text-forest-shadow mb-2">Public View</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* About the Club */}
+          <div className="bg-white rounded-lg club-shadow p-6">
+            <h3 className="text-lg font-semibold text-forest-shadow mb-4">About Our Club</h3>
             <p className="text-weathered-wood mb-4">
-              You're viewing the public information about Caswell County Yacht Club. 
-              Sign in to access member features including hunt logs, maintenance tracking, 
-              trail camera management, and more.
+              Caswell County Yacht Club is a premier hunting destination in North Carolina, 
+              featuring 100 acres of diverse terrain with established hunting stands and 
+              comprehensive trail camera coverage.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md mx-auto">
-              <Link
-                href="/login"
-                className="flex items-center justify-center px-4 py-2 bg-olive-green text-white rounded-lg hover:bg-pine-needle transition-colors"
-              >
-                <LogIn size={16} className="mr-2" />
-                Sign In
-              </Link>
-              <button
-                onClick={() => setActiveSection('calendar')}
-                className="flex items-center justify-center px-4 py-2 border border-border text-weathered-wood rounded-lg hover:bg-morning-mist transition-colors"
-              >
-                <Calendar size={16} className="mr-2" />
-                View Calendar
-              </button>
+            <div className="space-y-2 text-sm text-weathered-wood">
+              <div className="flex items-center">
+                <MapPin className="w-4 h-4 mr-2 text-olive-green" />
+                100 acres in Caswell County, NC
+              </div>
+              <div className="flex items-center">
+                <Target className="w-4 h-4 mr-2 text-olive-green" />
+                12 strategically placed hunting stands
+              </div>
+              <div className="flex items-center">
+                <Camera className="w-4 h-4 mr-2 text-olive-green" />
+                8 trail cameras monitoring wildlife
+              </div>
+            </div>
+          </div>
+
+          {/* Member Benefits */}
+          <div className="bg-white rounded-lg club-shadow p-6">
+            <h3 className="text-lg font-semibold text-forest-shadow mb-4">Member Features</h3>
+            <div className="space-y-3">
+              <div className="flex items-start space-x-3">
+                <Target className="w-5 h-5 text-olive-green mt-0.5" />
+                <div>
+                  <p className="font-medium text-forest-shadow">Hunt Logging</p>
+                  <p className="text-sm text-weathered-wood">Track your hunts and success rates</p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3">
+                <Camera className="w-5 h-5 text-olive-green mt-0.5" />
+                <div>
+                  <p className="font-medium text-forest-shadow">Trail Camera Access</p>
+                  <p className="text-sm text-weathered-wood">Monitor wildlife activity</p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3">
+                <MapPin className="w-5 h-5 text-olive-green mt-0.5" />
+                <div>
+                  <p className="font-medium text-forest-shadow">Interactive Property Map</p>
+                  <p className="text-sm text-weathered-wood">Navigate stands and trails</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       )}
     </div>
-  );
+  )
+}
+
+// const renderHunts = () => (
+//   <div className="space-y-6">
+//     {/* Hunt Logging Header */}
+//     <div className="bg-white rounded-lg club-shadow p-6">
+//       <div className="flex items-center justify-between">
+//         <div>
+//           <h2 className="text-2xl font-bold text-forest-shadow flex items-center">
+//             <Target className="w-6 h-6 mr-2" />
+//             Hunt Logging
+//           </h2>
+//           <p className="text-weathered-wood mt-2">
+//             Track your hunts, log harvests, and record wildlife sightings
+//           </p>
+//         </div>
+//         <Link
+//           href="/hunt-logging"
+//           className="flex items-center px-4 py-2 bg-burnt-orange text-white rounded-lg hover:bg-clay-earth transition-colors"
+//         >
+//           <Plus className="w-4 h-4 mr-2" />
+//           Log New Hunt
+//         </Link>
+//       </div>
+//     </div>
+
+//     {/* Hunt Stats Grid */}
+//     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+//       <div className="bg-white rounded-lg club-shadow p-6">
+//         <div className="flex items-center justify-between">
+//           <div>
+//             <p className="text-sm font-medium text-weathered-wood">Total Hunts</p>
+//             <p className="text-2xl font-bold text-forest-shadow">23</p>
+//             <span className="text-sm font-medium text-bright-orange">+3 this week</span>
+//           </div>
+//           <div className="w-12 h-12 bg-olive-green/10 rounded-lg flex items-center justify-center">
+//             <Target className="w-6 h-6 text-olive-green" />
+//           </div>
+//         </div>
+//       </div>
+
+//       <div className="bg-white rounded-lg club-shadow p-6">
+//         <div className="flex items-center justify-between">
+//           <div>
+//             <p className="text-sm font-medium text-weathered-wood">Harvests</p>
+//             <p className="text-2xl font-bold text-forest-shadow">8</p>
+//             <span className="text-sm font-medium text-bright-orange">34.8% rate</span>
+//           </div>
+//           <div className="w-12 h-12 bg-burnt-orange/10 rounded-lg flex items-center justify-center">
+//             <Target className="w-6 h-6 text-burnt-orange" />
+//           </div>
+//         </div>
+//       </div>
+
+//       <div className="bg-white rounded-lg club-shadow p-6">
+//         <div className="flex items-center justify-between">
+//           <div>
+//             <p className="text-sm font-medium text-weathered-wood">Sightings</p>
+//             <p className="text-2xl font-bold text-forest-shadow">156</p>
+//             <span className="text-sm font-medium text-olive-green">+12 recent</span>
+//           </div>
+//           <div className="w-12 h-12 bg-muted-gold/10 rounded-lg flex items-center justify-center">
+//             <Eye className="w-6 h-6 text-muted-gold" />
+//           </div>
+//         </div>
+//       </div>
+
+//       <div className="bg-white rounded-lg club-shadow p-6">
+//         <div className="flex items-center justify-between">
+//           <div>
+//             <p className="text-sm font-medium text-weathered-wood">Active Stands</p>
+//             <p className="text-2xl font-bold text-forest-shadow">12</p>
+//             <span className="text-sm font-medium text-weathered-wood">8 used recently</span>
+//           </div>
+//           <div className="w-12 h-12 bg-dark-teal/10 rounded-lg flex items-center justify-center">
+//             <MapPin className="w-6 h-6 text-dark-teal" />
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+
+//     {/* Recent Activity & Quick Actions */}
+//     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+//       {/* Recent Hunts */}
+//       <div className="bg-white rounded-lg club-shadow">
+//         <div className="p-6 border-b border-morning-mist">
+//           <div className="flex items-center justify-between">
+//             <h3 className="text-lg font-semibold text-forest-shadow">Recent Hunts</h3>
+//             <Link 
+//               href="/hunt-logging"
+//               className="text-olive-green hover:text-pine-needle text-sm font-medium"
+//             >
+//               View All
+//             </Link>
+//           </div>
+//         </div>
+//         <div className="p-6">
+//           <div className="space-y-4">
+//             {recentHunts.map((hunt, index) => (
+//               <div key={index} className="flex items-center space-x-4">
+//                 <div className="w-10 h-10 bg-olive-green/10 rounded-lg flex items-center justify-center">
+//                   <Target size={20} className="text-olive-green" />
+//                 </div>
+//                 <div className="flex-1 min-w-0">
+//                   <p className="text-sm font-medium text-forest-shadow truncate">
+//                     {hunt.hunter} - {hunt.game}
+//                   </p>
+//                   <p className="text-sm text-weathered-wood">{hunt.location} • {hunt.date}</p>
+//                 </div>
+//                 <div className="text-xs text-weathered-wood">
+//                   <div className="bg-morning-mist px-2 py-1 rounded">
+//                     AM Hunt
+//                   </div>
+//                 </div>
+//               </div>
+//             ))}
+            
+//             {/* Quick Entry Button */}
+//             <Link 
+//               href="/hunt-logging"
+//               className="flex items-center justify-center w-full p-3 border-2 border-dashed border-olive-green/30 text-olive-green rounded-lg hover:border-olive-green/50 hover:bg-olive-green/5 transition-colors"
+//             >
+//               <Plus className="w-4 h-4 mr-2" />
+//               Log New Hunt
+//             </Link>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Hunt Analytics Preview */}
+//       <div className="bg-white rounded-lg club-shadow">
+//         <div className="p-6 border-b border-morning-mist">
+//           <div className="flex items-center justify-between">
+//             <h3 className="text-lg font-semibold text-forest-shadow">Hunt Analytics</h3>
+//             <button className="text-olive-green hover:text-pine-needle text-sm font-medium">
+//               View Details
+//             </button>
+//           </div>
+//         </div>
+//         <div className="p-6">
+//           <div className="space-y-4">
+//             {/* Success Rate */}
+//             <div className="flex items-center justify-between">
+//               <span className="text-sm text-weathered-wood">Success Rate</span>
+//               <div className="flex items-center space-x-2">
+//                 <div className="w-24 h-2 bg-morning-mist rounded-full overflow-hidden">
+//                   <div className="w-8 h-full bg-bright-orange rounded-full"></div>
+//                 </div>
+//                 <span className="text-sm font-medium text-forest-shadow">34.8%</span>
+//               </div>
+//             </div>
+            
+//             {/* Most Productive Stand */}
+//             <div className="flex items-center justify-between">
+//               <span className="text-sm text-weathered-wood">Best Stand</span>
+//               <span className="text-sm font-medium text-forest-shadow">Creek Bottom</span>
+//             </div>
+            
+//             {/* Best Time */}
+//             <div className="flex items-center justify-between">
+//               <span className="text-sm text-weathered-wood">Peak Time</span>
+//               <span className="text-sm font-medium text-forest-shadow">6:30 AM</span>
+//             </div>
+            
+//             {/* Weather Pattern */}
+//             <div className="flex items-center justify-between">
+//               <span className="text-sm text-weathered-wood">Best Conditions</span>
+//               <span className="text-sm font-medium text-forest-shadow">Overcast, 45°F</span>
+//             </div>
+//           </div>
+
+//           {/* Coming Soon Notice */}
+//           <div className="mt-4 p-3 bg-muted-gold/10 border border-muted-gold/20 rounded-lg">
+//             <p className="text-xs text-muted-gold font-medium">
+//               🚧 Advanced analytics coming soon
+//             </p>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+
+//     {/* Quick Actions */}
+//     <div className="bg-white rounded-lg club-shadow p-6">
+//       <h3 className="text-lg font-semibold text-forest-shadow mb-4">Quick Actions</h3>
+//       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+//         <Link
+//           href="/hunt-logging"
+//           className="flex flex-col items-center p-4 border border-weathered-wood/20 rounded-lg hover:bg-morning-mist transition-colors"
+//         >
+//           <Plus className="w-6 h-6 text-burnt-orange mb-2" />
+//           <span className="text-sm font-medium text-forest-shadow">Log Hunt</span>
+//         </Link>
+        
+//         <button className="flex flex-col items-center p-4 border border-weathered-wood/20 rounded-lg hover:bg-morning-mist transition-colors">
+//           <BarChart3 className="w-6 h-6 text-olive-green mb-2" />
+//           <span className="text-sm font-medium text-forest-shadow">Analytics</span>
+//         </button>
+        
+//         <button className="flex flex-col items-center p-4 border border-weathered-wood/20 rounded-lg hover:bg-morning-mist transition-colors">
+//           <MapPin className="w-6 h-6 text-dark-teal mb-2" />
+//           <span className="text-sm font-medium text-forest-shadow">Stand Map</span>
+//         </button>
+        
+//         <button className="flex flex-col items-center p-4 border border-weathered-wood/20 rounded-lg hover:bg-morning-mist transition-colors">
+//           <FileText className="w-6 h-6 text-muted-gold mb-2" />
+//           <span className="text-sm font-medium text-forest-shadow">Reports</span>
+//         </button>
+//       </div>
+//     </div>
+//   </div>
+// )
+
+const renderHunts = () => {
+  // Calculate real stats
+  const totalHunts = hunts?.length || 0
+  const totalHarvests = hunts?.reduce((sum, hunt) => sum + hunt.harvest_count, 0) || 0
+  const totalSightings = sightings?.length || 0
+  const activeStands = stands?.filter(s => s.active).length || 0
+
+  return (
+    <div className="space-y-6">
+      {/* Hunt Logging Header */}
+      <div className="bg-white rounded-lg club-shadow p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-forest-shadow flex items-center">
+              <Target className="w-6 h-6 mr-2" />
+              Hunt Logging
+            </h2>
+            <p className="text-weathered-wood mt-2">
+              Track your hunts, log harvests, and record wildlife sightings
+            </p>
+          </div>
+          <button
+            onClick={() => showModal('hunt-form')}
+            className="flex items-center px-4 py-2 bg-burnt-orange text-white rounded-lg hover:bg-clay-earth transition-colors"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Log New Hunt
+          </button>
+        </div>
+      </div>
+
+      {/* Clickable Hunt Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <button
+          onClick={() => showModal('hunts')}
+          className="bg-white rounded-lg club-shadow p-6 text-left hover:bg-morning-mist/30 transition-colors"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-weathered-wood">Total Hunts</p>
+              <p className="text-2xl font-bold text-forest-shadow">{totalHunts}</p>
+              <span className="text-sm font-medium text-bright-orange">Click to view</span>
+            </div>
+            <div className="w-12 h-12 bg-olive-green/10 rounded-lg flex items-center justify-center">
+              <Target className="w-6 h-6 text-olive-green" />
+            </div>
+          </div>
+        </button>
+
+        <button
+          onClick={() => showModal('harvests')}
+          className="bg-white rounded-lg club-shadow p-6 text-left hover:bg-morning-mist/30 transition-colors"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-weathered-wood">Harvests</p>
+              <p className="text-2xl font-bold text-forest-shadow">{totalHarvests}</p>
+              <span className="text-sm font-medium text-burnt-orange">
+                {totalHunts > 0 ? Math.round((totalHarvests / totalHunts) * 100) : 0}% rate
+              </span>
+            </div>
+            <div className="w-12 h-12 bg-burnt-orange/10 rounded-lg flex items-center justify-center">
+              <Target className="w-6 h-6 text-burnt-orange" />
+            </div>
+          </div>
+        </button>
+
+        <button
+          onClick={() => showModal('sightings')}
+          className="bg-white rounded-lg club-shadow p-6 text-left hover:bg-morning-mist/30 transition-colors"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-weathered-wood">Sightings</p>
+              <p className="text-2xl font-bold text-forest-shadow">{totalSightings}</p>
+              <span className="text-sm font-medium text-muted-gold">Wildlife data</span>
+            </div>
+            <div className="w-12 h-12 bg-muted-gold/10 rounded-lg flex items-center justify-center">
+              <Eye className="w-6 h-6 text-muted-gold" />
+            </div>
+          </div>
+        </button>
+
+        <button
+          onClick={() => showModal('stands')}
+          className="bg-white rounded-lg club-shadow p-6 text-left hover:bg-morning-mist/30 transition-colors"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-weathered-wood">Active Stands</p>
+              <p className="text-2xl font-bold text-forest-shadow">{activeStands}</p>
+              <span className="text-sm font-medium text-dark-teal">Ready to hunt</span>
+            </div>
+            <div className="w-12 h-12 bg-dark-teal/10 rounded-lg flex items-center justify-center">
+              <MapPin className="w-6 h-6 text-dark-teal" />
+            </div>
+          </div>
+        </button>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-white rounded-lg club-shadow p-6">
+        <h3 className="text-lg font-semibold text-forest-shadow mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <button
+            onClick={() => showModal('hunt-form')}
+            className="flex flex-col items-center p-4 border border-weathered-wood/20 rounded-lg hover:bg-morning-mist transition-colors"
+          >
+            <Plus className="w-6 h-6 text-burnt-orange mb-2" />
+            <span className="text-sm font-medium text-forest-shadow">Log Hunt</span>
+          </button>
+          
+          <button
+            onClick={() => showModal('hunts')}
+            className="flex flex-col items-center p-4 border border-weathered-wood/20 rounded-lg hover:bg-morning-mist transition-colors"
+          >
+            <BarChart3 className="w-6 h-6 text-olive-green mb-2" />
+            <span className="text-sm font-medium text-forest-shadow">View History</span>
+          </button>
+          
+          <button
+            onClick={() => showModal('stands')}
+            className="flex flex-col items-center p-4 border border-weathered-wood/20 rounded-lg hover:bg-morning-mist transition-colors"
+          >
+            <MapPin className="w-6 h-6 text-dark-teal mb-2" />
+            <span className="text-sm font-medium text-forest-shadow">Stand Info</span>
+          </button>
+          
+          <button
+            onClick={() => showModal('sightings')}
+            className="flex flex-col items-center p-4 border border-weathered-wood/20 rounded-lg hover:bg-morning-mist transition-colors"
+          >
+            <Eye className="w-6 h-6 text-muted-gold mb-2" />
+            <span className="text-sm font-medium text-forest-shadow">Sightings</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
   const renderSection = () => {
     switch (activeSection) {
@@ -260,6 +1002,10 @@ export default function MainPage() {
           // height="h-80"
           showControls={false} // Minimal for dashboard
         />;
+      case 'hunts':
+        return <div className="p-6">
+          {renderHunts()}
+        </div>
       case 'dashboard':
         return renderDashboard();
       default:
@@ -333,119 +1079,162 @@ export default function MainPage() {
         </div>
       )}
 
-      {/* Header */}
-      <header className="bg-white club-shadow border-b border-morning-mist">
-        {/* Top row: Logo/Title and User Menu */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo and Title */}
-            <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-10 h-10 bg-olive-green rounded-lg flex items-center justify-center flex-shrink-0">
-                <Target size={20} className="text-white" />
-              </div>
-              <div className="min-w-0 flex-shrink-0">
-                <h1 className="text-lg font-bold text-forest-shadow whitespace-nowrap">Caswell County Yacht Club</h1>
-              </div>
+    {/* Enhanced Navigation Header with Hunt Logging Button */}
+    <header className="bg-olive-green text-white club-shadow relative z-40">
+      <div className="flex items-center justify-between p-4">
+        {/* Logo and Mobile Menu Button */}
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+          <div className="flex items-center space-x-2">
+            <Target className="w-8 h-8" />
+            <div>
+              <h1 className="font-bold text-lg leading-tight">Caswell County</h1>
+              <p className="text-xs text-olive-green/80">Yacht Club</p>
             </div>
+          </div>
+        </div>
 
-            {/* Desktop User Menu */}
-            <div className="hidden lg:flex items-center space-x-3 flex-shrink-0">
-              {user ? (
-                <div className="relative">
-                  <button
-                    onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-weathered-wood hover:text-forest-shadow hover:bg-morning-mist"
-                  >
-                    <User size={16} />
-                    <span className="hidden sm:block max-w-32 truncate">{user.email}</span>
-                    <ChevronDown size={16} />
-                  </button>
-
-                  {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md club-shadow py-1 z-50">
-                      <button
-                        onClick={handleSignOut}
-                        className="flex items-center px-4 py-2 text-sm text-weathered-wood hover:bg-morning-mist w-full text-left"
-                      >
-                        <LogOut size={16} className="mr-2" />
-                        Sign Out
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <Link
-                  href="/login"
-                  className="flex items-center px-4 py-2 bg-olive-green text-white rounded-md hover:bg-pine-needle transition-colors text-sm font-medium"
-                >
-                  <LogIn size={16} className="mr-2" />
-                  <span className="hidden sm:block">Sign In</span>
-                </Link>
-              )}
-            </div>
-
-            {/* Mobile menu button */}
+        {/* Center - Hunt Logging Button (always visible when authenticated) */}
+        {user && (
+          <div className="absolute left-1/2 transform -translate-x-1/2">
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-md text-weathered-wood hover:text-forest-shadow hover:bg-morning-mist"
+              onClick={() => showModal('hunt-form')}
+              className="bg-burnt-orange hover:bg-clay-earth text-white p-3 rounded-full transition-colors club-shadow-lg flex items-center justify-center"
+              title="Log Hunt"
             >
-              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              <Plus className="w-5 h-5" />
             </button>
           </div>
-        </div>
-
-        {/* Bottom row: Desktop Navigation */}
-        <div className="hidden lg:block border-t border-morning-mist">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <nav className="flex items-center space-x-1 h-12">
-              {navigationItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleNavClick(item.id)}
-                  className={`
-                    flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
-                    ${activeSection === item.id
-                      ? 'bg-olive-green/10 text-olive-green'
-                      : 'text-weathered-wood hover:text-forest-shadow hover:bg-morning-mist'
-                    }
-                    ${item.requiresAuth && !user ? 'opacity-60' : ''}
-                  `}
-                >
-                  <item.icon size={16} className="mr-2" />
-                  {item.label}
-                  {item.requiresAuth && !user && <Lock size={12} className="ml-1" />}
-                </button>
-              ))}
-            </nav>
-          </div>
-        </div>
-
-        {/* Mobile Navigation */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-morning-mist bg-white">
-            <div className="px-4 py-3 space-y-1">
-              {navigationItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleNavClick(item.id)}
-                  className={`
-                    flex items-center w-full px-3 py-2 rounded-md text-sm font-medium transition-colors
-                    ${activeSection === item.id
-                      ? 'bg-olive-green/10 text-olive-green'
-                      : 'text-weathered-wood hover:text-forest-shadow hover:bg-morning-mist'
-                    }
-                    ${item.requiresAuth && !user ? 'opacity-60' : ''}
-                  `}
-                >
-                  <item.icon size={16} className="mr-3" />
-                  {item.label}
-                  {item.requiresAuth && !user && <Lock size={12} className="ml-auto" />}
-                </button>
-              ))}
-            </div>
-          </div>
         )}
-      </header>
+
+        {/* Right Side - User Menu and Notifications */}
+        <div className="flex items-center space-x-2">
+          {user ? (
+            <>
+              {/* Notifications Button */}
+              <button className="p-2 hover:bg-white/10 rounded-lg transition-colors relative">
+                <Bell size={20} />
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-burnt-orange text-white text-xs rounded-full flex items-center justify-center">
+                  3
+                </span>
+              </button>
+
+              {/* User Menu */}
+              <div className="relative">
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center space-x-2 p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                    <User size={16} />
+                  </div>
+                  <ChevronDown size={16} />
+                </button>
+
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg club-shadow py-2 text-forest-shadow z-50">
+                    <div className="px-4 py-2 border-b border-morning-mist">
+                      <p className="text-sm font-medium">{user.email}</p>
+                      <p className="text-xs text-weathered-wood">Club Member</p>
+                    </div>
+                    <button className="w-full text-left px-4 py-2 text-sm hover:bg-morning-mist flex items-center">
+                      <User size={16} className="mr-2" />
+                      Profile
+                    </button>
+                    <button className="w-full text-left px-4 py-2 text-sm hover:bg-morning-mist flex items-center">
+                      <Settings size={16} className="mr-2" />
+                      Settings
+                    </button>
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-morning-mist flex items-center text-clay-earth"
+                    >
+                      <LogOut size={16} className="mr-2" />
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="flex items-center px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm"
+            >
+              <LogIn size={16} className="mr-2" />
+              Sign In
+            </Link>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop Navigation */}
+      <nav className="hidden lg:block border-t border-white/10">
+        <div className="flex items-center justify-center space-x-1 px-4 py-2">
+          {navigationItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeSection === item.id;
+            const isDisabled = item.requiresAuth && !user;
+            
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleNavClick(item.id)}
+                disabled={isDisabled}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                  isActive
+                    ? 'bg-white/20 text-white'
+                    : isDisabled
+                    ? 'text-white/40 cursor-not-allowed'
+                    : 'text-white/80 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <Icon size={16} />
+                <span>{item.label}</span>
+                {isDisabled && <Lock size={12} className="ml-1" />}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* Mobile Navigation Drawer */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden absolute top-full left-0 right-0 bg-olive-green border-t border-white/10 club-shadow-lg z-30">
+          <nav className="p-4 space-y-2">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeSection === item.id;
+              const isDisabled = item.requiresAuth && !user;
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavClick(item.id)}
+                  disabled={isDisabled}
+                  className={`w-full flex items-center space-x-3 px-3 py-3 rounded-lg text-left transition-colors ${
+                    isActive
+                      ? 'bg-white/20 text-white'
+                      : isDisabled
+                      ? 'text-white/40 cursor-not-allowed'
+                      : 'text-white/80 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  <Icon size={20} />
+                  <span className="font-medium">{item.label}</span>
+                  {isDisabled && <Lock size={16} className="ml-auto" />}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+      )}
+    </header>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -4,6 +4,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "../styles/leaflet.css"; // Import Leaflet styles
 import "../styles/hunting-map.css"; // Import Map styles 
+import { ModalProvider } from '@/components/modals/ModalSystem'
+import Navigation from "@/components/Navigation";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -30,7 +32,10 @@ export default function RootLayout({
       <body
         className={`${geist.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <ModalProvider>
+          <Navigation />
+          {children}
+        </ModalProvider>
       </body>
     </html>
   );

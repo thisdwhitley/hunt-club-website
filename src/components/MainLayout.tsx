@@ -18,7 +18,7 @@ export default function MainLayout({ children, className = '' }: MainLayoutProps
       <Navigation />
       
       {/* Main Content */}
-      <main className={`lg:ml-64 lg:pt-0 pt-16 ${className}`}>
+      <main className={`max-w-5xl mx-auto px-4 lg:px-6 ${className}`}>
         {children}
       </main>
     </div>
