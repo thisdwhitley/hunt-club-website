@@ -19,7 +19,7 @@ import {
   Footprints as WalkingIcon,
   Users as CapacityIcon,
   Ruler as HeightIcon,
-  Bow as ArcheryIcon,
+  BowArrow as ArcheryIcon,
   type LucideIcon
 } from 'lucide-react'
 

@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(events);
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in Google Calendar API route:', error);
     return NextResponse.json([]);
   }

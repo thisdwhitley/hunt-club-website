@@ -57,7 +57,7 @@ export function CalendarView() {
 
   async function fetchSupabaseEvents(): Promise<CalendarEvent[]> {
     try {
-      let allEvents: CalendarEvent[] = []
+      const allEvents: CalendarEvent[] = []
 
       // Always fetch public events
       const { data: publicEvents } = await supabase
