@@ -18,9 +18,6 @@ import {
   Menu,
   X,
   Camera,
-  Users,
-  Wrench,
-  Cog,
   Bell,
   ChevronDown,
   LogOut,
@@ -28,6 +25,7 @@ import {
   ClipboardList
 } from 'lucide-react'
 
+// Navigation configuration
 const navigationItems = [
   { name: 'Calendar', href: '/calendar', icon: Calendar },
   { name: 'Property Map', href: '/map', icon: MapPin },
@@ -40,6 +38,25 @@ const managementTabs = [
   { name: 'Stands', href: '/management/stands', icon: Target }
 ]
 
+// Shared styling constants
+const styles = {
+  navItem: {
+    base: "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap",
+    active: "bg-pine-needle text-white shadow-club",
+    inactive: "text-green-100 hover:bg-pine-needle hover:text-white"
+  },
+  managementTab: {
+    base: "flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors text-sm font-medium whitespace-nowrap",
+    active: "bg-pine-needle text-white shadow-club", 
+    inactive: "text-green-200 hover:bg-pine-needle hover:text-white"
+  },
+  mobileNavItem: {
+    base: "flex items-center gap-3 px-3 py-3 rounded-lg transition-colors",
+    active: "bg-pine-needle text-white shadow-club",
+    inactive: "text-green-100 hover:bg-pine-needle hover:text-white"
+  }
+}
+
 export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -51,8 +68,12 @@ export default function Navigation() {
   const { user, signOut, loading } = useAuth()
   const { showModal } = useModal()
 
-  // Check if we're on a management page
+  // Computed values
   const isManagementPage = pathname.startsWith('/management')
+  const isProduction = process.env.NODE_ENV === 'production' || 
+                       process.env.NEXT_PUBLIC_ENVIRONMENT === 'production'
+  const showMinimalNav = !user || isProduction
+  const showFullNavigation = !showMinimalNav // More readable
 
   // Auto-expand management if we're on a management page
   useEffect(() => {
@@ -74,10 +95,9 @@ export default function Navigation() {
     return () => window.removeEventListener('resize', updateHeaderHeight)
   }, [isMobileMenuOpen, managementExpanded, showWipBanner])
 
+  // Helper functions
   const isActive = (href: string) => {
-    if (href === '/') {
-      return pathname === '/'
-    }
+    if (href === '/') return pathname === '/'
     return pathname.startsWith(href)
   }
 
@@ -99,11 +119,110 @@ export default function Navigation() {
     setIsMobileMenuOpen(false)
   }
 
+  const closeMobileMenu = () => setIsMobileMenuOpen(false)
+
+  // Navigation item renderers
+  const renderNavItem = (item: typeof navigationItems[0], isMobile = false) => {
+    const Icon = item.icon
+    const active = isActive(item.href)
+    const styleSet = isMobile ? styles.mobileNavItem : styles.navItem
+    
+    // Special handling for Management tab
+    if (item.name === 'Management') {
+      return (
+        <li key={item.name}>
+          <button
+            onClick={() => setManagementExpanded(!managementExpanded)}
+            className={`${styleSet.base} ${
+              managementExpanded || isManagementPage ? styleSet.active : styleSet.inactive
+            } ${isMobile ? 'w-full' : ''}`}
+          >
+            <Icon size={isMobile ? 20 : 16} />
+            <span className={isMobile ? "font-medium" : ""}>{item.name}</span>
+          </button>
+        </li>
+      )
+    }
+    
+    return (
+      <li key={item.name}>
+        <Link
+          href={item.href}
+          onClick={isMobile ? closeMobileMenu : undefined}
+          className={`${styleSet.base} ${active ? styleSet.active : styleSet.inactive}`}
+        >
+          <Icon size={isMobile ? 20 : 16} />
+          <span className={isMobile ? "font-medium" : ""}>{item.name}</span>
+        </Link>
+      </li>
+    )
+  }
+
+  const renderManagementTabs = (isMobile = false) => {
+    if (!managementExpanded) return null
+
+    if (isMobile) {
+      return (
+        <div className="pt-4 border-t border-pine-needle">
+          <h3 className="text-green-200 text-sm font-medium mb-2 px-3">Management</h3>
+          <ul className="space-y-1">
+            {managementTabs.map((tab) => {
+              const Icon = tab.icon
+              const active = isManagementTabActive(tab.href)
+              
+              return (
+                <li key={tab.name}>
+                  <Link
+                    href={tab.href}
+                    onClick={closeMobileMenu}
+                    className={`${styles.mobileNavItem.base} ${
+                      active ? styles.mobileNavItem.active : styles.mobileNavItem.inactive
+                    }`}
+                  >
+                    <Icon size={18} />
+                    <span className="font-medium">{tab.name}</span>
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )
+    }
+
+    return (
+      <div className="flex items-center">
+        <div className="w-px h-6 bg-morning-mist/30 mx-3"></div>
+        <ul className="flex items-center gap-1">
+          {managementTabs.map((tab) => {
+            const Icon = tab.icon
+            const active = isManagementTabActive(tab.href)
+            
+            return (
+              <li key={tab.name}>
+                <Link
+                  href={tab.href}
+                  className={`${styles.managementTab.base} ${
+                    active ? styles.managementTab.active : styles.managementTab.inactive
+                  }`}
+                >
+                  <Icon size={14} />
+                  <span>{tab.name}</span>
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+    )
+  }
+
   return (
     <>
-      {/* Fixed Top Header Bar - Full Width */}
+      {/* Fixed Top Header Bar */}
       <header ref={headerRef} className="fixed top-0 left-0 right-0 bg-olive-green text-white shadow-club-lg z-50">
-        {/* WIP Banner - Inside Header */}
+        
+        {/* WIP Banner */}
         {showWipBanner && (
           <div className="bg-muted-gold text-forest-shadow">
             <div className="max-w-5xl mx-auto px-4 lg:px-6 py-3">
@@ -113,9 +232,6 @@ export default function Navigation() {
                   <span className="text-sm font-medium">
                     🚧 System under development.
                   </span>
-                  {/* <span className="text-sm ml-1">
-                    Some features may be incomplete.
-                  </span> */}
                 </div>
                 <button
                   onClick={() => setShowWipBanner(false)}
@@ -128,12 +244,12 @@ export default function Navigation() {
           </div>
         )}
 
-        {/* Main Header Row - Centered Content */}
+        {/* Main Header Row */}
         <div className="max-w-5xl mx-auto px-4 lg:px-6">
           <div className="flex items-center justify-between py-3">
-            {/* Brand/Title with Logo - Clickable */}
+            
+            {/* Brand/Title with Logo */}
             <Link href="/" className="hover:opacity-90 transition-opacity flex items-center gap-3">
-              {/* Logo Placeholder */}
               <div className="w-8 h-8 lg:w-12 lg:h-12 bg-morning-mist/20 rounded-lg flex items-center justify-center border border-morning-mist/30">
                 <img 
                   src="/images/club-logo.svg" 
@@ -147,7 +263,6 @@ export default function Navigation() {
                 <span className="text-xs font-bold text-morning-mist hidden">CCYC</span>
               </div>
               
-              {/* Title and Subtitle */}
               <div className="min-w-0">
                 <h1 className="text-sm lg:text-xl font-bold text-white leading-tight">
                   <span className="block lg:inline">Caswell County</span>
@@ -161,7 +276,7 @@ export default function Navigation() {
 
             {/* Desktop Actions */}
             <div className="hidden lg:flex items-center gap-4">
-              {/* Quick Hunt Log Button */}
+              {/* Quick Hunt Log Button - only for logged in users */}
               {user && (
                 <button
                   onClick={handleLogHunt}
@@ -217,91 +332,29 @@ export default function Navigation() {
           </div>
         </div>
 
-        {/* Light Separator Bar - Full Width */}
-        <div className="h-px bg-morning-mist/20"></div>
-
-        {/* Desktop Navigation Menu - Centered Content */}
-        <nav className="hidden lg:block">
-          <div className="max-w-5xl mx-auto px-4 lg:px-6">
-            <div className="py-2">
-              <div className="flex items-center justify-between">
-                {/* Main Navigation Items */}
-                <ul className="flex items-center gap-1">
-                  {navigationItems.map((item) => {
-                    const Icon = item.icon
-                    const active = isActive(item.href)
-                    
-                    // Special handling for Management tab
-                    if (item.name === 'Management') {
-                      return (
-                        <li key={item.name}>
-                          <button
-                            onClick={() => setManagementExpanded(!managementExpanded)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap ${
-                              managementExpanded || isManagementPage
-                                ? 'bg-pine-needle text-white shadow-club'
-                                : 'text-green-100 hover:bg-pine-needle hover:text-white'
-                            }`}
-                          >
-                            <Icon size={16} />
-                            <span>{item.name}</span>
-                          </button>
-                        </li>
-                      )
-                    }
-                    
-                    return (
-                      <li key={item.name}>
-                        <Link
-                          href={item.href}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap ${
-                            active
-                              ? 'bg-pine-needle text-white shadow-club'
-                              : 'text-green-100 hover:bg-pine-needle hover:text-white'
-                          }`}
-                        >
-                          <Icon size={16} />
-                          <span>{item.name}</span>
-                        </Link>
-                      </li>
-                    )
-                  })}
-                </ul>
-
-                {/* Management Tabs - Show when expanded */}
-                {managementExpanded && (
-                  <div className="flex items-center">
-                    <div className="w-px h-6 bg-morning-mist/30 mx-3"></div>
+        {/* Desktop Navigation - Only show for full navigation */}
+        {showFullNavigation && (
+          <>
+            <div className="h-px bg-morning-mist/20"></div>
+            <nav className="hidden lg:block">
+              <div className="max-w-5xl mx-auto px-4 lg:px-6">
+                <div className="py-2">
+                  <div className="flex items-center justify-between">
+                    {/* Main Navigation Items */}
                     <ul className="flex items-center gap-1">
-                      {managementTabs.map((tab) => {
-                        const Icon = tab.icon
-                        const active = isManagementTabActive(tab.href)
-                        
-                        return (
-                          <li key={tab.name}>
-                            <Link
-                              href={tab.href}
-                              className={`flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors text-sm font-medium whitespace-nowrap ${
-                                active
-                                  ? 'bg-pine-needle text-white shadow-club'
-                                  : 'text-green-200 hover:bg-pine-needle hover:text-white'
-                              }`}
-                            >
-                              <Icon size={14} />
-                              <span>{tab.name}</span>
-                            </Link>
-                          </li>
-                        )
-                      })}
+                      {navigationItems.map(item => renderNavItem(item))}
                     </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </nav>
 
-        {/* Orange Separator - Full Width, positioned at bottom of header */}
+                    {/* Management Tabs */}
+                    {renderManagementTabs()}
+                  </div>
+                </div>
+              </div>
+            </nav>
+          </>
+        )}
+
+        {/* Orange Separator */}
         <div className="h-1 bg-burnt-orange"></div>
       </header>
 
@@ -311,16 +364,17 @@ export default function Navigation() {
           {/* Mobile Backdrop */}
           <div 
             className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
-            onClick={() => setIsMobileMenuOpen(false)}
+            onClick={closeMobileMenu}
           />
           
-          {/* Mobile Menu Panel - Fixed positioning */}
+          {/* Mobile Menu Panel */}
           <div 
             className="lg:hidden fixed left-0 right-0 bg-olive-green border-t border-pine-needle shadow-club-xl z-50 max-h-[calc(100vh-4rem)] overflow-y-auto"
             style={{ top: `${headerHeight}px` }}
           >
             <div className="max-w-5xl mx-auto px-4">
               <div className="py-4">
+                
                 {/* Mobile Quick Actions */}
                 <div className="mb-4 pb-4 border-b border-pine-needle">
                   {user && (
@@ -345,7 +399,7 @@ export default function Navigation() {
                   ) : (
                     <Link
                       href="/login"
-                      onClick={() => setIsMobileMenuOpen(false)}
+                      onClick={closeMobileMenu}
                       className="flex items-center gap-3 text-green-100 hover:text-white hover:bg-pine-needle px-3 py-2 rounded-lg transition-colors"
                     >
                       <LogIn size={20} />
@@ -354,78 +408,16 @@ export default function Navigation() {
                   )}
                 </div>
 
-                {/* Mobile Navigation Items */}
-                <ul className="space-y-1 mb-4">
-                  {navigationItems.map((item) => {
-                    const Icon = item.icon
-                    const active = isActive(item.href)
-                    
-                    // Special handling for Management tab
-                    if (item.name === 'Management') {
-                      return (
-                        <li key={item.name}>
-                          <button
-                            onClick={() => setManagementExpanded(!managementExpanded)}
-                            className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-colors w-full ${
-                              managementExpanded || isManagementPage
-                                ? 'bg-pine-needle text-white shadow-club'
-                                : 'text-green-100 hover:bg-pine-needle hover:text-white'
-                            }`}
-                          >
-                            <Icon size={20} />
-                            <span className="font-medium">{item.name}</span>
-                          </button>
-                        </li>
-                      )
-                    }
-                    
-                    return (
-                      <li key={item.name}>
-                        <Link
-                          href={item.href}
-                          onClick={() => setIsMobileMenuOpen(false)}
-                          className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${
-                            active
-                              ? 'bg-pine-needle text-white shadow-club'
-                              : 'text-green-100 hover:bg-pine-needle hover:text-white'
-                          }`}
-                        >
-                          <Icon size={20} />
-                          <span className="font-medium">{item.name}</span>
-                        </Link>
-                      </li>
-                    )
-                  })}
-                </ul>
-
-                {/* Mobile Management Tabs - Only show when expanded */}
-                {managementExpanded && (
-                  <div className="pt-4 border-t border-pine-needle">
-                    <h3 className="text-green-200 text-sm font-medium mb-2 px-3">Management</h3>
-                    <ul className="space-y-1">
-                      {managementTabs.map((tab) => {
-                        const Icon = tab.icon
-                        const active = isManagementTabActive(tab.href)
-                        
-                        return (
-                          <li key={tab.name}>
-                            <Link
-                              href={tab.href}
-                              onClick={() => setIsMobileMenuOpen(false)}
-                              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                                active
-                                  ? 'bg-pine-needle text-white shadow-club'
-                                  : 'text-green-100 hover:bg-pine-needle hover:text-white'
-                              }`}
-                            >
-                              <Icon size={18} />
-                              <span className="font-medium">{tab.name}</span>
-                            </Link>
-                          </li>
-                        )
-                      })}
+                {/* Mobile Navigation Items - Only show for full navigation */}
+                {showFullNavigation && (
+                  <>
+                    <ul className="space-y-1 mb-4">
+                      {navigationItems.map(item => renderNavItem(item, true))}
                     </ul>
-                  </div>
+
+                    {/* Mobile Management Tabs */}
+                    {renderManagementTabs(true)}
+                  </>
                 )}
               </div>
             </div>
@@ -441,7 +433,7 @@ export default function Navigation() {
         />
       )}
 
-      {/* Dynamic Content Spacer - matches actual header height */}
+      {/* Dynamic Content Spacer */}
       <div style={{ height: `${headerHeight}px` }}></div>
     </>
   )

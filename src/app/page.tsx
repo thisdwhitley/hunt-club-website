@@ -52,6 +52,15 @@ export default function MainPage() {
 
   const supabase = createClient()
 
+  // Check if we're in production environment
+  const isProduction = process.env.NODE_ENV === 'production' || 
+                       process.env.NEXT_PUBLIC_ENVIRONMENT === 'production'
+
+  // Show logo-only page if:
+  // 1. User is not logged in, OR
+  // 2. User is logged in but we're on production site
+  const showLogoOnly = !user || isProduction
+
   // NEW: Load real data
   useEffect(() => {
     if (user) {
@@ -185,159 +194,6 @@ export default function MainPage() {
       console.error('Error signing out:', error);
     }
   };
-
-  // const renderDashboard = () => (
-  //   <div className="space-y-6">
-  //     {/* Welcome Section */}
-  //     <div className="bg-white rounded-lg club-shadow p-6">
-  //       <div className="flex items-center justify-between">
-  //         <div>
-  //           <h2 className="text-2xl font-bold text-forest-shadow">
-  //             Welcome to Caswell County Yacht Club
-  //           </h2>
-  //           <p className="text-weathered-wood mt-2">
-  //             {user 
-  //               ? `Welcome back, ${user.email}! Here's what's happening at the club.`
-  //               : "A premier hunting club in North Carolina. Sign in to access member features."
-  //             }
-  //           </p>
-  //         </div>
-  //         {!user && (
-  //           <Link
-  //             href="/login"
-  //             className="flex items-center px-4 py-2 bg-olive-green text-white rounded-lg hover:bg-pine-needle transition-colors"
-  //           >
-  //             <LogIn size={16} className="mr-2" />
-  //             Sign In
-  //           </Link>
-  //         )}
-  //       </div>
-  //     </div>
-
-  //     {/* Stats Grid */}
-  //     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-  //       {(user ? huntingStats : publicStats).map((stat, index) => (
-  //         <div key={index} className="bg-white rounded-lg club-shadow p-6">
-  //           <div className="flex items-center justify-between">
-  //             <div>
-  //               <p className="text-sm font-medium text-weathered-wood">{stat.label}</p>
-  //               <p className="text-2xl font-bold text-forest-shadow">{stat.value}</p>
-  //               {stat.change && (
-  //                 <span className={`text-sm font-medium ${
-  //                   stat.change.startsWith('+') ? 'text-bright-orange' : 
-  //                   stat.change.startsWith('-') ? 'text-clay-earth' : 
-  //                   'text-weathered-wood'
-  //                 }`}>
-  //                   {stat.change}
-  //                 </span>
-  //               )}
-  //             </div>
-  //             <div className="w-12 h-12 bg-morning-mist rounded-lg flex items-center justify-center">
-  //               <stat.icon size={24} className="text-olive-green" />
-  //             </div>
-  //           </div>
-  //         </div>
-  //       ))}
-  //     </div>
-
-  //     {user ? (
-  //       // Authenticated user content
-  //       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-  //         {/* Recent Hunts */}
-  //         <div className="bg-white rounded-lg club-shadow">
-  //           <div className="p-6 border-b border-morning-mist">
-  //             <h3 className="text-lg font-semibold text-forest-shadow">Recent Hunts</h3>
-  //           </div>
-  //           <div className="p-6">
-  //             <div className="space-y-4">
-  //               {recentHunts.map((hunt, index) => (
-  //                 <div key={index} className="flex items-center space-x-4">
-  //                   <div className="w-10 h-10 bg-olive-green/10 rounded-lg flex items-center justify-center">
-  //                     <Target size={20} className="text-olive-green" />
-  //                   </div>
-  //                   <div className="flex-1 min-w-0">
-  //                     <p className="text-sm font-medium text-forest-shadow truncate">
-  //                       {hunt.hunter} - {hunt.game}
-  //                     </p>
-  //                     <p className="text-sm text-weathered-wood">{hunt.location} • {hunt.date}</p>
-  //                   </div>
-  //                   <ChevronRight size={16} className="text-muted-gold" />
-  //                 </div>
-  //               ))}
-  //             </div>
-  //           </div>
-  //         </div>
-
-  //         {/* Maintenance Tasks */}
-  //         <div className="bg-white rounded-lg club-shadow">
-  //           <div className="p-6 border-b border-morning-mist">
-  //             <h3 className="text-lg font-semibold text-forest-shadow">Maintenance Tasks</h3>
-  //           </div>
-  //           <div className="p-6">
-  //             <div className="space-y-4">
-  //               {maintenanceTasks.map((task, index) => (
-  //                 <div key={index} className="flex items-center space-x-4">
-  //                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-  //                     task.status === 'completed' ? 'bg-bright-orange/10' : 
-  //                     task.status === 'in-progress' ? 'bg-muted-gold/10' : 'bg-clay-earth/10'
-  //                   }`}>
-  //                     {task.status === 'completed' ? 
-  //                       <CheckCircle size={20} className="text-bright-orange" /> :
-  //                       task.status === 'in-progress' ?
-  //                       <Clock size={20} className="text-muted-gold" /> :
-  //                       <AlertTriangle size={20} className="text-clay-earth" />
-  //                     }
-  //                   </div>
-  //                   <div className="flex-1 min-w-0">
-  //                     <p className="text-sm font-medium text-forest-shadow truncate">
-  //                       {task.task}
-  //                     </p>
-  //                     <p className="text-sm text-weathered-wood">{task.assignee} • Due: {task.dueDate}</p>
-  //                   </div>
-  //                   <ChevronRight size={16} className="text-muted-gold" />
-  //                 </div>
-  //               ))}
-  //             </div>
-  //           </div>
-  //         </div>
-  //       </div>
-  //     ) : (
-  //       // Public content for non-authenticated users
-  //       <div className="bg-white rounded-lg club-shadow p-6">
-  //         <div className="text-center">
-  //           <div className="w-16 h-16 bg-olive-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
-  //             <Eye size={32} className="text-olive-green" />
-  //           </div>
-  //           <h3 className="text-lg font-semibold text-forest-shadow mb-2">Public View</h3>
-  //           <p className="text-weathered-wood mb-4">
-  //             You're viewing the public information about Caswell County Yacht Club. 
-  //             Sign in to access member features including hunt logs, maintenance tracking, 
-  //             trail camera management, and more.
-  //           </p>
-  //           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md mx-auto">
-  //             <Link
-  //               href="/login"
-  //               className="flex items-center justify-center px-4 py-2 bg-olive-green text-white rounded-lg hover:bg-pine-needle transition-colors"
-  //             >
-  //               <LogIn size={16} className="mr-2" />
-  //               Sign In
-  //             </Link>
-  //             <button
-  //               onClick={() => setActiveSection('calendar')}
-  //               className="flex items-center justify-center px-4 py-2 border border-border text-weathered-wood rounded-lg hover:bg-morning-mist transition-colors"
-  //             >
-  //               <Calendar size={16} className="mr-2" />
-  //               View Calendar
-  //             </button>
-  //           </div>
-  //         </div>
-  //       </div>
-  //     )}
-  //   </div>
-  // );
-
-  // Add this renderHunts function to your src/app/page.tsx file
-// Insert it after the renderDashboard function
 
 const renderDashboard = () => {
   // Calculate real stats from data
@@ -642,216 +498,6 @@ const renderDashboard = () => {
   )
 }
 
-// const renderHunts = () => (
-//   <div className="space-y-6">
-//     {/* Hunt Logging Header */}
-//     <div className="bg-white rounded-lg club-shadow p-6">
-//       <div className="flex items-center justify-between">
-//         <div>
-//           <h2 className="text-2xl font-bold text-forest-shadow flex items-center">
-//             <Target className="w-6 h-6 mr-2" />
-//             Hunt Logging
-//           </h2>
-//           <p className="text-weathered-wood mt-2">
-//             Track your hunts, log harvests, and record wildlife sightings
-//           </p>
-//         </div>
-//         <Link
-//           href="/hunt-logging"
-//           className="flex items-center px-4 py-2 bg-burnt-orange text-white rounded-lg hover:bg-clay-earth transition-colors"
-//         >
-//           <Plus className="w-4 h-4 mr-2" />
-//           Log New Hunt
-//         </Link>
-//       </div>
-//     </div>
-
-//     {/* Hunt Stats Grid */}
-//     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-//       <div className="bg-white rounded-lg club-shadow p-6">
-//         <div className="flex items-center justify-between">
-//           <div>
-//             <p className="text-sm font-medium text-weathered-wood">Total Hunts</p>
-//             <p className="text-2xl font-bold text-forest-shadow">23</p>
-//             <span className="text-sm font-medium text-bright-orange">+3 this week</span>
-//           </div>
-//           <div className="w-12 h-12 bg-olive-green/10 rounded-lg flex items-center justify-center">
-//             <Target className="w-6 h-6 text-olive-green" />
-//           </div>
-//         </div>
-//       </div>
-
-//       <div className="bg-white rounded-lg club-shadow p-6">
-//         <div className="flex items-center justify-between">
-//           <div>
-//             <p className="text-sm font-medium text-weathered-wood">Harvests</p>
-//             <p className="text-2xl font-bold text-forest-shadow">8</p>
-//             <span className="text-sm font-medium text-bright-orange">34.8% rate</span>
-//           </div>
-//           <div className="w-12 h-12 bg-burnt-orange/10 rounded-lg flex items-center justify-center">
-//             <Target className="w-6 h-6 text-burnt-orange" />
-//           </div>
-//         </div>
-//       </div>
-
-//       <div className="bg-white rounded-lg club-shadow p-6">
-//         <div className="flex items-center justify-between">
-//           <div>
-//             <p className="text-sm font-medium text-weathered-wood">Sightings</p>
-//             <p className="text-2xl font-bold text-forest-shadow">156</p>
-//             <span className="text-sm font-medium text-olive-green">+12 recent</span>
-//           </div>
-//           <div className="w-12 h-12 bg-muted-gold/10 rounded-lg flex items-center justify-center">
-//             <Eye className="w-6 h-6 text-muted-gold" />
-//           </div>
-//         </div>
-//       </div>
-
-//       <div className="bg-white rounded-lg club-shadow p-6">
-//         <div className="flex items-center justify-between">
-//           <div>
-//             <p className="text-sm font-medium text-weathered-wood">Active Stands</p>
-//             <p className="text-2xl font-bold text-forest-shadow">12</p>
-//             <span className="text-sm font-medium text-weathered-wood">8 used recently</span>
-//           </div>
-//           <div className="w-12 h-12 bg-dark-teal/10 rounded-lg flex items-center justify-center">
-//             <MapPin className="w-6 h-6 text-dark-teal" />
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-
-//     {/* Recent Activity & Quick Actions */}
-//     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-//       {/* Recent Hunts */}
-//       <div className="bg-white rounded-lg club-shadow">
-//         <div className="p-6 border-b border-morning-mist">
-//           <div className="flex items-center justify-between">
-//             <h3 className="text-lg font-semibold text-forest-shadow">Recent Hunts</h3>
-//             <Link 
-//               href="/hunt-logging"
-//               className="text-olive-green hover:text-pine-needle text-sm font-medium"
-//             >
-//               View All
-//             </Link>
-//           </div>
-//         </div>
-//         <div className="p-6">
-//           <div className="space-y-4">
-//             {recentHunts.map((hunt, index) => (
-//               <div key={index} className="flex items-center space-x-4">
-//                 <div className="w-10 h-10 bg-olive-green/10 rounded-lg flex items-center justify-center">
-//                   <Target size={20} className="text-olive-green" />
-//                 </div>
-//                 <div className="flex-1 min-w-0">
-//                   <p className="text-sm font-medium text-forest-shadow truncate">
-//                     {hunt.hunter} - {hunt.game}
-//                   </p>
-//                   <p className="text-sm text-weathered-wood">{hunt.location} • {hunt.date}</p>
-//                 </div>
-//                 <div className="text-xs text-weathered-wood">
-//                   <div className="bg-morning-mist px-2 py-1 rounded">
-//                     AM Hunt
-//                   </div>
-//                 </div>
-//               </div>
-//             ))}
-            
-//             {/* Quick Entry Button */}
-//             <Link 
-//               href="/hunt-logging"
-//               className="flex items-center justify-center w-full p-3 border-2 border-dashed border-olive-green/30 text-olive-green rounded-lg hover:border-olive-green/50 hover:bg-olive-green/5 transition-colors"
-//             >
-//               <Plus className="w-4 h-4 mr-2" />
-//               Log New Hunt
-//             </Link>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* Hunt Analytics Preview */}
-//       <div className="bg-white rounded-lg club-shadow">
-//         <div className="p-6 border-b border-morning-mist">
-//           <div className="flex items-center justify-between">
-//             <h3 className="text-lg font-semibold text-forest-shadow">Hunt Analytics</h3>
-//             <button className="text-olive-green hover:text-pine-needle text-sm font-medium">
-//               View Details
-//             </button>
-//           </div>
-//         </div>
-//         <div className="p-6">
-//           <div className="space-y-4">
-//             {/* Success Rate */}
-//             <div className="flex items-center justify-between">
-//               <span className="text-sm text-weathered-wood">Success Rate</span>
-//               <div className="flex items-center space-x-2">
-//                 <div className="w-24 h-2 bg-morning-mist rounded-full overflow-hidden">
-//                   <div className="w-8 h-full bg-bright-orange rounded-full"></div>
-//                 </div>
-//                 <span className="text-sm font-medium text-forest-shadow">34.8%</span>
-//               </div>
-//             </div>
-            
-//             {/* Most Productive Stand */}
-//             <div className="flex items-center justify-between">
-//               <span className="text-sm text-weathered-wood">Best Stand</span>
-//               <span className="text-sm font-medium text-forest-shadow">Creek Bottom</span>
-//             </div>
-            
-//             {/* Best Time */}
-//             <div className="flex items-center justify-between">
-//               <span className="text-sm text-weathered-wood">Peak Time</span>
-//               <span className="text-sm font-medium text-forest-shadow">6:30 AM</span>
-//             </div>
-            
-//             {/* Weather Pattern */}
-//             <div className="flex items-center justify-between">
-//               <span className="text-sm text-weathered-wood">Best Conditions</span>
-//               <span className="text-sm font-medium text-forest-shadow">Overcast, 45°F</span>
-//             </div>
-//           </div>
-
-//           {/* Coming Soon Notice */}
-//           <div className="mt-4 p-3 bg-muted-gold/10 border border-muted-gold/20 rounded-lg">
-//             <p className="text-xs text-muted-gold font-medium">
-//               🚧 Advanced analytics coming soon
-//             </p>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-
-//     {/* Quick Actions */}
-//     <div className="bg-white rounded-lg club-shadow p-6">
-//       <h3 className="text-lg font-semibold text-forest-shadow mb-4">Quick Actions</h3>
-//       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-//         <Link
-//           href="/hunt-logging"
-//           className="flex flex-col items-center p-4 border border-weathered-wood/20 rounded-lg hover:bg-morning-mist transition-colors"
-//         >
-//           <Plus className="w-6 h-6 text-burnt-orange mb-2" />
-//           <span className="text-sm font-medium text-forest-shadow">Log Hunt</span>
-//         </Link>
-        
-//         <button className="flex flex-col items-center p-4 border border-weathered-wood/20 rounded-lg hover:bg-morning-mist transition-colors">
-//           <BarChart3 className="w-6 h-6 text-olive-green mb-2" />
-//           <span className="text-sm font-medium text-forest-shadow">Analytics</span>
-//         </button>
-        
-//         <button className="flex flex-col items-center p-4 border border-weathered-wood/20 rounded-lg hover:bg-morning-mist transition-colors">
-//           <MapPin className="w-6 h-6 text-dark-teal mb-2" />
-//           <span className="text-sm font-medium text-forest-shadow">Stand Map</span>
-//         </button>
-        
-//         <button className="flex flex-col items-center p-4 border border-weathered-wood/20 rounded-lg hover:bg-morning-mist transition-colors">
-//           <FileText className="w-6 h-6 text-muted-gold mb-2" />
-//           <span className="text-sm font-medium text-forest-shadow">Reports</span>
-//         </button>
-//       </div>
-//     </div>
-//   </div>
-// )
-
 const renderHunts = () => {
   // Calculate real stats
   const totalHunts = hunts?.length || 0
@@ -1051,6 +697,29 @@ const renderHunts = () => {
       </div>
     );
   }
+
+  // Show logo-only page if:
+  // 1. User is not logged in, OR
+  // 2. User is logged in but we're on production site
+  if (showLogoOnly) {
+    return (
+      <div className="min-h-screen bg-morning-mist">
+        <div className="pt-16 px-4">
+          <div className="max-w-5xl mx-auto text-center">
+            {/* Logo Image */}
+            <div className="mb-8">
+              <img 
+                src="/images/club-logo-whole.svg" 
+                alt="Caswell County Yacht Club"
+                className="mx-auto w-full h-auto max-w-4xl"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-screen bg-morning-mist">
