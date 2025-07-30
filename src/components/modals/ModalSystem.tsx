@@ -690,9 +690,20 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
           if (error) throw error
         }
         
-        setSuccess(localIsSignUp ? 'Account created successfully!' : 'Signed in successfully!')
-        hideModal()
+        // setSuccess(localIsSignUp ? 'Account created successfully!' : 'Signed in successfully!')
+        // hideModal()
         
+        // After successful login in ModalSystem.tsx:
+        const redirect = sessionStorage.getItem('loginRedirect')
+        if (redirect) {
+            sessionStorage.removeItem('loginRedirect')
+            window.location.href = redirect
+        } else {
+            // Normal success flow
+            setSuccess(localIsSignUp ? 'Account created successfully!' : 'Signed in successfully!')
+            hideModal()
+        }
+
         // Clear form
         setLocalEmail('')
         setLocalPassword('')

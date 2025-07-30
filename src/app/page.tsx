@@ -69,17 +69,6 @@ export default function MainPage() {
     }
   }, [user])
 
-  // // FIXED: Enhanced mobile state reset effect with proper logout redirect
-  // useEffect(() => {
-  //   if (!loading && !user) {
-  //     // Reset to dashboard section when logged out
-  //     setActiveSection('dashboard')
-  //     // Close any open menus - MOBILE FIX
-  //     setUserMenuOpen(false)
-  //     setMobileMenuOpen(false) // Reset mobile menu state
-  //   }
-  // }, [user, loading])
-  
   // UPDATED: Enhanced mobile state reset effect with debugging
   useEffect(() => {
     console.log('Auth state changed:', { user: !!user, loading, isSigningOut }) // Debug log
@@ -92,6 +81,31 @@ export default function MainPage() {
       setMobileMenuOpen(false) // Reset mobile menu state
     }
   }, [user, loading, isSigningOut])
+
+  useEffect(() => {
+    // Auto-open login modal if redirected from protected route
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const authRequired = urlParams.get('auth')
+      const redirectTo = urlParams.get('redirectTo')
+      
+      if (authRequired === 'required' && !user) {
+        // Store redirect destination for after login
+        if (redirectTo) {
+          sessionStorage.setItem('loginRedirect', redirectTo)
+        }
+        
+        // Auto-open login modal
+        showModal('login')
+        
+        // Clean up URL
+        const newUrl = new URL(window.location.href)
+        newUrl.searchParams.delete('auth')
+        newUrl.searchParams.delete('redirectTo')
+        window.history.replaceState({}, '', newUrl.toString())
+      }
+    }
+  }, [user, showModal])
 
   const loadData = async () => {
     try {

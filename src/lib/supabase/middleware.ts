@@ -49,7 +49,6 @@ export async function updateSession(request: NextRequest) {
     '/',
     '/calendar',
     '/about',
-    '/login',
     '/auth'
   ]
 
@@ -61,18 +60,12 @@ export async function updateSession(request: NextRequest) {
 
   // If user is not authenticated and trying to access a protected route
   if (!user && requiresAuth) {
+    // Instead of redirecting to /login, redirect to home with a query param
+    // Your main page can detect this and auto-open the login modal
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
+    url.pathname = '/'
+    url.searchParams.set('auth', 'required')
     url.searchParams.set('redirectTo', pathname)
-    return NextResponse.redirect(url)
-  }
-
-  // If user is authenticated and trying to access login page, redirect to home
-  if (user && pathname === '/login') {
-    const redirectTo = request.nextUrl.searchParams.get('redirectTo') || '/'
-    const url = request.nextUrl.clone()
-    url.pathname = redirectTo
-    url.searchParams.delete('redirectTo')
     return NextResponse.redirect(url)
   }
 
