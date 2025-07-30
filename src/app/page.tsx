@@ -40,11 +40,12 @@ export default function MainPage() {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [showWipBanner, setShowWipBanner] = useState(true);
+  // ADD THIS: Force logout state
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const { user, signOut, loading } = useAuth();
-  // NEW: Add modal system hook
   const { showModal } = useModal();
 
-  // NEW: Add data state for real stats
+  // Data state for real stats
   const [stands, setStands] = useState([]);
   const [hunts, setHunts] = useState([]);
   const [sightings, setSightings] = useState([]);
@@ -59,14 +60,38 @@ export default function MainPage() {
   // Show logo-only page if:
   // 1. User is not logged in, OR
   // 2. User is logged in but we're on production site
-  const showLogoOnly = !user || isProduction
+  const showLogoOnly = !user || isProduction || isSigningOut
 
-  // NEW: Load real data
+  // Load real data when user logs in
   useEffect(() => {
     if (user) {
       loadData()
     }
   }, [user])
+
+  // // FIXED: Enhanced mobile state reset effect with proper logout redirect
+  // useEffect(() => {
+  //   if (!loading && !user) {
+  //     // Reset to dashboard section when logged out
+  //     setActiveSection('dashboard')
+  //     // Close any open menus - MOBILE FIX
+  //     setUserMenuOpen(false)
+  //     setMobileMenuOpen(false) // Reset mobile menu state
+  //   }
+  // }, [user, loading])
+  
+  // UPDATED: Enhanced mobile state reset effect with debugging
+  useEffect(() => {
+    console.log('Auth state changed:', { user: !!user, loading, isSigningOut }) // Debug log
+    if (!loading && (!user || isSigningOut)) {
+      console.log('Redirecting to logo page') // Debug log
+      // Reset to dashboard section when logged out
+      setActiveSection('dashboard')
+      // Close any open menus - MOBILE FIX
+      setUserMenuOpen(false)
+      setMobileMenuOpen(false) // Reset mobile menu state
+    }
+  }, [user, loading, isSigningOut])
 
   const loadData = async () => {
     try {
@@ -155,45 +180,52 @@ export default function MainPage() {
     { label: 'Trail Cameras', value: '8', icon: Camera, change: '' },
   ];
 
-  // Authenticated user stats
-  const huntingStats = [
-    { label: 'Total Harvests', value: '47', icon: Target, change: '+12%' },
-    { label: 'Active Hunters', value: '23', icon: Users, change: '+3' },
-    { label: 'Days Until Season', value: '45', icon: Calendar, change: '-1' },
-    { label: 'Camera Photos', value: '1,247', icon: Camera, change: '+156' },
-  ];
-
-  const recentHunts = [
-    { hunter: 'John Smith', game: 'White-tail Buck', date: '2024-01-20', location: 'North Stand' },
-    { hunter: 'Mike Johnson', game: 'Doe', date: '2024-01-19', location: 'Creek Bottom' },
-    { hunter: 'Dave Wilson', game: 'Turkey', date: '2024-01-18', location: 'Ridge Line' },
-  ];
-
-  const maintenanceTasks = [
-    { task: 'Repair feeder #3', priority: 'High', assignee: 'Tom Brown', status: 'pending', dueDate: '2024-01-25' },
-    { task: 'Clear shooting lanes', priority: 'Medium', assignee: 'Mike Johnson', status: 'in-progress', dueDate: '2024-01-30' },
-    { task: 'Check trail cameras', priority: 'Low', assignee: 'John Smith', status: 'completed', dueDate: '2024-01-20' },
-  ];
-
+  // FIXED: Mobile-aware nav click handler
   const handleNavClick = (sectionId: string) => {
     if (navigationItems.find(item => item.id === sectionId)?.requiresAuth && !user) {
-      // Redirect to login for protected routes
+      // For mobile, show login modal instead of redirect
+      if (window.innerWidth < 1024) { // lg breakpoint
+        showModal('login')
+        setMobileMenuOpen(false)
+        return
+      }
+      // Desktop redirect
       window.location.href = `/login?redirectTo=/?section=${sectionId}`;
       return;
     }
     setActiveSection(sectionId);
-    setMobileMenuOpen(false);
-  };
-
+    setMobileMenuOpen(false); // MOBILE FIX: Always close mobile menu on nav
+  }
+  
+  // FIXED: Enhanced signOut handler with mobile state reset and immediate redirect
   const handleSignOut = async () => {
     try {
-      await signOut();
-      setUserMenuOpen(false);
-      setActiveSection('dashboard'); // Reset to dashboard after sign out
+      // FORCE logout state immediately
+      setIsSigningOut(true)
+
+      // Close all menus immediately - MOBILE FIX
+      setUserMenuOpen(false)
+      setMobileMenuOpen(false) // Close mobile menu
+      // Reset to dashboard section
+      setActiveSection('dashboard')
+      // Clear any local data immediately
+      setStands([])
+      setHunts([])
+      setSightings([])
+      setHarvests([])
+      // Sign out - this will trigger the useEffect above to show logo page
+      await signOut()
+
+      // Keep the forced logout state for a moment to ensure redirect
+      setTimeout(() => {
+        setIsSigningOut(false)
+      }, 500)
+
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('Error signing out:', error)
+      setIsSigningOut(false) // Reset on error
     }
-  };
+  }
 
 const renderDashboard = () => {
   // Calculate real stats from data
@@ -224,13 +256,13 @@ const renderDashboard = () => {
             </p>
           </div>
           {!user && (
-            <Link
-              href="/login"
+            <button
+              onClick={() => showModal('login')}
               className="flex items-center px-4 py-2 bg-olive-green text-white rounded-lg hover:bg-pine-needle transition-colors"
             >
               <LogIn size={16} className="mr-2" />
               Sign In
-            </Link>
+            </button>
           )}
         </div>
       </div>
@@ -644,14 +676,9 @@ const renderHunts = () => {
       case 'calendar':
         return <CalendarView />;
       case 'property':
-        return         <PropertyMap 
-          // height="h-80"
-          showControls={false} // Minimal for dashboard
-        />;
+        return <PropertyMap showControls={false} />;
       case 'hunts':
-        return <div className="p-6">
-          {renderHunts()}
-        </div>
+        return <div className="p-6">{renderHunts()}</div>
       case 'dashboard':
         return renderDashboard();
       default:
@@ -671,13 +698,13 @@ const renderHunts = () => {
               }
             </p>
             {!user && (
-              <Link
-                href="/login"
+              <button
+                onClick={() => showModal('login')}
                 className="inline-flex items-center px-4 py-2 bg-olive-green text-white rounded-lg hover:bg-pine-needle transition-colors"
               >
                 <LogIn size={16} className="mr-2" />
                 Sign In
-              </Link>
+              </button>
             )}
           </div>
         );
@@ -698,9 +725,7 @@ const renderHunts = () => {
     );
   }
 
-  // Show logo-only page if:
-  // 1. User is not logged in, OR
-  // 2. User is logged in but we're on production site
+  // FIXED: Show logo-only page for logout redirect
   if (showLogoOnly) {
     return (
       <div className="min-h-screen bg-morning-mist">
@@ -719,7 +744,6 @@ const renderHunts = () => {
       </div>
     );
   }
-
 
   return (
     <div className="min-h-screen bg-morning-mist">
@@ -748,134 +772,103 @@ const renderHunts = () => {
         </div>
       )}
 
-    {/* Enhanced Navigation Header with Hunt Logging Button */}
-    <header className="bg-olive-green text-white club-shadow relative z-40">
-      <div className="flex items-center justify-between p-4">
-        {/* Logo and Mobile Menu Button */}
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors"
-          >
-            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-          <div className="flex items-center space-x-2">
-            <Target className="w-8 h-8" />
-            <div>
-              <h1 className="font-bold text-lg leading-tight">Caswell County</h1>
-              <p className="text-xs text-olive-green/80">Yacht Club</p>
+      {/* Enhanced Navigation Header with Hunt Logging Button */}
+      <header className="bg-olive-green text-white club-shadow relative z-40">
+        <div className="flex items-center justify-between p-4">
+          {/* Logo and Mobile Menu Button */}
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+            <div className="flex items-center space-x-2">
+              <Target className="w-8 h-8" />
+              <div>
+                <h1 className="font-bold text-lg leading-tight">Caswell County</h1>
+                <p className="text-xs text-olive-green/80">Yacht Club</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Center - Hunt Logging Button (always visible when authenticated) */}
-        {user && (
-          <div className="absolute left-1/2 transform -translate-x-1/2">
-            <button
-              onClick={() => showModal('hunt-form')}
-              className="bg-burnt-orange hover:bg-clay-earth text-white p-3 rounded-full transition-colors club-shadow-lg flex items-center justify-center"
-              title="Log Hunt"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
-          </div>
-        )}
-
-        {/* Right Side - User Menu and Notifications */}
-        <div className="flex items-center space-x-2">
-          {user ? (
-            <>
-              {/* Notifications Button */}
-              <button className="p-2 hover:bg-white/10 rounded-lg transition-colors relative">
-                <Bell size={20} />
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-burnt-orange text-white text-xs rounded-full flex items-center justify-center">
-                  3
-                </span>
+          {/* Center - Hunt Logging Button (always visible when authenticated) */}
+          {user && (
+            <div className="absolute left-1/2 transform -translate-x-1/2">
+              <button
+                onClick={() => showModal('hunt-form')}
+                className="bg-burnt-orange hover:bg-clay-earth text-white p-3 rounded-full transition-colors club-shadow-lg flex items-center justify-center"
+                title="Log Hunt"
+              >
+                <Plus className="w-5 h-5" />
               </button>
+            </div>
+          )}
 
-              {/* User Menu */}
-              <div className="relative">
-                <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center space-x-2 p-2 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                    <User size={16} />
-                  </div>
-                  <ChevronDown size={16} />
+          {/* Right Side - User Menu and Notifications */}
+          <div className="flex items-center space-x-2">
+            {user ? (
+              <>
+                {/* Notifications Button */}
+                <button className="p-2 hover:bg-white/10 rounded-lg transition-colors relative">
+                  <Bell size={20} />
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-burnt-orange text-white text-xs rounded-full flex items-center justify-center">
+                    3
+                  </span>
                 </button>
 
-                {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg club-shadow py-2 text-forest-shadow z-50">
-                    <div className="px-4 py-2 border-b border-morning-mist">
-                      <p className="text-sm font-medium">{user.email}</p>
-                      <p className="text-xs text-weathered-wood">Club Member</p>
+                {/* User Menu */}
+                <div className="relative">
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center space-x-2 p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                      <User size={16} />
                     </div>
-                    <button className="w-full text-left px-4 py-2 text-sm hover:bg-morning-mist flex items-center">
-                      <User size={16} className="mr-2" />
-                      Profile
-                    </button>
-                    <button className="w-full text-left px-4 py-2 text-sm hover:bg-morning-mist flex items-center">
-                      <Settings size={16} className="mr-2" />
-                      Settings
-                    </button>
-                    <button
-                      onClick={handleSignOut}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-morning-mist flex items-center text-clay-earth"
-                    >
-                      <LogOut size={16} className="mr-2" />
-                      Sign Out
-                    </button>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <Link
-              href="/login"
-              className="flex items-center px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm"
-            >
-              <LogIn size={16} className="mr-2" />
-              Sign In
-            </Link>
-          )}
-        </div>
-      </div>
+                    <ChevronDown size={16} />
+                  </button>
 
-      {/* Desktop Navigation */}
-      <nav className="hidden lg:block border-t border-white/10">
-        <div className="flex items-center justify-center space-x-1 px-4 py-2">
-          {navigationItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeSection === item.id;
-            const isDisabled = item.requiresAuth && !user;
-            
-            return (
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg club-shadow py-2 text-forest-shadow z-50">
+                      <div className="px-4 py-2 border-b border-morning-mist">
+                        <p className="text-sm font-medium">{user.email}</p>
+                        <p className="text-xs text-weathered-wood">Club Member</p>
+                      </div>
+                      <button className="w-full text-left px-4 py-2 text-sm hover:bg-morning-mist flex items-center">
+                        <User size={16} className="mr-2" />
+                        Profile
+                      </button>
+                      <button className="w-full text-left px-4 py-2 text-sm hover:bg-morning-mist flex items-center">
+                        <Settings size={16} className="mr-2" />
+                        Settings
+                      </button>
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-morning-mist flex items-center text-clay-earth"
+                      >
+                        <LogOut size={16} className="mr-2" />
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
               <button
-                key={item.id}
-                onClick={() => handleNavClick(item.id)}
-                disabled={isDisabled}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                  isActive
-                    ? 'bg-white/20 text-white'
-                    : isDisabled
-                    ? 'text-white/40 cursor-not-allowed'
-                    : 'text-white/80 hover:bg-white/10 hover:text-white'
-                }`}
+                onClick={() => showModal('login')}
+                className="flex items-center px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm"
               >
-                <Icon size={16} />
-                <span>{item.label}</span>
-                {isDisabled && <Lock size={12} className="ml-1" />}
+                <LogIn size={16} className="mr-2" />
+                Sign In
               </button>
-            );
-          })}
+            )}
+          </div>
         </div>
-      </nav>
 
-      {/* Mobile Navigation Drawer */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 right-0 bg-olive-green border-t border-white/10 club-shadow-lg z-30">
-          <nav className="p-4 space-y-2">
+        {/* Desktop Navigation */}
+        <nav className="hidden lg:block border-t border-white/10">
+          <div className="flex items-center justify-center space-x-1 px-4 py-2">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeSection === item.id;
@@ -886,7 +879,7 @@ const renderHunts = () => {
                   key={item.id}
                   onClick={() => handleNavClick(item.id)}
                   disabled={isDisabled}
-                  className={`w-full flex items-center space-x-3 px-3 py-3 rounded-lg text-left transition-colors ${
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                     isActive
                       ? 'bg-white/20 text-white'
                       : isDisabled
@@ -894,16 +887,47 @@ const renderHunts = () => {
                       : 'text-white/80 hover:bg-white/10 hover:text-white'
                   }`}
                 >
-                  <Icon size={20} />
-                  <span className="font-medium">{item.label}</span>
-                  {isDisabled && <Lock size={16} className="ml-auto" />}
+                  <Icon size={16} />
+                  <span>{item.label}</span>
+                  {isDisabled && <Lock size={12} className="ml-1" />}
                 </button>
               );
             })}
-          </nav>
-        </div>
-      )}
-    </header>
+          </div>
+        </nav>
+
+        {/* Mobile Navigation Drawer */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden absolute top-full left-0 right-0 bg-olive-green border-t border-white/10 club-shadow-lg z-30">
+            <nav className="p-4 space-y-2">
+              {navigationItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeSection === item.id;
+                const isDisabled = item.requiresAuth && !user;
+                
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleNavClick(item.id)}
+                    disabled={isDisabled}
+                    className={`w-full flex items-center space-x-3 px-3 py-3 rounded-lg text-left transition-colors ${
+                      isActive
+                        ? 'bg-white/20 text-white'
+                        : isDisabled
+                        ? 'text-white/40 cursor-not-allowed'
+                        : 'text-white/80 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    <Icon size={20} />
+                    <span className="font-medium">{item.label}</span>
+                    {isDisabled && <Lock size={16} className="ml-auto" />}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        )}
+      </header>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

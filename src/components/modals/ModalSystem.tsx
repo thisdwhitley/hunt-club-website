@@ -4,7 +4,7 @@
 // Centralized modal system for hunt logging and data displays
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { X, Target, MapPin, Eye, Calendar } from 'lucide-react'
+import { X, Target, MapPin, Eye, Calendar, EyeOff, Loader2, LogIn } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import HuntEntryForm from '@/components/hunt-logging/HuntEntryForm'
@@ -53,7 +53,7 @@ interface Sighting {
   stand_name: string
 }
 
-type ModalType = 'hunt-form' | 'stands' | 'hunts' | 'sightings' | 'harvests' | null
+type ModalType = 'hunt-form' | 'stands' | 'hunts' | 'sightings' | 'harvests' | 'login' | null
 
 interface ModalContextType {
   currentModal: ModalType
@@ -89,6 +89,11 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+//   // extending to Login modal
+//   const [loginEmail, setLoginEmail] = useState('')
+//   const [loginPassword, setLoginPassword] = useState('')
+//   const [showPassword, setShowPassword] = useState(false)
+//   const [isSignUp, setIsSignUp] = useState(false)
 
   const { user } = useAuth()
   const supabase = createClient()
@@ -110,6 +115,36 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       return () => clearTimeout(timer)
     }
   }, [error, success])
+
+  // UPDATED: Add body scroll management for mobile modals
+  useEffect(() => {
+    if (currentModal) {
+      // Prevent body scroll when modal is open (mobile fix)
+      document.body.style.overflow = 'hidden'
+      // Prevent viewport zoom on input focus (iOS fix)
+      const viewport = document.querySelector('meta[name=viewport]')
+      if (viewport) {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
+      }
+    } else {
+      // Restore body scroll when modal closes
+      document.body.style.overflow = 'unset'
+      // Restore normal viewport behavior
+      const viewport = document.querySelector('meta[name=viewport]')
+      if (viewport) {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1')
+      }
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset'
+      const viewport = document.querySelector('meta[name=viewport]')
+      if (viewport) {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1')
+      }
+    }
+  }, [currentModal])
 
   // ===========================================
   // DATA LOADING
@@ -377,6 +412,63 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+//   const handleLogin = async (e: React.FormEvent) => {
+//     e.preventDefault()
+//     if (!loginEmail || !loginPassword) {
+//         setError('Please fill in all fields')
+//         return
+//     }
+
+//     try {
+//         setIsLoading(true)
+//         setError(null)
+
+//         if (isSignUp) {
+//         const { error } = await supabase.auth.signUp({
+//             email: loginEmail,
+//             password: loginPassword,
+//             options: {
+//             data: {
+//                 full_name: loginEmail.split('@')[0],
+//             },
+//             },
+//         })
+        
+//         if (error) throw error
+        
+//         // After successful signup, sign them in
+//         const { error: signInError } = await supabase.auth.signInWithPassword({
+//             email: loginEmail,
+//             password: loginPassword,
+//         })
+        
+//         if (signInError) throw signInError
+        
+//         } else {
+//         const { error } = await supabase.auth.signInWithPassword({
+//             email: loginEmail,
+//             password: loginPassword,
+//         })
+        
+//         if (error) throw error
+//         }
+        
+//         setSuccess(isSignUp ? 'Account created successfully!' : 'Signed in successfully!')
+//         hideModal()
+        
+//         // Clear form
+//         setLoginEmail('')
+//         setLoginPassword('')
+//         setShowPassword(false)
+//         setIsSignUp(false)
+        
+//     } catch (err: any) {
+//         setError(err.message || 'Authentication failed')
+//     } finally {
+//         setIsLoading(false)
+//     }
+//   }
+
   // ===========================================
   // MODAL CONTENT COMPONENTS
   // ===========================================
@@ -545,17 +637,200 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
   )
 
   // ===========================================
+  // LOGIN MODAL COMPONENT - FIXED VERSION
+  // ===========================================
+
+  const LoginModal = () => {
+    // LOCAL state management to prevent parent re-renders
+    const [localEmail, setLocalEmail] = useState('')
+    const [localPassword, setLocalPassword] = useState('')
+    const [localShowPassword, setLocalShowPassword] = useState(false)
+    const [localIsSignUp, setLocalIsSignUp] = useState(false)
+    const [localLoading, setLocalLoading] = useState(false)
+    const [localError, setLocalError] = useState<string | null>(null)
+
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault()
+      if (!localEmail || !localPassword) {
+        setLocalError('Please fill in all fields')
+        return
+      }
+
+      try {
+        setLocalLoading(true)
+        setLocalError(null)
+
+        if (localIsSignUp) {
+          const { error } = await supabase.auth.signUp({
+            email: localEmail,
+            password: localPassword,
+            options: {
+              data: {
+                full_name: localEmail.split('@')[0],
+              },
+            },
+          })
+          
+          if (error) throw error
+          
+          // After successful signup, sign them in
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: localEmail,
+            password: localPassword,
+          })
+          
+          if (signInError) throw signInError
+          
+        } else {
+          const { error } = await supabase.auth.signInWithPassword({
+            email: localEmail,
+            password: localPassword,
+          })
+          
+          if (error) throw error
+        }
+        
+        setSuccess(localIsSignUp ? 'Account created successfully!' : 'Signed in successfully!')
+        hideModal()
+        
+        // Clear form
+        setLocalEmail('')
+        setLocalPassword('')
+        setLocalShowPassword(false)
+        setLocalIsSignUp(false)
+        
+      } catch (err: any) {
+        setLocalError(err.message || 'Authentication failed')
+      } finally {
+        setLocalLoading(false)
+      }
+    }
+
+    return (
+      <div className="max-w-md mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-olive-green rounded-lg flex items-center justify-center">
+              <LogIn className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-forest-shadow">
+                {localIsSignUp ? 'Join the Club' : 'Welcome Back'}
+              </h2>
+              <p className="text-sm text-weathered-wood">
+                {localIsSignUp ? 'Create your account' : 'Sign in to continue'}
+              </p>
+            </div>
+          </div>
+          <button onClick={hideModal} className="p-2 hover:bg-morning-mist rounded-lg">
+            <X className="w-5 h-5 text-weathered-wood" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {localError && (
+            <div className="bg-clay-earth/10 border border-clay-earth/20 text-clay-earth px-4 py-3 rounded-lg text-sm">
+              {localError}
+            </div>
+          )}
+
+          <div>
+            <label htmlFor="modal-email" className="block text-sm font-medium text-forest-shadow mb-1">
+              Email Address
+            </label>
+            <input
+              id="modal-email"
+              type="email"
+              value={localEmail}
+              onChange={(e) => setLocalEmail(e.target.value)}
+              className="w-full px-3 py-2 border border-weathered-wood/30 rounded-lg bg-morning-mist/50 focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+              placeholder="your@email.com"
+              required
+              disabled={localLoading}
+              autoComplete="email"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="modal-password" className="block text-sm font-medium text-forest-shadow mb-1">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                id="modal-password"
+                type={localShowPassword ? "text" : "password"}
+                value={localPassword}
+                onChange={(e) => setLocalPassword(e.target.value)}
+                className="w-full px-3 py-2 pr-10 border border-weathered-wood/30 rounded-lg bg-morning-mist/50 focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                placeholder="Enter your password"
+                required
+                disabled={localLoading}
+                autoComplete={localIsSignUp ? "new-password" : "current-password"}
+              />
+              <button
+                type="button"
+                onClick={() => setLocalShowPassword(!localShowPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                disabled={localLoading}
+              >
+                {localShowPassword ? (
+                  <EyeOff className="w-4 h-4 text-weathered-wood" />
+                ) : (
+                  <Eye className="w-4 h-4 text-weathered-wood" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={localLoading}
+            className="w-full bg-olive-green hover:bg-pine-needle text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+          >
+            {localLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>{localIsSignUp ? 'Creating Account...' : 'Signing In...'}</span>
+              </>
+            ) : (
+              <span>{localIsSignUp ? 'Create Account' : 'Sign In'}</span>
+            )}
+          </button>
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setLocalIsSignUp(!localIsSignUp)
+                setLocalError(null)
+              }}
+              className="text-sm text-olive-green hover:text-pine-needle transition-colors"
+              disabled={localLoading}
+            >
+              {localIsSignUp 
+                ? 'Already have an account? Sign in'
+                : "Don't have an account? Sign up"
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    )
+  }
+
+  // ===========================================
   // MODAL BACKDROP & CONTAINER
   // ===========================================
 
+  // UPDATED: Mobile-optimized modal backdrop & container
   const Modal = ({ children }: { children: React.ReactNode }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div 
         className="absolute inset-0 bg-forest-shadow/50 backdrop-blur-sm"
         onClick={hideModal}
       />
-      <div className="relative bg-white rounded-lg club-shadow max-w-[90vw] overflow-hidden">
-        <div className="p-6">
+      <div className="relative bg-white rounded-lg club-shadow max-w-[90vw] max-h-[90vh] overflow-hidden w-full sm:w-auto">
+        <div className="p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
           {children}
         </div>
       </div>
@@ -620,6 +895,13 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
           <HarvestsModal />
         </Modal>
       )}
+
+      {currentModal === 'login' && (
+        <Modal>
+            <LoginModal />
+        </Modal>
+      )}
+
     </ModalContext.Provider>
   )
 }

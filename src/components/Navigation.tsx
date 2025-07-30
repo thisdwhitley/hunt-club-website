@@ -73,7 +73,7 @@ export default function Navigation() {
   const isProduction = process.env.NODE_ENV === 'production' || 
                        process.env.NEXT_PUBLIC_ENVIRONMENT === 'production'
   const showMinimalNav = !user || isProduction
-  const showFullNavigation = !showMinimalNav // More readable
+  const showFullNavigation = !showMinimalNav
 
   // Auto-expand management if we're on a management page
   useEffect(() => {
@@ -81,6 +81,15 @@ export default function Navigation() {
       setManagementExpanded(true)
     }
   }, [isManagementPage])
+
+  // Reset mobile state when user changes
+  useEffect(() => {
+    if (!user) {
+      setUserMenuOpen(false)
+      setIsMobileMenuOpen(false)
+      setManagementExpanded(false)
+    }
+  }, [user])
 
   // Measure header height dynamically
   useEffect(() => {
@@ -105,10 +114,19 @@ export default function Navigation() {
     return pathname === href || (href === '/management' && pathname === '/management')
   }
 
+  const handleMobileLogin = () => {
+    setIsMobileMenuOpen(false)
+    setTimeout(() => {
+      showModal('login')
+    }, 100)
+  }
+
   const handleSignOut = async () => {
     try {
       await signOut()
       setUserMenuOpen(false)
+      setIsMobileMenuOpen(false)
+      setManagementExpanded(false)
     } catch (error) {
       console.error('Sign out error:', error)
     }
@@ -127,15 +145,18 @@ export default function Navigation() {
     const active = isActive(item.href)
     const styleSet = isMobile ? styles.mobileNavItem : styles.navItem
     
-    // Special handling for Management tab
     if (item.name === 'Management') {
+      const buttonClass = [
+        styleSet.base,
+        managementExpanded || isManagementPage ? styleSet.active : styleSet.inactive,
+        isMobile ? 'w-full' : ''
+      ].join(' ')
+
       return (
         <li key={item.name}>
           <button
             onClick={() => setManagementExpanded(!managementExpanded)}
-            className={`${styleSet.base} ${
-              managementExpanded || isManagementPage ? styleSet.active : styleSet.inactive
-            } ${isMobile ? 'w-full' : ''}`}
+            className={buttonClass}
           >
             <Icon size={isMobile ? 20 : 16} />
             <span className={isMobile ? "font-medium" : ""}>{item.name}</span>
@@ -144,12 +165,17 @@ export default function Navigation() {
       )
     }
     
+    const linkClass = [
+      styleSet.base,
+      active ? styleSet.active : styleSet.inactive
+    ].join(' ')
+
     return (
       <li key={item.name}>
         <Link
           href={item.href}
           onClick={isMobile ? closeMobileMenu : undefined}
-          className={`${styleSet.base} ${active ? styleSet.active : styleSet.inactive}`}
+          className={linkClass}
         >
           <Icon size={isMobile ? 20 : 16} />
           <span className={isMobile ? "font-medium" : ""}>{item.name}</span>
@@ -169,15 +195,17 @@ export default function Navigation() {
             {managementTabs.map((tab) => {
               const Icon = tab.icon
               const active = isManagementTabActive(tab.href)
+              const linkClass = [
+                styles.mobileNavItem.base,
+                active ? styles.mobileNavItem.active : styles.mobileNavItem.inactive
+              ].join(' ')
               
               return (
                 <li key={tab.name}>
                   <Link
                     href={tab.href}
                     onClick={closeMobileMenu}
-                    className={`${styles.mobileNavItem.base} ${
-                      active ? styles.mobileNavItem.active : styles.mobileNavItem.inactive
-                    }`}
+                    className={linkClass}
                   >
                     <Icon size={18} />
                     <span className="font-medium">{tab.name}</span>
@@ -197,14 +225,16 @@ export default function Navigation() {
           {managementTabs.map((tab) => {
             const Icon = tab.icon
             const active = isManagementTabActive(tab.href)
+            const linkClass = [
+              styles.managementTab.base,
+              active ? styles.managementTab.active : styles.managementTab.inactive
+            ].join(' ')
             
             return (
               <li key={tab.name}>
                 <Link
                   href={tab.href}
-                  className={`${styles.managementTab.base} ${
-                    active ? styles.managementTab.active : styles.managementTab.inactive
-                  }`}
+                  className={linkClass}
                 >
                   <Icon size={14} />
                   <span>{tab.name}</span>
@@ -257,7 +287,7 @@ export default function Navigation() {
                   className="w-6 h-6 lg:w-10 lg:h-10 object-contain brightness-0 invert"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextElementSibling.style.display = 'block';
+                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'block';
                   }}
                 />
                 <span className="text-xs font-bold text-morning-mist hidden">CCYC</span>
@@ -312,13 +342,13 @@ export default function Navigation() {
                   )}
                 </div>
               ) : (
-                <Link
-                  href="/login"
+                <button
+                  onClick={() => showModal('login')}
                   className="flex items-center gap-2 bg-burnt-orange hover:bg-clay-earth text-white px-4 py-2 rounded-lg transition-colors font-medium"
                 >
                   <LogIn size={18} />
                   <span>Sign In</span>
-                </Link>
+                </button>
               )}
             </div>
 
@@ -397,14 +427,13 @@ export default function Navigation() {
                       <span className="font-medium">Sign Out ({user.email})</span>
                     </button>
                   ) : (
-                    <Link
-                      href="/login"
-                      onClick={closeMobileMenu}
-                      className="flex items-center gap-3 text-green-100 hover:text-white hover:bg-pine-needle px-3 py-2 rounded-lg transition-colors"
+                    <button
+                      onClick={handleMobileLogin}
+                      className="flex items-center gap-3 text-green-100 hover:text-white hover:bg-pine-needle px-3 py-2 rounded-lg transition-colors w-full text-left"
                     >
                       <LogIn size={20} />
                       <span className="font-medium">Sign In</span>
-                    </Link>
+                    </button>
                   )}
                 </div>
 
