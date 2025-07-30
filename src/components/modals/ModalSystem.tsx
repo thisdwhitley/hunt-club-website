@@ -1,17 +1,15 @@
+// src/components/modals/ModalSystem.tsx
+
 'use client'
 
-// src/components/modals/ModalSystem.tsx
-// Centralized modal system for hunt logging and data displays
-
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { X, Target, MapPin, Eye, Calendar, EyeOff, Loader2, LogIn } from 'lucide-react'
-import { useAuth } from '@/hooks/useAuth'
+import { X, Calendar, MapPin, Eye, Target, Clock, Hash } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import HuntEntryForm from '@/components/hunt-logging/HuntEntryForm'
-import { HuntFormData } from '@/lib/hunt-logging/hunt-validation'
+import { useAuth } from '@/hooks/useAuth'
+import { HuntEntryForm, type HuntFormData } from '@/components/hunt-logging/HuntEntryForm'
 
 // ===========================================
-// TYPES
+// TYPES & INTERFACES
 // ===========================================
 
 interface Stand {
@@ -63,6 +61,45 @@ interface ModalContextType {
 }
 
 // ===========================================
+// UTILITY FUNCTIONS
+// ===========================================
+
+// Helper function to extract meaningful error messages from various error types
+const extractErrorMessage = (error: any): string => {
+  if (typeof error === 'string') {
+    return error
+  }
+  
+  if (error?.message) {
+    return error.message
+  }
+  
+  if (error?.details) {
+    return error.details
+  }
+  
+  if (error?.hint) {
+    return error.hint
+  }
+  
+  if (error?.code) {
+    return `Database error (${error.code}): ${error.message || 'Unknown error'}`
+  }
+  
+  // For Supabase errors that might have nested properties
+  if (error?.error) {
+    return extractErrorMessage(error.error)
+  }
+  
+  // If we still can't extract a message, stringify the error
+  try {
+    return JSON.stringify(error, null, 2)
+  } catch {
+    return 'Unknown error occurred'
+  }
+}
+
+// ===========================================
 // CONTEXT
 // ===========================================
 
@@ -89,11 +126,6 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-//   // extending to Login modal
-//   const [loginEmail, setLoginEmail] = useState('')
-//   const [loginPassword, setLoginPassword] = useState('')
-//   const [showPassword, setShowPassword] = useState(false)
-//   const [isSignUp, setIsSignUp] = useState(false)
 
   const { user } = useAuth()
   const supabase = createClient()
@@ -102,6 +134,12 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (user) {
       refreshData()
+    } else {
+      // Clear data when user logs out
+      setStands([])
+      setHunts([])
+      setSightings([])
+      setHarvests([])
     }
   }, [user])
 
@@ -151,19 +189,29 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
   // ===========================================
 
   const refreshData = async () => {
-    if (!user) return
+    if (!user) {
+      console.log('No user found, skipping data refresh')
+      return
+    }
     
     try {
       setIsLoading(true)
+      setError(null)
+      
+      console.log('Starting data refresh for user:', user.id)
+      
       await Promise.all([
         loadStands(),
         loadHunts(),
         loadSightings(),
         loadHarvests()
       ])
+      
+      console.log('Data refresh completed successfully')
     } catch (err) {
-      console.error('Error refreshing data:', err)
-      setError('Failed to load data')
+      const errorMessage = extractErrorMessage(err)
+      console.error('Error refreshing data:', errorMessage)
+      setError('Failed to load data: ' + errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -171,18 +219,30 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
 
   const loadStands = async () => {
     try {
+      console.log('Loading stands...')
+      
       const { data, error } = await supabase
         .from('stands')
         .select('*')
         .order('name')
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error loading stands:', error)
+        throw error
+      }
+
+      console.log(`Loaded ${data?.length || 0} stands`)
 
       // Get usage statistics for each stand
-      const { data: huntCounts } = await supabase
+      const { data: huntCounts, error: huntCountsError } = await supabase
         .from('hunt_logs')
         .select('stand_id, hunt_date')
         .not('stand_id', 'is', null)
+
+      if (huntCountsError) {
+        console.warn('Error loading hunt counts:', extractErrorMessage(huntCountsError))
+        // Continue without hunt counts rather than failing completely
+      }
 
       const standStats = huntCounts?.reduce((acc, hunt) => {
         if (!acc[hunt.stand_id]) {
@@ -202,15 +262,24 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       })) || []
 
       setStands(enrichedStands)
+      console.log('Stands loaded successfully')
     } catch (err) {
-      console.error('Error loading stands:', err)
+      const errorMessage = extractErrorMessage(err)
+      console.error('Error loading stands:', errorMessage)
+      // Don't throw - allow other data loading to continue
+      setStands([])
     }
   }
 
   const loadHunts = async () => {
-    if (!user) return
+    if (!user) {
+      console.log('No user, skipping hunt loading')
+      return
+    }
 
     try {
+      console.log('Loading hunts for user:', user.id)
+      
       const { data: hunts, error } = await supabase
         .from('hunt_logs')
         .select(`
@@ -229,19 +298,27 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
         .order('created_at', { ascending: false })
         .limit(50)
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error loading hunts:', error)
+        throw error
+      }
+
+      console.log(`Loaded ${hunts?.length || 0} hunts`)
 
       // Get sightings count for each hunt
       const huntIds = hunts?.map(h => h.id) || []
       let sightingsCounts: { [key: string]: number } = {}
       
       if (huntIds.length > 0) {
-        const { data: sightings } = await supabase
+        const { data: sightings, error: sightingsError } = await supabase
           .from('hunt_sightings')
           .select('hunt_log_id')
           .in('hunt_log_id', huntIds)
         
-        if (sightings) {
+        if (sightingsError) {
+          console.warn('Error loading sightings counts:', extractErrorMessage(sightingsError))
+          // Continue without sightings counts
+        } else if (sightings) {
           sightingsCounts = sightings.reduce((acc, s) => {
             acc[s.hunt_log_id] = (acc[s.hunt_log_id] || 0) + 1
             return acc
@@ -255,15 +332,23 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       })) || []
 
       setHunts(enrichedHunts)
+      console.log('Hunts loaded successfully')
     } catch (err) {
-      console.error('Error loading hunts:', err)
+      const errorMessage = extractErrorMessage(err)
+      console.error('Error loading hunts:', errorMessage)
+      setHunts([])
     }
   }
 
   const loadSightings = async () => {
-    if (!user) return
+    if (!user) {
+      console.log('No user, skipping sightings loading')
+      return
+    }
 
     try {
+      console.log('Loading sightings for user:', user.id)
+      
       const { data, error } = await supabase
         .from('hunt_sightings')
         .select(`
@@ -273,6 +358,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
           gender,
           behavior,
           time_observed,
+          created_at,
           hunt_logs!inner (
             hunt_date,
             member_id,
@@ -280,10 +366,15 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
           )
         `)
         .eq('hunt_logs.member_id', user.id)
-        .order('hunt_logs.hunt_date', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(100)
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error loading sightings:', error)
+        throw error
+      }
+
+      console.log(`Loaded ${data?.length || 0} sightings`)
 
       const formattedSightings = data?.map(sighting => ({
         id: sighting.id,
@@ -296,16 +387,27 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
         stand_name: sighting.hunt_logs.stands?.name || 'Unknown'
       })) || []
 
+      // Sort by hunt_date in JavaScript since we can't do it in the SQL query
+      formattedSightings.sort((a, b) => new Date(b.hunt_date).getTime() - new Date(a.hunt_date).getTime())
+
       setSightings(formattedSightings)
+      console.log('Sightings loaded successfully')
     } catch (err) {
-      console.error('Error loading sightings:', err)
+      const errorMessage = extractErrorMessage(err)
+      console.error('Error loading sightings:', errorMessage)
+      setSightings([])
     }
   }
 
   const loadHarvests = async () => {
-    if (!user) return
+    if (!user) {
+      console.log('No user, skipping harvests loading')
+      return
+    }
 
     try {
+      console.log('Loading harvests for user:', user.id)
+      
       const { data, error } = await supabase
         .from('hunt_harvests')
         .select(`
@@ -314,6 +416,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
           gender,
           estimated_weight,
           shot_distance_yards,
+          created_at,
           hunt_logs!inner (
             hunt_date,
             member_id,
@@ -321,14 +424,27 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
           )
         `)
         .eq('hunt_logs.member_id', user.id)
-        .order('hunt_logs.hunt_date', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(50)
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error loading harvests:', error)
+        throw error
+      }
 
-      setHarvests(data || [])
+      console.log(`Loaded ${data?.length || 0} harvests`)
+
+      // Sort by hunt_date in JavaScript since we can't do it in the SQL query
+      const sortedHarvests = (data || []).sort((a, b) => 
+        new Date(b.hunt_logs.hunt_date).getTime() - new Date(a.hunt_logs.hunt_date).getTime()
+      )
+
+      setHarvests(sortedHarvests)
+      console.log('Harvests loaded successfully')
     } catch (err) {
-      console.error('Error loading harvests:', err)
+      const errorMessage = extractErrorMessage(err)
+      console.error('Error loading harvests:', errorMessage)
+      setHarvests([])
     }
   }
 
@@ -365,14 +481,15 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
         hunt_date: formData.hunt_date,
         start_time: formData.start_time || null,
         end_time: formData.end_time || null,
-        harvest_count: formData.had_harvest ? 1 : 0,
+        harvest_count: formData.had_harvest ? (formData.harvest_count || 1) : 0,
         hunt_type: formData.hunt_type || 'AM',
         notes: formData.notes || null,
+        had_harvest: formData.had_harvest || false
       }
 
       const { data: huntLog, error: huntError } = await supabase
         .from('hunt_logs')
-        .insert([huntData])
+        .insert(huntData)
         .select()
         .single()
 
@@ -383,14 +500,10 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
         const sightingsData = formData.sightings.map(sighting => ({
           hunt_log_id: huntLog.id,
           animal_type: sighting.animal_type,
-          count: sighting.count || 1,
+          count: sighting.count,
           gender: sighting.gender || null,
-          estimated_age: sighting.estimated_age || null,
           behavior: sighting.behavior || null,
-          distance_yards: sighting.distance_yards || null,
-          direction: sighting.direction || null,
-          time_observed: sighting.time_observed || null,
-          notes: sighting.notes || null,
+          time_observed: sighting.time_observed || null
         }))
 
         const { error: sightingsError } = await supabase
@@ -400,77 +513,37 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
         if (sightingsError) throw sightingsError
       }
 
-      setSuccess(`Hunt logged successfully! ${formData.sightings?.length || 0} sightings added.`)
+      // Insert harvest if any
+      if (formData.had_harvest && formData.harvest) {
+        const harvestData = {
+          hunt_log_id: huntLog.id,
+          animal_type: formData.harvest.animal_type,
+          gender: formData.harvest.gender || null,
+          estimated_weight: formData.harvest.estimated_weight || null,
+          shot_distance_yards: formData.harvest.shot_distance_yards || null
+        }
+
+        const { error: harvestError } = await supabase
+          .from('hunt_harvests')
+          .insert(harvestData)
+
+        if (harvestError) throw harvestError
+      }
+
+      setSuccess('Hunt logged successfully!')
       hideModal()
       await refreshData()
-
     } catch (err) {
-      console.error('Error saving hunt log:', err)
-      setError('Failed to save hunt log. Please try again.')
+      const errorMessage = extractErrorMessage(err)
+      console.error('Error submitting hunt:', errorMessage)
+      setError('Failed to save hunt: ' + errorMessage)
     } finally {
       setIsLoading(false)
     }
   }
 
-//   const handleLogin = async (e: React.FormEvent) => {
-//     e.preventDefault()
-//     if (!loginEmail || !loginPassword) {
-//         setError('Please fill in all fields')
-//         return
-//     }
-
-//     try {
-//         setIsLoading(true)
-//         setError(null)
-
-//         if (isSignUp) {
-//         const { error } = await supabase.auth.signUp({
-//             email: loginEmail,
-//             password: loginPassword,
-//             options: {
-//             data: {
-//                 full_name: loginEmail.split('@')[0],
-//             },
-//             },
-//         })
-        
-//         if (error) throw error
-        
-//         // After successful signup, sign them in
-//         const { error: signInError } = await supabase.auth.signInWithPassword({
-//             email: loginEmail,
-//             password: loginPassword,
-//         })
-        
-//         if (signInError) throw signInError
-        
-//         } else {
-//         const { error } = await supabase.auth.signInWithPassword({
-//             email: loginEmail,
-//             password: loginPassword,
-//         })
-        
-//         if (error) throw error
-//         }
-        
-//         setSuccess(isSignUp ? 'Account created successfully!' : 'Signed in successfully!')
-//         hideModal()
-        
-//         // Clear form
-//         setLoginEmail('')
-//         setLoginPassword('')
-//         setShowPassword(false)
-//         setIsSignUp(false)
-        
-//     } catch (err: any) {
-//         setError(err.message || 'Authentication failed')
-//     } finally {
-//         setIsLoading(false)
-//     }
-//   }
-
   // ===========================================
-  // MODAL CONTENT COMPONENTS
+  // MODAL COMPONENTS
   // ===========================================
 
   const StandsModal = () => (
@@ -483,37 +556,39 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       </div>
       
       <div className="space-y-3">
-        {stands.map(stand => (
-          <div key={stand.id} className="bg-morning-mist/50 p-4 rounded-lg border border-weathered-wood/20">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-1">
-                  <MapPin className="w-4 h-4 text-olive-green" />
-                  <h4 className="font-medium text-forest-shadow">{stand.name}</h4>
-                  {stand.type && (
-                    <span className="bg-olive-green/10 text-olive-green px-2 py-0.5 rounded text-xs">
-                      {stand.type.replace('_', ' ')}
-                    </span>
+        {stands.length === 0 ? (
+          <div className="text-center py-8 text-weathered-wood">
+            No stands found
+          </div>
+        ) : (
+          stands.map(stand => (
+            <div key={stand.id} className="bg-morning-mist/50 p-4 rounded-lg border border-weathered-wood/20">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <MapPin className="w-4 h-4 text-muted-gold" />
+                    <h4 className="font-medium text-forest-shadow">{stand.name}</h4>
+                    {!stand.active && (
+                      <span className="px-2 py-1 text-xs bg-clay-earth/20 text-clay-earth rounded">
+                        Inactive
+                      </span>
+                    )}
+                  </div>
+                  {stand.description && (
+                    <p className="text-sm text-weathered-wood mb-2">{stand.description}</p>
                   )}
-                  <span className={`px-2 py-0.5 rounded text-xs ${
-                    stand.active ? 'bg-bright-orange/10 text-bright-orange' : 'bg-clay-earth/10 text-clay-earth'
-                  }`}>
-                    {stand.active ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-                {stand.description && (
-                  <p className="text-sm text-weathered-wood mb-2">{stand.description}</p>
-                )}
-                <div className="flex items-center space-x-4 text-xs text-weathered-wood">
-                  <span>{stand.hunt_count || 0} hunts</span>
-                  {stand.last_used && (
-                    <span>Last used: {new Date(stand.last_used).toLocaleDateString()}</span>
-                  )}
+                  <div className="flex items-center space-x-4 text-sm text-weathered-wood">
+                    <span>Type: {stand.type || 'Unknown'}</span>
+                    <span>Used: {stand.hunt_count || 0} times</span>
+                    {stand.last_used && (
+                      <span>Last: {new Date(stand.last_used).toLocaleDateString()}</span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   )
@@ -528,38 +603,49 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       </div>
       
       <div className="space-y-3">
-        {hunts.map(hunt => (
-          <div key={hunt.id} className="bg-morning-mist/50 p-4 rounded-lg border border-weathered-wood/20">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Target className="w-4 h-4 text-olive-green" />
-                  <h4 className="font-medium text-forest-shadow">{hunt.stands?.name || 'Unknown Stand'}</h4>
-                  <span className="bg-olive-green/10 text-olive-green px-2 py-0.5 rounded text-xs">
-                    {hunt.hunt_type || 'AM'}
-                  </span>
-                </div>
-                <div className="text-sm text-weathered-wood mb-2">
-                  {new Date(hunt.hunt_date).toLocaleDateString()} 
-                  {hunt.start_time && hunt.end_time && (
-                    <span> • {hunt.start_time} - {hunt.end_time}</span>
+        {hunts.length === 0 ? (
+          <div className="text-center py-8 text-weathered-wood">
+            No hunts logged yet
+          </div>
+        ) : (
+          hunts.map(hunt => (
+            <div key={hunt.id} className="bg-morning-mist/50 p-4 rounded-lg border border-weathered-wood/20">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Calendar className="w-4 h-4 text-muted-gold" />
+                    <h4 className="font-medium text-forest-shadow">
+                      {new Date(hunt.hunt_date).toLocaleDateString()}
+                    </h4>
+                    <span className="text-sm text-weathered-wood">
+                      {hunt.hunt_type || 'AM'}
+                    </span>
+                  </div>
+                  <div className="text-sm text-weathered-wood mb-2">
+                    {hunt.stands?.name || 'Unknown Stand'}
+                    {hunt.start_time && hunt.end_time && (
+                      <span> • {hunt.start_time} - {hunt.end_time}</span>
+                    )}
+                  </div>
+                  {hunt.notes && (
+                    <p className="text-sm text-weathered-wood mb-2 italic">{hunt.notes}</p>
                   )}
-                </div>
-                {hunt.notes && (
-                  <p className="text-sm text-weathered-wood mb-2 italic">"{hunt.notes}"</p>
-                )}
-                <div className="flex items-center space-x-4 text-sm">
-                  <span className={`font-medium ${hunt.harvest_count > 0 ? 'text-burnt-orange' : 'text-weathered-wood'}`}>
-                    {hunt.harvest_count} harvest{hunt.harvest_count !== 1 ? 's' : ''}
-                  </span>
-                  <span className="text-olive-green">
-                    {hunt.sightings_count || 0} sighting{hunt.sightings_count !== 1 ? 's' : ''}
-                  </span>
+                  <div className="flex items-center space-x-4 text-sm">
+                    <span className={`flex items-center space-x-1 ${
+                      hunt.harvest_count > 0 ? 'text-burnt-orange' : 'text-weathered-wood'}`}>
+                      <Target className="w-3 h-3" />
+                      <span>{hunt.harvest_count} harvest{hunt.harvest_count !== 1 ? 's' : ''}</span>
+                    </span>
+                    <span className="flex items-center space-x-1 text-olive-green">
+                      <Eye className="w-3 h-3" />
+                      <span>{hunt.sightings_count || 0} sighting{hunt.sightings_count !== 1 ? 's' : ''}</span>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   )
@@ -574,28 +660,34 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       </div>
       
       <div className="space-y-3">
-        {sightings.map(sighting => (
-          <div key={sighting.id} className="bg-morning-mist/50 p-4 rounded-lg border border-weathered-wood/20">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-1">
-                  <Eye className="w-4 h-4 text-muted-gold" />
-                  <h4 className="font-medium text-forest-shadow">
-                    {sighting.count} {sighting.animal_type}
-                    {sighting.gender && sighting.gender !== 'Unknown' && ` (${sighting.gender})`}
-                  </h4>
+        {sightings.length === 0 ? (
+          <div className="text-center py-8 text-weathered-wood">
+            No sightings recorded yet
+          </div>
+        ) : (
+          sightings.map(sighting => (
+            <div key={sighting.id} className="bg-morning-mist/50 p-4 rounded-lg border border-weathered-wood/20">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Eye className="w-4 h-4 text-muted-gold" />
+                    <h4 className="font-medium text-forest-shadow">
+                      {sighting.count} {sighting.animal_type}
+                      {sighting.gender && sighting.gender !== 'Unknown' && ` (${sighting.gender})`}
+                    </h4>
+                  </div>
+                  <div className="text-sm text-weathered-wood mb-1">
+                    {sighting.stand_name} • {new Date(sighting.hunt_date).toLocaleDateString()}
+                    {sighting.time_observed && ` • ${sighting.time_observed}`}
+                  </div>
+                  {sighting.behavior && (
+                    <p className="text-sm text-weathered-wood italic">Behavior: {sighting.behavior}</p>
+                  )}
                 </div>
-                <div className="text-sm text-weathered-wood mb-1">
-                  {sighting.stand_name} • {new Date(sighting.hunt_date).toLocaleDateString()}
-                  {sighting.time_observed && ` • ${sighting.time_observed}`}
-                </div>
-                {sighting.behavior && (
-                  <p className="text-sm text-weathered-wood italic">Behavior: {sighting.behavior}</p>
-                )}
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   )
@@ -603,206 +695,143 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
   const HarvestsModal = () => (
     <div className="max-w-2xl mx-auto max-h-[80vh] overflow-y-auto">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-forest-shadow">Harvest Records</h2>
+        <h2 className="text-xl font-bold text-forest-shadow">Recent Harvests</h2>
         <button onClick={hideModal} className="p-2 hover:bg-morning-mist rounded-lg">
           <X className="w-5 h-5 text-weathered-wood" />
         </button>
       </div>
       
       <div className="space-y-3">
-        {harvests.map(harvest => (
-          <div key={harvest.id} className="bg-morning-mist/50 p-4 rounded-lg border border-weathered-wood/20">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-1">
-                  <Target className="w-4 h-4 text-burnt-orange" />
-                  <h4 className="font-medium text-forest-shadow">
-                    {harvest.animal_type}
-                    {harvest.gender && ` (${harvest.gender})`}
-                  </h4>
-                </div>
-                <div className="text-sm text-weathered-wood mb-1">
-                  {harvest.hunt_logs.stands?.name} • {new Date(harvest.hunt_logs.hunt_date).toLocaleDateString()}
-                </div>
-                <div className="flex items-center space-x-4 text-sm text-weathered-wood">
-                  {harvest.estimated_weight && <span>{harvest.estimated_weight} lbs</span>}
-                  {harvest.shot_distance_yards && <span>{harvest.shot_distance_yards} yards</span>}
+        {harvests.length === 0 ? (
+          <div className="text-center py-8 text-weathered-wood">
+            No harvests recorded yet
+          </div>
+        ) : (
+          harvests.map(harvest => (
+            <div key={harvest.id} className="bg-morning-mist/50 p-4 rounded-lg border border-weathered-wood/20">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Target className="w-4 h-4 text-muted-gold" />
+                    <h4 className="font-medium text-forest-shadow">
+                      {harvest.animal_type}
+                      {harvest.gender && harvest.gender !== 'Unknown' && ` (${harvest.gender})`}
+                    </h4>
+                  </div>
+                  <div className="text-sm text-weathered-wood mb-1">
+                    {harvest.hunt_logs?.stands?.name || 'Unknown Stand'} • {new Date(harvest.hunt_logs?.hunt_date || harvest.created_at).toLocaleDateString()}
+                  </div>
+                  <div className="flex items-center space-x-4 text-sm text-weathered-wood">
+                    {harvest.estimated_weight && (
+                      <span>Weight: {harvest.estimated_weight} lbs</span>
+                    )}
+                    {harvest.shot_distance_yards && (
+                      <span>Distance: {harvest.shot_distance_yards} yards</span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   )
 
-  // ===========================================
-  // LOGIN MODAL COMPONENT - FIXED VERSION
-  // ===========================================
-
   const LoginModal = () => {
-    // LOCAL state management to prevent parent re-renders
     const [localEmail, setLocalEmail] = useState('')
     const [localPassword, setLocalPassword] = useState('')
-    const [localShowPassword, setLocalShowPassword] = useState(false)
     const [localIsSignUp, setLocalIsSignUp] = useState(false)
     const [localLoading, setLocalLoading] = useState(false)
     const [localError, setLocalError] = useState<string | null>(null)
 
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault()
-      if (!localEmail || !localPassword) {
-        setLocalError('Please fill in all fields')
-        return
-      }
+      setLocalLoading(true)
+      setLocalError(null)
 
       try {
-        setLocalLoading(true)
-        setLocalError(null)
-
         if (localIsSignUp) {
           const { error } = await supabase.auth.signUp({
             email: localEmail,
             password: localPassword,
-            options: {
-              data: {
-                full_name: localEmail.split('@')[0],
-              },
-            },
           })
-          
           if (error) throw error
-          
-          // After successful signup, sign them in
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: localEmail,
-            password: localPassword,
-          })
-          
-          if (signInError) throw signInError
-          
+          setSuccess('Check your email for verification link!')
         } else {
           const { error } = await supabase.auth.signInWithPassword({
             email: localEmail,
             password: localPassword,
           })
-          
           if (error) throw error
+          setSuccess('Signed in successfully!')
         }
-        
-        // setSuccess(localIsSignUp ? 'Account created successfully!' : 'Signed in successfully!')
-        // hideModal()
-        
-        // After successful login in ModalSystem.tsx:
-        const redirect = sessionStorage.getItem('loginRedirect')
-        if (redirect) {
-            sessionStorage.removeItem('loginRedirect')
-            window.location.href = redirect
-        } else {
-            // Normal success flow
-            setSuccess(localIsSignUp ? 'Account created successfully!' : 'Signed in successfully!')
-            hideModal()
-        }
-
-        // Clear form
-        setLocalEmail('')
-        setLocalPassword('')
-        setLocalShowPassword(false)
-        setLocalIsSignUp(false)
-        
-      } catch (err: any) {
-        setLocalError(err.message || 'Authentication failed')
+        hideModal()
+      } catch (err) {
+        setLocalError(extractErrorMessage(err))
       } finally {
         setLocalLoading(false)
       }
     }
 
     return (
-      <div className="max-w-md mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-olive-green rounded-lg flex items-center justify-center">
-              <LogIn className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-forest-shadow">
-                {localIsSignUp ? 'Join the Club' : 'Welcome Back'}
-              </h2>
-              <p className="text-sm text-weathered-wood">
-                {localIsSignUp ? 'Create your account' : 'Sign in to continue'}
-              </p>
-            </div>
-          </div>
-          <button onClick={hideModal} className="p-2 hover:bg-morning-mist rounded-lg">
-            <X className="w-5 h-5 text-weathered-wood" />
-          </button>
+      <div className="w-full max-w-md mx-auto">
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-forest-shadow">
+            {localIsSignUp ? 'Create Account' : 'Sign In'}
+          </h2>
+          <p className="text-weathered-wood mt-2">
+            {localIsSignUp ? 'Join the hunting club' : 'Welcome back to the club'}
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {localError && (
-            <div className="bg-clay-earth/10 border border-clay-earth/20 text-clay-earth px-4 py-3 rounded-lg text-sm">
-              {localError}
-            </div>
-          )}
+        {localError && (
+          <div className="mb-4 p-3 bg-clay-earth/10 border border-clay-earth/30 rounded-lg text-clay-earth text-sm">
+            {localError}
+          </div>
+        )}
 
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="modal-email" className="block text-sm font-medium text-forest-shadow mb-1">
-              Email Address
+            <label htmlFor="email" className="block text-sm font-medium text-forest-shadow mb-1">
+              Email
             </label>
             <input
-              id="modal-email"
+              id="email"
               type="email"
               value={localEmail}
               onChange={(e) => setLocalEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-weathered-wood/30 rounded-lg bg-morning-mist/50 focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-              placeholder="your@email.com"
+              className="w-full px-3 py-2 border border-weathered-wood/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-olive-green/50 focus:border-olive-green"
               required
               disabled={localLoading}
-              autoComplete="email"
             />
           </div>
 
           <div>
-            <label htmlFor="modal-password" className="block text-sm font-medium text-forest-shadow mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-forest-shadow mb-1">
               Password
             </label>
-            <div className="relative">
-              <input
-                id="modal-password"
-                type={localShowPassword ? "text" : "password"}
-                value={localPassword}
-                onChange={(e) => setLocalPassword(e.target.value)}
-                className="w-full px-3 py-2 pr-10 border border-weathered-wood/30 rounded-lg bg-morning-mist/50 focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-                placeholder="Enter your password"
-                required
-                disabled={localLoading}
-                autoComplete={localIsSignUp ? "new-password" : "current-password"}
-              />
-              <button
-                type="button"
-                onClick={() => setLocalShowPassword(!localShowPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                disabled={localLoading}
-              >
-                {localShowPassword ? (
-                  <EyeOff className="w-4 h-4 text-weathered-wood" />
-                ) : (
-                  <Eye className="w-4 h-4 text-weathered-wood" />
-                )}
-              </button>
-            </div>
+            <input
+              id="password"
+              type="password"
+              value={localPassword}
+              onChange={(e) => setLocalPassword(e.target.value)}
+              className="w-full px-3 py-2 border border-weathered-wood/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-olive-green/50 focus:border-olive-green"
+              required
+              disabled={localLoading}
+            />
           </div>
 
           <button
             type="submit"
             disabled={localLoading}
-            className="w-full bg-olive-green hover:bg-pine-needle text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            className="w-full bg-olive-green text-white py-2 px-4 rounded-lg hover:bg-pine-needle transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {localLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>{localIsSignUp ? 'Creating Account...' : 'Signing In...'}</span>
-              </>
+              <span className="flex items-center justify-center space-x-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>Processing...</span>
+              </span>
             ) : (
               <span>{localIsSignUp ? 'Create Account' : 'Sign In'}</span>
             )}
@@ -833,7 +862,6 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
   // MODAL BACKDROP & CONTAINER
   // ===========================================
 
-  // UPDATED: Mobile-optimized modal backdrop & container
   const Modal = ({ children }: { children: React.ReactNode }) => (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div 
@@ -858,14 +886,28 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       
       {/* Status Messages */}
       {error && (
-        <div className="fixed top-4 right-4 z-50 p-3 bg-clay-earth/90 text-white rounded-lg club-shadow">
-          {error}
+        <div className="fixed top-4 right-4 z-50 p-3 bg-clay-earth/90 text-white rounded-lg club-shadow max-w-sm">
+          <div className="text-sm">
+            {error}
+          </div>
         </div>
       )}
       
       {success && (
-        <div className="fixed top-4 right-4 z-50 p-3 bg-bright-orange/90 text-white rounded-lg club-shadow">
-          {success}
+        <div className="fixed top-4 right-4 z-50 p-3 bg-bright-orange/90 text-white rounded-lg club-shadow max-w-sm">
+          <div className="text-sm">
+            {success}
+          </div>
+        </div>
+      )}
+
+      {/* Loading Indicator */}
+      {isLoading && (
+        <div className="fixed top-4 left-4 z-50 p-3 bg-olive-green/90 text-white rounded-lg club-shadow">
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            <span className="text-sm">Loading...</span>
+          </div>
         </div>
       )}
 
@@ -909,7 +951,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
 
       {currentModal === 'login' && (
         <Modal>
-            <LoginModal />
+          <LoginModal />
         </Modal>
       )}
 
