@@ -6,7 +6,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react'
 import { X, Calendar, MapPin, Eye, Target, Clock, Hash } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
-import { HuntEntryForm, type HuntFormData } from '@/components/hunt-logging/HuntEntryForm'
+import HuntEntryForm from '@/components/hunt-logging/HuntEntryForm'
+import { type HuntFormData } from '@/lib/hunt-logging/hunt-validation'
 
 // ===========================================
 // TYPES & INTERFACES
