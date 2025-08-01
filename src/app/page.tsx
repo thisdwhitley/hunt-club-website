@@ -152,7 +152,7 @@ export default function MainPage() {
           )
         `)
         .eq('hunt_logs.member_id', user.id)
-        .order('hunt_logs.hunt_date', { ascending: false })
+        .order('created_at', { ascending: false })  // <- Fixed: Order by sightings table field
         .limit(100)
       
       const formattedSightings = sightingsData?.map(sighting => ({
@@ -165,6 +165,9 @@ export default function MainPage() {
         hunt_date: sighting.hunt_logs.hunt_date,
         stand_name: sighting.hunt_logs.stands?.name || 'Unknown'
       })) || []
+      // ADDED: Sort by hunt_date in JavaScript since we can't do it in SQL
+      formattedSightings.sort((a, b) => new Date(b.hunt_date).getTime() - new Date(a.hunt_date).getTime())
+
       setSightings(formattedSightings)
 
     } catch (err) {
