@@ -1,14 +1,13 @@
 // src/app/hunts/page.tsx
-// Hunt management page - works with existing Navigation component
+// UPDATED: Now uses contextual temperature display
 
 'use client'
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { huntService, type HuntWithDetails, type HuntStats, type HuntFilters } from '@/lib/hunt-logging/hunt-service'
-import { HuntDetailsModal } from '@/components/hunt-logging/HuntDetailsModal'
-import StandCard from '@/components/stands/StandCard'
-import type { Stand } from '@/lib/database/stands'
+import { getTemperatureContext } from '@/lib/hunt-logging/temperature-utils' // NEW IMPORT
+import HuntDataManagement from '@/components/hunt-logging/HuntDataManagement'
 import { 
   Target, 
   Calendar, 
@@ -21,7 +20,14 @@ import {
   Download,
   Search,
   X,
-  ChevronRight
+  ChevronRight,
+  Database,
+  BarChart3,
+  Plus,
+  Eye,
+  Thermometer,
+  Wind,
+  Moon
 } from 'lucide-react'
 
 export default function HuntManagementPage() {
@@ -33,8 +39,7 @@ export default function HuntManagementPage() {
   const [filters, setFilters] = useState<HuntFilters>({})
   const [showFilters, setShowFilters] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedHuntId, setSelectedHuntId] = useState<string | null>(null)
-  const [showDetails, setShowDetails] = useState(false)
+  const [showManagement, setShowManagement] = useState(false)
 
   // Fetch data on component mount and when filters change
   useEffect(() => {
@@ -63,106 +68,212 @@ export default function HuntManagementPage() {
     }
   }
 
-  // Filter hunts by search term
+  // Filter hunts based on search term using actual database fields
   const filteredHunts = hunts.filter(hunt => {
     if (!searchTerm) return true
+    
     const searchLower = searchTerm.toLowerCase()
-    return (
-      hunt.stand?.name?.toLowerCase().includes(searchLower) ||
-      hunt.member?.display_name?.toLowerCase().includes(searchLower) ||
-      hunt.member?.full_name?.toLowerCase().includes(searchLower) ||
-      hunt.member?.email?.toLowerCase().includes(searchLower) ||
-      hunt.notes?.toLowerCase().includes(searchLower) ||
-      hunt.game_type?.toLowerCase().includes(searchLower)
-    )
+    const memberName = (hunt.member?.display_name || hunt.member?.full_name || '').toLowerCase()
+    const standName = (hunt.stand?.name || '').toLowerCase()
+    const notes = (hunt.notes || '').toLowerCase()
+    const gameType = (hunt.game_type || '').toLowerCase()
+    
+    return memberName.includes(searchLower) ||
+           standName.includes(searchLower) ||
+           notes.includes(searchLower) ||
+           gameType.includes(searchLower)
   })
 
-  const formatDate = (dateString: string) => {
-    // Fix timezone issue by parsing date as local date, not UTC
-    const [year, month, day] = dateString.split('-').map(Number)
-    const date = new Date(year, month - 1, day) // month is 0-indexed
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    })
-  }
-
-  const getDateParts = (dateString: string) => {
-    const [year, month, day] = dateString.split('-').map(Number)
-    const date = new Date(year, month - 1, day)
-    return {
-      day: day,
-      month: date.toLocaleDateString('en-US', { month: 'short' })
-    }
-  }
-
-  const formatTime = (timeString?: string) => {
-    if (!timeString) return 'Not set'
+  const exportHunts = async () => {
     try {
-      const time = new Date(`2000-01-01T${timeString}`)
-      return time.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit'
-      })
-    } catch {
-      return timeString
+      const csvContent = await huntService.exportHuntsToCSV(filters)
+      const blob = new Blob([csvContent], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `hunt-data-${new Date().toISOString().split('T')[0]}.csv`
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Error exporting hunts:', err)
+      alert('Failed to export hunt data. Please try again.')
     }
   }
 
-  const handleViewHunt = (huntId: string) => {
-    setSelectedHuntId(huntId)
-    setShowDetails(true)
-  }
-
-  const exportHunts = () => {
-    // Basic CSV export functionality
-    const csvContent = [
-      ['Date', 'Hunter', 'Stand', 'Start Time', 'End Time', 'Harvests', 'Sightings', 'Notes'],
-      ...filteredHunts.map(hunt => [
-        hunt.hunt_date,
-        hunt.member?.full_name || hunt.member?.email || 'Unknown',
-        hunt.stand?.name || '',
-        hunt.start_time || '',
-        hunt.end_time || '',
-        hunt.harvest_count || 0,
-        hunt.sightings?.length || 0,
-        hunt.notes || ''
-      ])
-    ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n')
-
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `hunt-logs-${new Date().toISOString().split('T')[0]}.csv`
-    a.click()
-    window.URL.revokeObjectURL(url)
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-morning-mist flex items-center justify-center">
-        <div className="bg-white rounded-lg club-shadow p-8 text-center">
-          <h2 className="text-2xl font-bold text-forest-shadow mb-4">Authentication Required</h2>
-          <p className="text-weathered-wood">Please sign in to access hunt management.</p>
+  const renderRecentHunts = () => {
+    if (loading) {
+      return (
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white rounded-lg club-shadow p-4 animate-pulse">
+              <div className="h-4 bg-morning-mist rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-morning-mist rounded w-1/2"></div>
+            </div>
+          ))}
         </div>
+      )
+    }
+
+    if (filteredHunts.length === 0) {
+      return (
+        <div className="bg-white rounded-lg club-shadow p-8 text-center">
+          <Target className="w-12 h-12 text-weathered-wood/50 mx-auto mb-4" />
+          <p className="text-weathered-wood">
+            {hunts.length === 0 ? 'No hunt records found.' : 'No hunts match your search criteria.'}
+          </p>
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="mt-2 text-olive-green hover:underline"
+            >
+              Clear search
+            </button>
+          )}
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-3">
+        {filteredHunts.slice(0, 10).map((hunt) => {
+          // UPDATED: Get contextual temperature for this hunt
+          const tempContext = getTemperatureContext(hunt)
+          
+          return (
+            <div key={hunt.id} className="bg-white rounded-lg club-shadow hover:shadow-lg transition-shadow">
+              <div className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="w-4 h-4 text-weathered-wood" />
+                        <span className="font-medium text-forest-shadow">
+                          {new Date(hunt.hunt_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {(hunt.had_harvest || hunt.harvest_count > 0) && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-bright-orange/10 text-bright-orange">
+                          <Trophy className="w-3 h-3 mr-1" />
+                          Harvest
+                        </span>
+                      )}
+                      {hunt.hunt_type && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-olive-green/10 text-olive-green">
+                          {hunt.hunt_type}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-sm text-weathered-wood mb-3">
+                      <div className="flex items-center">
+                        <span className="font-medium mr-1">Member:</span>
+                        {hunt.member?.display_name || hunt.member?.full_name || 'Unknown'}
+                      </div>
+                      <div className="flex items-center">
+                        <MapPin className="w-3 h-3 mr-1" />
+                        {hunt.stand?.name || 'Unknown Stand'}
+                        {hunt.stand?.type && <span className="ml-1 text-xs">({hunt.stand.type})</span>}
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="w-3 h-3 mr-1" />
+                        {hunt.start_time || 'N/A'} - {hunt.end_time || 'N/A'}
+                        {hunt.hunt_duration_minutes && (
+                          <span className="ml-1 text-xs">({hunt.hunt_duration_minutes}m)</span>
+                        )}
+                      </div>
+                      <div className="flex items-center">
+                        <Binoculars className="w-3 h-3 mr-1" />
+                        {hunt.sightings?.length || 0} sightings
+                      </div>
+                    </div>
+
+                    {/* UPDATED: Weather and harvest info with contextual temperature */}
+                    <div className="flex items-center space-x-4 text-xs text-weathered-wood mb-2">
+                      {/* UPDATED: Show contextual temperature instead of hardcoded temp_dawn */}
+                      {tempContext.temperature !== null && (
+                        <div className="flex items-center">
+                          <Thermometer className="w-3 h-3 mr-1 text-burnt-orange" />
+                          <span className="font-medium">{tempContext.fullDisplay}</span>
+                        </div>
+                      )}
+                      {hunt.windspeed !== null && (
+                        <div className="flex items-center">
+                          <Wind className="w-3 h-3 mr-1 text-dark-teal" />
+                          <span>{hunt.windspeed} mph</span>
+                        </div>
+                      )}
+                      {hunt.moonphase !== null && (
+                        <div className="flex items-center">
+                          <Moon className="w-3 h-3 mr-1 text-muted-gold" />
+                          <span>
+                            {/* Convert moon phase to readable text */}
+                            {hunt.moonphase < 0.125 ? 'New' :
+                             hunt.moonphase < 0.25 ? 'Waxing Crescent' :
+                             hunt.moonphase < 0.375 ? 'First Quarter' :
+                             hunt.moonphase < 0.5 ? 'Waxing Gibbous' :
+                             hunt.moonphase < 0.625 ? 'Full' :
+                             hunt.moonphase < 0.75 ? 'Waning Gibbous' :
+                             hunt.moonphase < 0.875 ? 'Last Quarter' : 'Waning Crescent'} Moon
+                          </span>
+                        </div>
+                      )}
+                      {(hunt.had_harvest || hunt.harvest_count > 0) && hunt.game_type && (
+                        <div className="flex items-center font-medium text-bright-orange">
+                          <Trophy className="w-3 h-3 mr-1" />
+                          {hunt.harvest_count} {hunt.game_type}
+                        </div>
+                      )}
+                    </div>
+
+                    {hunt.notes && (
+                      <p className="text-sm text-weathered-wood line-clamp-2 italic">
+                        "{hunt.notes}"
+                      </p>
+                    )}
+                  </div>
+                  
+                  <button
+                    onClick={() => console.log('View hunt details:', hunt.id)}
+                    className="ml-4 p-2 text-weathered-wood hover:text-olive-green hover:bg-morning-mist rounded-lg transition-colors"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+        
+        {filteredHunts.length > 10 && (
+          <div className="text-center py-4">
+            <button
+              onClick={() => setShowManagement(true)}
+              className="text-olive-green hover:text-pine-needle font-medium flex items-center mx-auto"
+            >
+              View all {filteredHunts.length} hunts in data management →
+              <Database className="w-4 h-4 ml-2" />
+            </button>
+          </div>
+        )}
       </div>
     )
   }
 
-  if (loading) {
+  if (loading && hunts.length === 0) {
     return (
       <div className="min-h-screen bg-morning-mist">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="animate-pulse">
-            <div className="h-8 bg-weathered-wood/20 rounded mb-6"></div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              {[...Array(3)].map((_, i) => (
+            <div className="h-8 bg-white rounded w-1/3 mb-8"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+              {[...Array(4)].map((_, i) => (
                 <div key={i} className="h-32 bg-white rounded-lg"></div>
               ))}
             </div>
-            <div className="bg-white rounded-lg h-96"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg h-96"></div>
+              <div className="bg-white rounded-lg h-96"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -188,10 +299,25 @@ export default function HuntManagementPage() {
             <div className="flex items-center space-x-3">
               <button 
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center px-4 py-2 bg-white text-olive-green border border-olive-green rounded-lg hover:bg-olive-green hover:text-white transition-colors"
+                className={`flex items-center px-4 py-2 border rounded-lg transition-colors ${
+                  showFilters 
+                    ? 'bg-olive-green text-white border-olive-green' 
+                    : 'bg-white text-olive-green border-olive-green hover:bg-olive-green hover:text-white'
+                }`}
               >
                 <Filter className="w-4 h-4 mr-2" />
                 Filters
+              </button>
+              <button 
+                onClick={() => setShowManagement(!showManagement)}
+                className={`flex items-center px-4 py-2 border rounded-lg transition-colors ${
+                  showManagement 
+                    ? 'bg-burnt-orange text-white border-burnt-orange' 
+                    : 'bg-white text-burnt-orange border-burnt-orange hover:bg-burnt-orange hover:text-white'
+                }`}
+              >
+                <Database className="w-4 h-4 mr-2" />
+                {showManagement ? 'Hide' : 'Show'} Data Management
               </button>
               <button 
                 onClick={exportHunts}
@@ -206,50 +332,67 @@ export default function HuntManagementPage() {
 
         {/* Error State */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-800">{error}</p>
+          <div className="bg-clay-earth/10 border border-clay-earth/20 rounded-lg p-4 mb-6">
+            <p className="text-clay-earth">{error}</p>
             <button 
               onClick={loadData}
-              className="mt-2 text-red-600 hover:text-red-800 underline"
+              className="mt-2 text-clay-earth hover:text-clay-earth/80 underline"
             >
               Try again
             </button>
           </div>
         )}
 
-        {/* Statistics Cards - Removed Success Rate */}
+        {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-lg club-shadow p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-weathered-wood">Total Hunts</p>
-                  <p className="text-3xl font-bold text-forest-shadow">{stats.totalHunts}</p>
-                  <p className="text-sm text-olive-green">This season: {stats.thisSeason.hunts}</p>
+              <div className="flex items-center">
+                <div className="p-3 bg-olive-green/10 rounded-lg">
+                  <Target className="w-6 h-6 text-olive-green" />
                 </div>
-                <Target className="w-8 h-8 text-olive-green" />
+                <div className="ml-4">
+                  <p className="text-2xl font-bold text-forest-shadow">{stats.totalHunts}</p>
+                  <p className="text-sm text-weathered-wood">Total Hunts</p>
+                </div>
               </div>
             </div>
 
             <div className="bg-white rounded-lg club-shadow p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-weathered-wood">Total Harvests</p>
-                  <p className="text-3xl font-bold text-forest-shadow">{stats.totalHarvests}</p>
-                  <p className="text-sm text-olive-green">This season: {stats.thisSeason.harvests}</p>
+              <div className="flex items-center">
+                <div className="p-3 bg-bright-orange/10 rounded-lg">
+                  <Trophy className="w-6 h-6 text-bright-orange" />
                 </div>
-                <Trophy className="w-8 h-8 text-burnt-orange" />
+                <div className="ml-4">
+                  <p className="text-2xl font-bold text-forest-shadow">{stats.totalHarvests}</p>
+                  <p className="text-sm text-weathered-wood">Total Harvests</p>
+                </div>
               </div>
             </div>
 
             <div className="bg-white rounded-lg club-shadow p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-weathered-wood">Total Sightings</p>
-                  <p className="text-3xl font-bold text-forest-shadow">{stats.totalSightings}</p>
-                  <p className="text-sm text-olive-green">This season: {stats.thisSeason.sightings}</p>
+              <div className="flex items-center">
+                <div className="p-3 bg-dark-teal/10 rounded-lg">
+                  <Binoculars className="w-6 h-6 text-dark-teal" />
                 </div>
-                <Binoculars className="w-8 h-8 text-pine-needle" />
+                <div className="ml-4">
+                  <p className="text-2xl font-bold text-forest-shadow">{stats.totalSightings}</p>
+                  <p className="text-sm text-weathered-wood">Total Sightings</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg club-shadow p-6">
+              <div className="flex items-center">
+                <div className="p-3 bg-burnt-orange/10 rounded-lg">
+                  <TrendingUp className="w-6 h-6 text-burnt-orange" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-2xl font-bold text-forest-shadow">
+                    {stats.totalHunts > 0 ? Math.round((stats.totalHarvests / stats.totalHunts) * 100) : 0}%
+                  </p>
+                  <p className="text-sm text-weathered-wood">Success Rate</p>
+                </div>
               </div>
             </div>
           </div>
@@ -259,16 +402,16 @@ export default function HuntManagementPage() {
         {showFilters && (
           <div className="bg-white rounded-lg club-shadow p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-forest-shadow">Filter Hunts</h3>
-              <button 
+              <h3 className="text-lg font-medium text-forest-shadow">Filter Hunts</h3>
+              <button
                 onClick={() => setShowFilters(false)}
-                className="text-weathered-wood hover:text-forest-shadow"
+                className="p-2 hover:bg-morning-mist rounded-lg transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 text-weathered-wood" />
               </button>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-medium text-forest-shadow mb-2">
                   Date From
@@ -277,10 +420,10 @@ export default function HuntManagementPage() {
                   type="date"
                   value={filters.date_from || ''}
                   onChange={(e) => setFilters(prev => ({ ...prev, date_from: e.target.value }))}
-                  className="w-full px-3 py-2 border border-weathered-wood/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-olive-green"
+                  className="w-full px-3 py-2 border border-weathered-wood/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-olive-green bg-morning-mist"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-forest-shadow mb-2">
                   Date To
@@ -289,8 +432,26 @@ export default function HuntManagementPage() {
                   type="date"
                   value={filters.date_to || ''}
                   onChange={(e) => setFilters(prev => ({ ...prev, date_to: e.target.value }))}
-                  className="w-full px-3 py-2 border border-weathered-wood/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-olive-green"
+                  className="w-full px-3 py-2 border border-weathered-wood/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-olive-green bg-morning-mist"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-forest-shadow mb-2">
+                  Stand
+                </label>
+                <select
+                  value={filters.stand_id || ''}
+                  onChange={(e) => setFilters(prev => ({ ...prev, stand_id: e.target.value }))}
+                  className="w-full px-3 py-2 border border-weathered-wood/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-olive-green bg-morning-mist"
+                >
+                  <option value="">All stands</option>
+                  {stats?.topStands.map(stand => (
+                    <option key={stand.id} value={stand.id}>
+                      {stand.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -303,7 +464,7 @@ export default function HuntManagementPage() {
                     ...prev, 
                     had_harvest: e.target.value === '' ? undefined : e.target.value === 'true'
                   }))}
-                  className="w-full px-3 py-2 border border-weathered-wood/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-olive-green"
+                  className="w-full px-3 py-2 border border-weathered-wood/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-olive-green bg-morning-mist"
                 >
                   <option value="">All hunts</option>
                   <option value="true">With harvest</option>
@@ -332,175 +493,93 @@ export default function HuntManagementPage() {
               placeholder="Search hunts by stand, member, notes, or game type..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-weathered-wood/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-olive-green"
+              className="w-full pl-10 pr-4 py-3 border border-weathered-wood/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-olive-green bg-morning-mist"
             />
           </div>
         </div>
 
-        {/* Desktop: Side-by-side layout for Recent Hunts and Most Hunted Stands */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
-          {/* Hunt List - Compact Design with Alternating Rows */}
-          <div className="bg-white rounded-lg club-shadow">
-            <div className="p-4 border-b border-weathered-wood/10">
-              <h2 className="text-lg font-semibold text-forest-shadow">
-                Recent Hunts ({filteredHunts.length})
-              </h2>
-            </div>
-
-            <div className="divide-y divide-weathered-wood/10">
-              {filteredHunts.length === 0 ? (
-                <div className="p-8 text-center">
-                  <Target className="w-12 h-12 text-weathered-wood/50 mx-auto mb-4" />
-                  <p className="text-weathered-wood">
-                    {hunts.length === 0 ? 'No hunts logged yet' : 'No hunts found matching your criteria'}
-                  </p>
-                </div>
-              ) : (
-                filteredHunts.slice(0, 8).map((hunt, index) => (
-                  <div 
-                    key={hunt.id} 
-                    onClick={() => handleViewHunt(hunt.id)}
-                    className={`p-3 hover:bg-morning-mist/70 transition-all duration-200 cursor-pointer group border-l-4 border-transparent hover:border-olive-green hover:shadow-sm ${
-                      index % 2 === 0 ? 'bg-white' : 'bg-morning-mist/20'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      {/* Left side - Main hunt info */}
-                      <div className="flex items-center space-x-4 flex-1 min-w-0">
-                        {/* Date */}
-                        <div className="text-center min-w-[50px] flex-shrink-0">
-                          <div className="text-lg font-bold text-forest-shadow">
-                            {getDateParts(hunt.hunt_date).day}
-                          </div>
-                          <div className="text-xs text-weathered-wood uppercase">
-                            {getDateParts(hunt.hunt_date).month}
-                          </div>
-                        </div>
-
-                        {/* Hunt Details */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-3 mb-1">
-                            <div className="flex items-center space-x-1 flex-shrink-0">
-                              <MapPin className="w-3 h-3 text-weathered-wood" />
-                              <span className="font-medium text-forest-shadow text-sm truncate">
-                                {hunt.stand?.name || 'Unknown Stand'}
-                              </span>
-                            </div>
-                            
-                            {hunt.start_time && (
-                              <div className="flex items-center space-x-1 flex-shrink-0">
-                                <Clock className="w-3 h-3 text-weathered-wood" />
-                                <span className="text-xs text-weathered-wood">
-                                  {formatTime(hunt.start_time)}
-                                  {hunt.end_time && ` - ${formatTime(hunt.end_time)}`}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs text-weathered-wood truncate">
-                              Hunter: {hunt.member?.full_name || hunt.member?.email || 'Unknown'}
-                            </div>
-
-                            {hunt.notes && (
-                              <p className="text-xs text-weathered-wood ml-2 truncate max-w-xs">
-                                {hunt.notes}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right side - Status indicators */}
-                      <div className="flex items-center space-x-2 flex-shrink-0">
-                        {hunt.harvest_count > 0 && (
-                          <div className="flex items-center space-x-1 bg-burnt-orange/10 text-burnt-orange px-2 py-1 rounded-full">
-                            <Trophy className="w-3 h-3" />
-                            <span className="text-xs font-medium">{hunt.harvest_count}</span>
-                          </div>
-                        )}
-
-                        {hunt.sightings && hunt.sightings.length > 0 && (
-                          <div className="flex items-center space-x-1 bg-pine-needle/10 text-pine-needle px-2 py-1 rounded-full">
-                            <Binoculars className="w-3 h-3" />
-                            <span className="text-xs font-medium">{hunt.sightings.length}</span>
-                          </div>
-                        )}
-
-                        <ChevronRight className="w-4 h-4 text-weathered-wood group-hover:text-olive-green transition-colors" />
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-              
-              {filteredHunts.length > 8 && (
-                <div className="p-3 text-center border-t border-weathered-wood/10">
-                  <p className="text-sm text-weathered-wood">
-                    Showing first 8 hunts. Use filters or search to find specific hunts.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Most Hunted Stands - Using Compact StandCard Components with Ranking Box */}
-          {stats && stats.topStands.length > 0 && (
+        {/* Main Content - Dashboard View */}
+        {!showManagement && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            
+            {/* Hunt List - Updated with contextual temperature */}
             <div className="bg-white rounded-lg club-shadow">
               <div className="p-4 border-b border-weathered-wood/10">
                 <h2 className="text-lg font-semibold text-forest-shadow">
-                  Most Hunted Stands
+                  Recent Hunts ({filteredHunts.length})
                 </h2>
               </div>
-              
-              <div className="p-4 space-y-3">
-                {stats.topStands.map((stand, index) => (
-                  <div key={stand.id} className="flex items-center space-x-3">
-                    {/* Ranking Box - Similar to calendar dates */}
-                    <div className="text-center min-w-[50px] flex-shrink-0">
-                      <div className="text-lg font-bold text-olive-green">
-                        #{index + 1}
+
+              <div className="p-4">
+                {renderRecentHunts()}
+              </div>
+            </div>
+
+            {/* Top Stands - Existing Design */}
+            <div className="bg-white rounded-lg club-shadow">
+              <div className="p-4 border-b border-weathered-wood/10">
+                <h2 className="text-lg font-semibold text-forest-shadow">Most Hunted Stands</h2>
+              </div>
+
+              <div className="p-4">
+                {stats?.topStands.length ? (
+                  <div className="space-y-3">
+                    {stats.topStands.slice(0, 5).map((stand, index) => (
+                      <div key={stand.id} className="flex items-center justify-between p-3 bg-morning-mist rounded-lg">
+                        <div className="flex items-center">
+                          <div className="flex items-center justify-center w-8 h-8 bg-olive-green text-white rounded-full text-sm font-medium mr-3">
+                            {index + 1}
+                          </div>
+                          <div>
+                            <p className="font-medium text-forest-shadow">{stand.name}</p>
+                            <p className="text-sm text-weathered-wood">
+                              {stand.hunt_count} hunts • {stand.type || 'Stand'}
+                            </p>
+                          </div>
+                        </div>
+                        <MapPin className="w-4 h-4 text-weathered-wood" />
                       </div>
-                      <div className="text-xs text-weathered-wood">
-                        {stand.hunt_count} hunt{stand.hunt_count !== 1 ? 's' : ''}
-                      </div>
-                    </div>
-                    
-                    {/* StandCard */}
-                    <div className="flex-1">
-                      <StandCard
-                        stand={stand}
-                        mode="compact"
-                        showActions={false}
-                        showStats={false}
-                        showLocation={false}
-                      />
-                    </div>
+                    ))}
                   </div>
-                ))}
-                
-                {stats.topStands.length === 0 && (
-                  <div className="p-8 text-center">
-                    <Target className="w-12 h-12 text-weathered-wood/50 mx-auto mb-4" />
+                ) : (
+                  <div className="text-center py-8">
+                    <MapPin className="w-12 h-12 text-weathered-wood/50 mx-auto mb-4" />
                     <p className="text-weathered-wood">No stand data available</p>
                   </div>
                 )}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Hunt Details Modal */}
-        <HuntDetailsModal
-          huntId={selectedHuntId}
-          isOpen={showDetails}
-          onClose={() => {
-            setShowDetails(false)
-            setSelectedHuntId(null)
-          }}
-        />
+        {/* Data Management Interface */}
+        {showManagement && (
+          <div className="mb-8">
+            <div className="bg-white rounded-lg club-shadow p-6 mb-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-forest-shadow flex items-center">
+                  <BarChart3 className="w-6 h-6 mr-2 text-olive-green" />
+                  Advanced Hunt Data Management
+                </h2>
+                <button
+                  onClick={() => setShowManagement(false)}
+                  className="p-2 hover:bg-morning-mist rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-weathered-wood" />
+                </button>
+              </div>
+              <p className="text-weathered-wood mt-2">
+                Comprehensive data management interface with advanced filtering, bulk operations, and detailed analytics.
+              </p>
+            </div>
+            
+            <HuntDataManagement 
+              hunts={hunts}
+              onHuntUpdate={loadData}
+              onHuntDelete={loadData}
+            />
+          </div>
+        )}
       </div>
     </div>
   )

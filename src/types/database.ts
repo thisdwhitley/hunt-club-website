@@ -230,6 +230,60 @@ export interface Database {
           updated_at?: string
         }
       }
+      // =====================================================  
+      // HUNT TEMPERATURE VIEW - Smart temperature display
+      // =====================================================
+      hunt_logs_with_temperature: {
+        Row: {
+          // All original hunt_logs columns
+          id: string
+          member_id: string
+          stand_id: string | null
+          hunt_date: string
+          start_time: string | null
+          end_time: string | null
+          weather_conditions: Json | null
+          temperature_high: number | null
+          temperature_low: number | null
+          wind_speed: number | null
+          wind_direction: string | null
+          precipitation: number | null
+          moon_phase: string | null
+          harvest_count: number
+          game_type: string | null
+          notes: string | null
+          photos: string[] | null
+          hunt_type: string | null
+          moon_illumination: number | null
+          sunrise_time: string | null
+          sunset_time: string | null
+          hunting_season: string | null
+          property_sector: string | null
+          hunt_duration_minutes: number | null
+          had_harvest: boolean | null
+          weather_fetched_at: string | null
+          stand_coordinates: Json | null
+          created_at: string
+          updated_at: string
+          
+          // Smart temperature based on hunt timing
+          hunt_temperature: number | null
+          
+          // Weather context from daily_weather_snapshots
+          temp_dawn: number | null
+          temp_dusk: number | null
+          daily_high: number | null
+          daily_low: number | null
+          daily_average: number | null
+          legal_hunting_start: string | null
+          legal_hunting_end: string | null
+          
+          // Data availability flags
+          has_weather_data: boolean
+          has_dawn_dusk_temps: boolean
+        }
+        // Views are read-only, so no Insert/Update types needed
+      }
       hunt_harvests: {
         Row: {
           id: string
@@ -548,3 +602,46 @@ export type HuntType = 'AM' | 'PM' | 'All Day'
 export type AnimalGender = 'Buck' | 'Doe' | 'Mixed' | 'Unknown'
 export type HuntDirection = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW' | 'Unknown'
 export type ConditionRating = 'Excellent' | 'Good' | 'Fair' | 'Poor' | 'Damaged'
+
+// =============================================================================
+// TYPE HELPERS FOR HUNT TEMPERATURE
+// =============================================================================
+
+export type HuntWithTemperature = Database['public']['Tables']['hunt_logs_with_temperature']['Row']
+
+export type HuntTemperatureDisplay = {
+  hunt_temperature: number | null
+  temperature_context: 'dawn' | 'dusk' | 'average' | 'fallback' | 'unavailable'
+  temperature_source: string
+}
+
+// Helper function type for computing temperature context
+export type ComputeTemperatureContext = (hunt: HuntWithTemperature) => HuntTemperatureDisplay
+
+// =============================================================================
+// USAGE EXAMPLES (for reference)
+// =============================================================================
+
+/*
+// Basic query with smart temperature
+const { data: hunts } = await supabase
+  .from('hunt_logs_with_temperature')
+  .select('hunt_date, hunt_type, hunt_temperature, daily_high, daily_low')
+  .order('hunt_date', { ascending: false })
+
+// Temperature analysis query
+const { data: tempAnalysis } = await supabase
+  .from('hunt_logs_with_temperature')
+  .select('hunt_temperature, harvest_count, had_harvest')
+  .not('hunt_temperature', 'is', null)
+
+// Hunt with weather context
+const { data: huntDetail } = await supabase
+  .from('hunt_logs_with_temperature')
+  .select(`
+    *,
+    hunting_stands!hunt_logs_stand_id_fkey(name, type)
+  `)
+  .eq('id', huntId)
+  .single()
+*/

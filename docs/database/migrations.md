@@ -35,6 +35,84 @@
 
 ---
 
+### 2025-08-01: Smart Hunt Temperature View
+
+**Type**: Schema Addition (View)  
+**Affected Tables**: hunt_logs, daily_weather_snapshots (via view)  
+**Breaking Changes**: No  
+**Rollback Available**: Yes (simple DROP VIEW)
+
+**Purpose**: Provide smart temperature display for hunt logs based on hunt timing without schema changes. Maps AM hunts to dawn temperature, PM hunts to dusk temperature, and All Day hunts to daily average.
+
+**Changes Made**:
+- **Added**: `hunt_logs_with_temperature` view with smart temperature logic
+- **Added**: `hunt_temperature` computed column (AM=dawn, PM=dusk, All Day=average)
+- **Added**: Weather context fields (`temp_dawn`, `temp_dusk`, `daily_high`, `daily_low`)
+- **Added**: Data availability flags (`has_weather_data`, `has_dawn_dusk_temps`)
+- **Added**: TypeScript interface for view in `database.ts`
+- **Added**: Helper types and usage examples
+
+**Migration SQL**: 
+```sql
+-- Create smart temperature view
+CREATE OR REPLACE VIEW hunt_logs_with_temperature AS
+SELECT 
+  hl.*,
+  CASE 
+    WHEN hl.hunt_type = 'AM' AND dws.temp_dawn IS NOT NULL 
+      THEN ROUND(dws.temp_dawn)::integer
+    WHEN hl.hunt_type = 'PM' AND dws.temp_dusk IS NOT NULL 
+      THEN ROUND(dws.temp_dusk)::integer
+    WHEN hl.hunt_type = 'All Day' AND dws.tempmax IS NOT NULL AND dws.tempmin IS NOT NULL 
+      THEN ROUND((dws.tempmax + dws.tempmin) / 2)::integer
+    WHEN dws.tempmax IS NOT NULL AND dws.tempmin IS NOT NULL 
+      THEN ROUND((dws.tempmax + dws.tempmin) / 2)::integer
+    ELSE hl.temperature_high
+  END AS hunt_temperature,
+  dws.temp_dawn,
+  dws.temp_dusk,
+  dws.tempmax AS daily_high,
+  dws.tempmin AS daily_low,
+  dws.temp AS daily_average,
+  dws.legal_hunting_start,
+  dws.legal_hunting_end,
+  (dws.id IS NOT NULL) AS has_weather_data,
+  (dws.temp_dawn IS NOT NULL AND dws.temp_dusk IS NOT NULL) AS has_dawn_dusk_temps
+FROM hunt_logs hl
+LEFT JOIN daily_weather_snapshots dws ON hl.hunt_date = dws.date;
+```
+
+**Verification Steps**:
+- [x] View creates successfully without errors
+- [x] Smart temperature logic returns expected values for each hunt type
+- [x] Weather context fields populate correctly
+- [x] Data availability flags work as expected  
+- [x] TypeScript types compile without errors
+- [x] Existing hunt_logs queries remain unaffected
+
+**Files Modified**:
+- supabase/migrations/hunt_temperature_view.sql (new migration)
+- src/types/database.ts (added view interface and helpers)
+- docs/database/migrations.md (this entry)
+- docs/database/hunt_temperature_view.md (new documentation)
+
+**Claude Context**: Include this migration when asking Claude about hunt temperature display, temperature-based analytics, smart weather integration, or hunt logging enhancements.
+
+**Business Value**:
+- More accurate temperature data for hunt analysis (dawn/dusk vs daily range)
+- Foundation for temperature-based pattern analysis
+- Enhanced user experience with contextual weather display  
+- No risk deployment (view-only, no data changes)
+
+**Technical Benefits**:
+- Zero database storage overhead
+- Always computed from fresh data
+- Backward compatible with existing queries
+- Easy to modify logic via view updates
+- Sets pattern for future computed displays
+
+---
+
 ### 2025-07-28: Legal Hunting Times for Hunt Logging
 
 **Type**: Schema Modification  
