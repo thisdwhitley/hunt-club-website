@@ -35,6 +35,100 @@
 
 ---
 
+### 2025-08-01: Authentication System Cleanup Migration
+
+**Type**: Schema Modification + Table Removal  
+**Affected Tables**: members, profiles  
+**Breaking Changes**: Yes (removes profiles table)  
+**Rollback Available**: Yes (backup profiles table first)  
+
+## Purpose
+Eliminate dual-table confusion between `profiles` and `members` tables. Console error shows queries for non-existent `display_name` column in profiles table. Clean up to use only `members` table as single source of truth for user data.
+
+## Changes Made
+1. **Add `display_name` column to members table**
+2. **Remove profiles table entirely** (with all policies and references)
+3. **Create auto-member-creation trigger** for new user signups
+4. **Update RLS policies** to reference only members table
+
+## Pre-Migration Backup (IMPORTANT)
+```sql
+-- Backup profiles table data before dropping (run this first!)
+CREATE TABLE profiles_backup AS SELECT * FROM public.profiles;
+```
+
+## Migration SQL
+```sql
+-- 1. Add display_name to members table
+ALTER TABLE public.members 
+ADD COLUMN display_name TEXT;
+
+-- 2. Populate display_name for existing members
+UPDATE public.members 
+SET display_name = COALESCE(full_name, email)
+WHERE display_name IS NULL;
+
+-- 3. Remove all profiles table policies
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Allow profile creation" ON public.profiles;
+DROP POLICY IF EXISTS "Admins can view all profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Admins can update all profiles" ON public.profiles;
+
+-- 4. Drop profiles table entirely
+DROP TABLE IF EXISTS public.profiles CASCADE;
+
+-- 5. Create/update member auto-creation trigger
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.members (
+    id, email, full_name, display_name, role
+  ) VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
+    'member'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 6. Create trigger
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+```
+
+## Rollback Procedure
+```sql
+-- If needed, restore profiles table
+CREATE TABLE public.profiles AS SELECT * FROM profiles_backup;
+-- Recreate RLS policies manually
+-- Remove display_name from members: ALTER TABLE public.members DROP COLUMN display_name;
+```
+
+## Verification Steps
+- [ ] Members table has display_name column
+- [ ] Existing members have display_name values
+- [ ] Profiles table is completely removed
+- [ ] New user signup creates member record automatically
+- [ ] Console error in hunt-logging page is resolved
+- [ ] All existing functionality still works
+
+## Files to Update After Migration
+- [ ] `src/types/database.ts` - Remove profiles table, add display_name to members
+- [ ] `src/lib/supabase.ts` - Remove Profile interface
+- [ ] `src/lib/hunt-logging/hunt-service.ts` - Remove getAuthUserData fallback logic
+- [ ] `supabase/schema.sql` - Export updated schema
+
+## Claude Context
+Use this migration when asking Claude about user authentication, member management, or fixing the hunt-logging console error.
+
+---
+
 ### 2025-08-01: Smart Hunt Temperature View
 
 **Type**: Schema Addition (View)  

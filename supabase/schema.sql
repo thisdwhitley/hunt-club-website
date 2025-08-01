@@ -152,6 +152,125 @@ CREATE TYPE "public"."wind_direction" AS ENUM (
 ALTER TYPE "public"."wind_direction" OWNER TO "postgres";
 
 --
+-- Name: backfill_hunt_weather_data(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION "public"."backfill_hunt_weather_data"() RETURNS TABLE("updated_hunts" integer)
+    LANGUAGE "plpgsql"
+    AS $$
+DECLARE
+  update_count INTEGER;
+BEGIN
+  WITH weather_data AS (
+    SELECT 
+      date,
+      tempmax,
+      tempmin,
+      windspeed,
+      winddir,
+      moonphase,
+      sunrise,
+      sunset,
+      precip,
+      cloudcover,
+      humidity,
+      CASE 
+        WHEN winddir IS NULL THEN NULL
+        WHEN winddir >= 337.5 OR winddir < 22.5 THEN 'N'
+        WHEN winddir >= 22.5 AND winddir < 67.5 THEN 'NE'
+        WHEN winddir >= 67.5 AND winddir < 112.5 THEN 'E'
+        WHEN winddir >= 112.5 AND winddir < 157.5 THEN 'SE'
+        WHEN winddir >= 157.5 AND winddir < 202.5 THEN 'S'
+        WHEN winddir >= 202.5 AND winddir < 247.5 THEN 'SW'
+        WHEN winddir >= 247.5 AND winddir < 292.5 THEN 'W'
+        WHEN winddir >= 292.5 AND winddir < 337.5 THEN 'NW'
+        ELSE 'Variable'
+      END as wind_direction_text,
+      CASE 
+        WHEN moonphase IS NULL THEN NULL
+        WHEN moonphase < 0.125 THEN 'New Moon'
+        WHEN moonphase < 0.25 THEN 'Waxing Crescent'
+        WHEN moonphase < 0.375 THEN 'First Quarter'
+        WHEN moonphase < 0.5 THEN 'Waxing Gibbous'
+        WHEN moonphase < 0.625 THEN 'Full Moon'
+        WHEN moonphase < 0.75 THEN 'Waning Gibbous'
+        WHEN moonphase < 0.875 THEN 'Last Quarter'
+        ELSE 'Waning Crescent'
+      END as moon_phase_name,
+      jsonb_build_object(
+        'summary', CASE 
+          WHEN precip > 0.1 THEN 'Rainy'
+          WHEN cloudcover > 80 THEN 'Overcast'
+          WHEN cloudcover > 50 THEN 'Mostly Cloudy'
+          WHEN cloudcover > 25 THEN 'Partly Cloudy'
+          ELSE 'Clear'
+        END,
+        'cloudcover', cloudcover,
+        'humidity', humidity,
+        'winddir_degrees', winddir,
+        'data_source', 'daily_weather_snapshots'
+      ) as weather_conditions
+    FROM daily_weather_snapshots
+  )
+  UPDATE hunt_logs 
+  SET 
+    weather_conditions = wd.weather_conditions,
+    temperature_high = ROUND(wd.tempmax)::integer,
+    temperature_low = ROUND(wd.tempmin)::integer,
+    wind_speed = ROUND(wd.windspeed)::integer,
+    wind_direction = wd.wind_direction_text,
+    moon_illumination = wd.moonphase,
+    moon_phase = wd.moon_phase_name,
+    sunrise_time = wd.sunrise,
+    sunset_time = wd.sunset,
+    precipitation = wd.precip,
+    weather_fetched_at = NOW(),
+    updated_at = NOW()
+  FROM weather_data wd
+  WHERE 
+    hunt_logs.hunt_date = wd.date 
+    AND hunt_logs.weather_fetched_at IS NULL;
+    
+  GET DIAGNOSTICS update_count = ROW_COUNT;
+  
+  RETURN QUERY SELECT update_count;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."backfill_hunt_weather_data"() OWNER TO "postgres";
+
+--
+-- Name: backfill_legal_hunting_times(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION "public"."backfill_legal_hunting_times"() RETURNS TABLE("updated_count" integer)
+    LANGUAGE "plpgsql"
+    AS $$
+DECLARE
+  update_count INTEGER;
+BEGIN
+  UPDATE daily_weather_snapshots 
+  SET 
+    legal_hunting_start = sunrise - INTERVAL '30 minutes',
+    legal_hunting_end = sunset + INTERVAL '30 minutes',
+    updated_at = NOW()
+  WHERE 
+    legal_hunting_start IS NULL 
+    OR legal_hunting_end IS NULL
+    OR legal_hunting_start != (sunrise - INTERVAL '30 minutes')
+    OR legal_hunting_end != (sunset + INTERVAL '30 minutes');
+    
+  GET DIAGNOSTICS update_count = ROW_COUNT;
+  
+  RETURN QUERY SELECT update_count;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."backfill_legal_hunting_times"() OWNER TO "postgres";
+
+--
 -- Name: calculate_activity_score(integer, numeric); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -207,6 +326,30 @@ $$;
 
 
 ALTER FUNCTION "public"."calculate_activity_trend"("current_images" integer, "previous_images" integer, "days_back" integer) OWNER TO "postgres";
+
+--
+-- Name: calculate_legal_hunting_times(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION "public"."calculate_legal_hunting_times"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+  -- Calculate legal hunting start time (30 minutes before sunrise)
+  NEW.legal_hunting_start := NEW.sunrise - INTERVAL '30 minutes';
+  
+  -- Calculate legal hunting end time (30 minutes after sunset)
+  NEW.legal_hunting_end := NEW.sunset + INTERVAL '30 minutes';
+  
+  -- Update the updated_at timestamp
+  NEW.updated_at := NOW();
+  
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."calculate_legal_hunting_times"() OWNER TO "postgres";
 
 --
 -- Name: calculate_weather_quality_score("jsonb"); Type: FUNCTION; Schema: public; Owner: postgres
@@ -355,9 +498,16 @@ CREATE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, full_name)
-  VALUES (new.id, new.email, new.raw_user_meta_data->>'full_name');
-  RETURN new;
+  INSERT INTO public.members (
+    id, email, full_name, display_name, role
+  ) VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
+    'member'
+  );
+  RETURN NEW;
 END;
 $$;
 
@@ -461,6 +611,90 @@ $$;
 
 
 ALTER FUNCTION "public"."update_camera_alert_status"() OWNER TO "postgres";
+
+--
+-- Name: update_hunt_logs_weather(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION "public"."update_hunt_logs_weather"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+DECLARE
+  hunt_record RECORD;
+  v_wind_direction_text TEXT;
+  v_moon_phase_name TEXT;
+  v_weather_conditions JSONB;
+BEGIN
+  -- Convert wind direction from degrees to cardinal direction
+  CASE 
+    WHEN NEW.winddir IS NULL THEN v_wind_direction_text := NULL;
+    WHEN NEW.winddir >= 337.5 OR NEW.winddir < 22.5 THEN v_wind_direction_text := 'N';
+    WHEN NEW.winddir >= 22.5 AND NEW.winddir < 67.5 THEN v_wind_direction_text := 'NE';
+    WHEN NEW.winddir >= 67.5 AND NEW.winddir < 112.5 THEN v_wind_direction_text := 'E';
+    WHEN NEW.winddir >= 112.5 AND NEW.winddir < 157.5 THEN v_wind_direction_text := 'SE';
+    WHEN NEW.winddir >= 157.5 AND NEW.winddir < 202.5 THEN v_wind_direction_text := 'S';
+    WHEN NEW.winddir >= 202.5 AND NEW.winddir < 247.5 THEN v_wind_direction_text := 'SW';
+    WHEN NEW.winddir >= 247.5 AND NEW.winddir < 292.5 THEN v_wind_direction_text := 'W';
+    WHEN NEW.winddir >= 292.5 AND NEW.winddir < 337.5 THEN v_wind_direction_text := 'NW';
+    ELSE v_wind_direction_text := 'Variable';
+  END CASE;
+
+  -- Convert moon phase from decimal to text
+  CASE 
+    WHEN NEW.moonphase IS NULL THEN v_moon_phase_name := NULL;
+    WHEN NEW.moonphase < 0.125 THEN v_moon_phase_name := 'New Moon';
+    WHEN NEW.moonphase < 0.25 THEN v_moon_phase_name := 'Waxing Crescent';
+    WHEN NEW.moonphase < 0.375 THEN v_moon_phase_name := 'First Quarter';
+    WHEN NEW.moonphase < 0.5 THEN v_moon_phase_name := 'Waxing Gibbous';
+    WHEN NEW.moonphase < 0.625 THEN v_moon_phase_name := 'Full Moon';
+    WHEN NEW.moonphase < 0.75 THEN v_moon_phase_name := 'Waning Gibbous';
+    WHEN NEW.moonphase < 0.875 THEN v_moon_phase_name := 'Last Quarter';
+    ELSE v_moon_phase_name := 'Waning Crescent';
+  END CASE;
+
+  -- Create simplified weather conditions JSON
+  v_weather_conditions := jsonb_build_object(
+    'summary', CASE 
+      WHEN NEW.precip > 0.1 THEN 'Rainy'
+      WHEN NEW.cloudcover > 80 THEN 'Overcast'
+      WHEN NEW.cloudcover > 50 THEN 'Mostly Cloudy'
+      WHEN NEW.cloudcover > 25 THEN 'Partly Cloudy'
+      ELSE 'Clear'
+    END,
+    'cloudcover', NEW.cloudcover,
+    'humidity', NEW.humidity,
+    'winddir_degrees', NEW.winddir,
+    'data_source', 'daily_weather_snapshots'
+  );
+
+  -- Update all hunt logs that match this date and don't have weather data yet
+  UPDATE hunt_logs 
+  SET 
+    weather_conditions = v_weather_conditions,
+    temperature_high = ROUND(NEW.tempmax)::integer,
+    temperature_low = ROUND(NEW.tempmin)::integer,
+    wind_speed = ROUND(NEW.windspeed)::integer,
+    wind_direction = v_wind_direction_text,
+    moon_illumination = NEW.moonphase,
+    moon_phase = v_moon_phase_name,
+    sunrise_time = NEW.sunrise,
+    sunset_time = NEW.sunset,
+    precipitation = NEW.precip,
+    weather_fetched_at = NOW(),
+    updated_at = NOW()
+  WHERE 
+    hunt_date = NEW.date 
+    AND weather_fetched_at IS NULL;  -- Only update hunts without weather data
+
+  -- Log the update for debugging
+  RAISE NOTICE 'Updated hunt logs for date % with weather data from daily snapshot', NEW.date;
+
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."update_hunt_logs_weather"() OWNER TO "postgres";
 
 --
 -- Name: update_stand_activity_on_hunt(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -1022,6 +1256,73 @@ COMMENT ON TABLE "public"."hunt_logs" IS 'Enhanced hunt logs with auto-populated
 
 
 --
+-- Name: hunt_logs_with_temperature; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW "public"."hunt_logs_with_temperature" AS
+ SELECT "hl"."id",
+    "hl"."member_id",
+    "hl"."stand_id",
+    "hl"."hunt_date",
+    "hl"."start_time",
+    "hl"."end_time",
+    "hl"."weather_conditions",
+    "hl"."temperature_high",
+    "hl"."temperature_low",
+    "hl"."wind_speed",
+    "hl"."wind_direction",
+    "hl"."precipitation",
+    "hl"."moon_phase",
+    "hl"."harvest_count",
+    "hl"."game_type",
+    "hl"."notes",
+    "hl"."photos",
+    "hl"."hunt_type",
+    "hl"."moon_illumination",
+    "hl"."sunrise_time",
+    "hl"."sunset_time",
+    "hl"."hunting_season",
+    "hl"."property_sector",
+    "hl"."hunt_duration_minutes",
+    "hl"."had_harvest",
+    "hl"."weather_fetched_at",
+    "hl"."stand_coordinates",
+    "hl"."created_at",
+    "hl"."updated_at",
+        CASE
+            WHEN ((("hl"."hunt_type")::"text" = 'AM'::"text") AND ("dws"."temp_dawn" IS NOT NULL)) THEN ("round"("dws"."temp_dawn"))::integer
+            WHEN ((("hl"."hunt_type")::"text" = 'PM'::"text") AND ("dws"."temp_dusk" IS NOT NULL)) THEN ("round"("dws"."temp_dusk"))::integer
+            WHEN ((("hl"."hunt_type")::"text" = 'All Day'::"text") AND ("dws"."tempmax" IS NOT NULL) AND ("dws"."tempmin" IS NOT NULL)) THEN ("round"((("dws"."tempmax" + "dws"."tempmin") / (2)::numeric)))::integer
+            WHEN (("dws"."tempmax" IS NOT NULL) AND ("dws"."tempmin" IS NOT NULL)) THEN ("round"((("dws"."tempmax" + "dws"."tempmin") / (2)::numeric)))::integer
+            ELSE "hl"."temperature_high"
+        END AS "hunt_temperature",
+    "dws"."temp_dawn",
+    "dws"."temp_dusk",
+    "dws"."tempmax" AS "daily_high",
+    "dws"."tempmin" AS "daily_low",
+    "dws"."temp" AS "daily_average",
+    "dws"."legal_hunting_start",
+    "dws"."legal_hunting_end",
+    "dws"."windspeed",
+    "dws"."winddir",
+    "dws"."moonphase",
+    "dws"."humidity",
+    "dws"."precip",
+    "dws"."precipprob",
+    "dws"."cloudcover",
+    "dws"."uvindex",
+    "dws"."sunrise",
+    "dws"."sunset",
+    "dws"."data_quality_score",
+    ("dws"."id" IS NOT NULL) AS "has_weather_data",
+    (("dws"."temp_dawn" IS NOT NULL) AND ("dws"."temp_dusk" IS NOT NULL)) AS "has_dawn_dusk_temps"
+   FROM ("public"."hunt_logs" "hl"
+     LEFT JOIN "public"."daily_weather_snapshots" "dws" ON (("hl"."hunt_date" = "dws"."date")));
+
+
+ALTER VIEW "public"."hunt_logs_with_temperature" OWNER TO "postgres";
+
+--
 -- Name: hunt_sightings; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -1096,6 +1397,7 @@ CREATE TABLE "public"."members" (
     "avatar_url" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
+    "display_name" "text",
     CONSTRAINT "members_role_check" CHECK (("role" = ANY (ARRAY['admin'::"text", 'member'::"text"])))
 );
 
@@ -1103,22 +1405,21 @@ CREATE TABLE "public"."members" (
 ALTER TABLE "public"."members" OWNER TO "postgres";
 
 --
--- Name: profiles; Type: TABLE; Schema: public; Owner: postgres
+-- Name: profiles_backup; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE "public"."profiles" (
-    "id" "uuid" NOT NULL,
-    "email" "text" NOT NULL,
+CREATE TABLE "public"."profiles_backup" (
+    "id" "uuid",
+    "email" "text",
     "full_name" "text",
-    "role" "text" DEFAULT 'member'::"text" NOT NULL,
+    "role" "text",
     "avatar_url" "text",
-    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
-    CONSTRAINT "profiles_role_check" CHECK (("role" = ANY (ARRAY['admin'::"text", 'member'::"text"])))
+    "created_at" timestamp with time zone,
+    "updated_at" timestamp with time zone
 );
 
 
-ALTER TABLE "public"."profiles" OWNER TO "postgres";
+ALTER TABLE "public"."profiles_backup" OWNER TO "postgres";
 
 --
 -- Name: property_boundaries; Type: TABLE; Schema: public; Owner: postgres
@@ -1410,14 +1711,6 @@ ALTER TABLE ONLY "public"."maintenance_tasks"
 
 ALTER TABLE ONLY "public"."members"
     ADD CONSTRAINT "members_pkey" PRIMARY KEY ("id");
-
-
---
--- Name: profiles profiles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
 
 
 --
@@ -1816,6 +2109,13 @@ CREATE INDEX "idx_weather_snapshots_quality" ON "public"."daily_weather_snapshot
 
 
 --
+-- Name: daily_weather_snapshots trigger_calculate_legal_hunting_times; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER "trigger_calculate_legal_hunting_times" BEFORE INSERT OR UPDATE ON "public"."daily_weather_snapshots" FOR EACH ROW EXECUTE FUNCTION "public"."calculate_legal_hunting_times"();
+
+
+--
 -- Name: camera_status_reports trigger_camera_alert_status; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -1834,6 +2134,13 @@ CREATE TRIGGER "trigger_camera_deployments_updated_at" BEFORE UPDATE ON "public"
 --
 
 CREATE TRIGGER "trigger_camera_hardware_updated_at" BEFORE UPDATE ON "public"."camera_hardware" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+--
+-- Name: daily_weather_snapshots trigger_update_hunt_logs_weather; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER "trigger_update_hunt_logs_weather" AFTER INSERT OR UPDATE ON "public"."daily_weather_snapshots" FOR EACH ROW EXECUTE FUNCTION "public"."update_hunt_logs_weather"();
 
 
 --
@@ -1918,13 +2225,6 @@ CREATE TRIGGER "update_members_updated_at" BEFORE UPDATE ON "public"."members" F
 --
 
 CREATE TRIGGER "update_plots_updated_at" BEFORE UPDATE ON "public"."food_plots" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
-
-
---
--- Name: profiles update_profiles_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
---
-
-CREATE TRIGGER "update_profiles_updated_at" BEFORE UPDATE ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
 --
@@ -2052,14 +2352,6 @@ ALTER TABLE ONLY "public"."members"
 
 
 --
--- Name: profiles profiles_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
---
 -- Name: stands stands_last_harvest_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2073,24 +2365,6 @@ ALTER TABLE ONLY "public"."stands"
 
 ALTER TABLE ONLY "public"."stands"
     ADD CONSTRAINT "stands_last_hunted_by_fkey" FOREIGN KEY ("last_hunted_by") REFERENCES "public"."members"("id");
-
-
---
--- Name: profiles Admins can update all profiles; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Admins can update all profiles" ON "public"."profiles" FOR UPDATE USING ((EXISTS ( SELECT 1
-   FROM "public"."profiles" "profiles_1"
-  WHERE (("profiles_1"."id" = "auth"."uid"()) AND ("profiles_1"."role" = 'admin'::"text")))));
-
-
---
--- Name: profiles Admins can view all profiles; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Admins can view all profiles" ON "public"."profiles" FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM "public"."profiles" "profiles_1"
-  WHERE (("profiles_1"."id" = "auth"."uid"()) AND ("profiles_1"."role" = 'admin'::"text")))));
 
 
 --
@@ -2175,13 +2449,6 @@ CREATE POLICY "Allow authenticated users to view all members" ON "public"."membe
 --
 
 CREATE POLICY "Allow authenticated users to view stands" ON "public"."stands" FOR SELECT TO "authenticated" USING (true);
-
-
---
--- Name: profiles Allow profile creation; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Allow profile creation" ON "public"."profiles" FOR INSERT WITH CHECK (("auth"."uid"() = "id"));
 
 
 --
@@ -2328,13 +2595,6 @@ CREATE POLICY "Users can update harvests from their hunts" ON "public"."hunt_har
 
 
 --
--- Name: profiles Users can update own profile; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can update own profile" ON "public"."profiles" FOR UPDATE USING (("auth"."uid"() = "id"));
-
-
---
 -- Name: hunt_sightings Users can update sightings from their hunts; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -2378,13 +2638,6 @@ CREATE POLICY "Users can view collection log" ON "public"."daily_collection_log"
 CREATE POLICY "Users can view harvests from their hunts" ON "public"."hunt_harvests" FOR SELECT USING ((EXISTS ( SELECT 1
    FROM "public"."hunt_logs"
   WHERE (("hunt_logs"."id" = "hunt_harvests"."hunt_log_id") AND ("hunt_logs"."member_id" = "auth"."uid"())))));
-
-
---
--- Name: profiles Users can view own profile; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can view own profile" ON "public"."profiles" FOR SELECT USING (("auth"."uid"() = "id"));
 
 
 --
@@ -2514,12 +2767,6 @@ ALTER TABLE "public"."maintenance_tasks" ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE "public"."members" ENABLE ROW LEVEL SECURITY;
-
---
--- Name: profiles; Type: ROW SECURITY; Schema: public; Owner: postgres
---
-
-ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: property_boundaries; Type: ROW SECURITY; Schema: public; Owner: postgres
@@ -3019,6 +3266,24 @@ GRANT ALL ON FUNCTION "graphql_public"."graphql"("operationName" "text", "query"
 
 
 --
+-- Name: FUNCTION "backfill_hunt_weather_data"(); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION "public"."backfill_hunt_weather_data"() TO "anon";
+GRANT ALL ON FUNCTION "public"."backfill_hunt_weather_data"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."backfill_hunt_weather_data"() TO "service_role";
+
+
+--
+-- Name: FUNCTION "backfill_legal_hunting_times"(); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION "public"."backfill_legal_hunting_times"() TO "anon";
+GRANT ALL ON FUNCTION "public"."backfill_legal_hunting_times"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."backfill_legal_hunting_times"() TO "service_role";
+
+
+--
 -- Name: FUNCTION "calculate_activity_score"("images_added_today" integer, "avg_images_per_day" numeric); Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -3034,6 +3299,15 @@ GRANT ALL ON FUNCTION "public"."calculate_activity_score"("images_added_today" i
 GRANT ALL ON FUNCTION "public"."calculate_activity_trend"("current_images" integer, "previous_images" integer, "days_back" integer) TO "anon";
 GRANT ALL ON FUNCTION "public"."calculate_activity_trend"("current_images" integer, "previous_images" integer, "days_back" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."calculate_activity_trend"("current_images" integer, "previous_images" integer, "days_back" integer) TO "service_role";
+
+
+--
+-- Name: FUNCTION "calculate_legal_hunting_times"(); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION "public"."calculate_legal_hunting_times"() TO "anon";
+GRANT ALL ON FUNCTION "public"."calculate_legal_hunting_times"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."calculate_legal_hunting_times"() TO "service_role";
 
 
 --
@@ -3097,6 +3371,15 @@ GRANT ALL ON FUNCTION "public"."interpolate_dawn_dusk_temps"("sunrise_time" time
 GRANT ALL ON FUNCTION "public"."update_camera_alert_status"() TO "anon";
 GRANT ALL ON FUNCTION "public"."update_camera_alert_status"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_camera_alert_status"() TO "service_role";
+
+
+--
+-- Name: FUNCTION "update_hunt_logs_weather"(); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION "public"."update_hunt_logs_weather"() TO "anon";
+GRANT ALL ON FUNCTION "public"."update_hunt_logs_weather"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."update_hunt_logs_weather"() TO "service_role";
 
 
 --
@@ -3277,6 +3560,15 @@ GRANT ALL ON TABLE "public"."hunt_logs" TO "service_role";
 
 
 --
+-- Name: TABLE "hunt_logs_with_temperature"; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON TABLE "public"."hunt_logs_with_temperature" TO "anon";
+GRANT ALL ON TABLE "public"."hunt_logs_with_temperature" TO "authenticated";
+GRANT ALL ON TABLE "public"."hunt_logs_with_temperature" TO "service_role";
+
+
+--
 -- Name: TABLE "hunt_sightings"; Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -3304,12 +3596,12 @@ GRANT ALL ON TABLE "public"."members" TO "service_role";
 
 
 --
--- Name: TABLE "profiles"; Type: ACL; Schema: public; Owner: postgres
+-- Name: TABLE "profiles_backup"; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT ALL ON TABLE "public"."profiles" TO "anon";
-GRANT ALL ON TABLE "public"."profiles" TO "authenticated";
-GRANT ALL ON TABLE "public"."profiles" TO "service_role";
+GRANT ALL ON TABLE "public"."profiles_backup" TO "anon";
+GRANT ALL ON TABLE "public"."profiles_backup" TO "authenticated";
+GRANT ALL ON TABLE "public"."profiles_backup" TO "service_role";
 
 
 --
