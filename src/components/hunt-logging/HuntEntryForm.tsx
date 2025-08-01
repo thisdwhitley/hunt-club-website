@@ -6,9 +6,10 @@
 import React, { useEffect, useState } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Calendar, Clock, MapPin, Target, Plus, ArrowLeft, ChevronDown, Eye, AlertCircle } from 'lucide-react'
+import { Calendar, Check, Clock, MapPin, Target, Plus, ArrowLeft, ChevronDown, Eye, AlertCircle, Settings } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { HuntFormSchema, type HuntFormData, type SightingData } from '@/lib/hunt-logging/hunt-validation'
+import { createClient } from '@/lib/supabase/client'
 
 // ===========================================
 // TYPES & UTILS
@@ -47,7 +48,7 @@ const getGenderOptions = (animalType: string) => {
   }
 }
 
-type FormStep = 'basic' | 'harvest' | 'sightings' | 'review'
+type HuntStep = 'basic' | 'harvest' | 'sightings' | 'success'  // Remove 'review', add 'success'
 
 // ===========================================
 // MAIN COMPONENT
@@ -64,6 +65,11 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
   const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState<FormStep>('basic')
   const [showExactTimes, setShowExactTimes] = useState(false)
+
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [selectedHunter, setSelectedHunter] = useState(user?.id || '')
+  const [members, setMembers] = useState<any[]>([])
+  const [submittedHuntData, setSubmittedHuntData] = useState<any>(null)
 
   const {
     register,
@@ -87,6 +93,28 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
       sightings: []
     }
   })
+
+  useEffect(() => {
+    const loadMembers = async () => {
+      try {
+        const supabase = createClient()
+        const { data } = await supabase
+          .from('members')
+          .select('id, email, full_name, display_name')  // Get both display_name and full_name
+          .order('display_name')
+        
+        setMembers(data || [])
+        
+        if (!selectedHunter && user?.id) {
+          setSelectedHunter(user.id)
+        }
+      } catch (error) {
+        console.error('Error loading members:', error)
+      }
+    }
+
+    loadMembers()
+  }, [user, selectedHunter])
 
   const { fields: sightingFields, append: addSighting, remove: removeSighting } = useFieldArray({
     control,
@@ -112,18 +140,14 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
   }
 
   // Navigation handlers
-  const handleBasicNext = async () => {
-    const isValid = await trigger(['hunt_date', 'stand_id'])
+  const handleBasicNext = () => {
+    const isValid = trigger(['hunt_date', 'stand_id'])
     if (isValid) {
-      // Auto-add a sighting if going to sightings and none exist
-      if (sightingFields.length === 0) {
-        handleAddSighting()
-      }
-      
       if (watchedHadHarvest) {
         setCurrentStep('harvest')
       } else {
-        setCurrentStep('sightings')
+        // No harvest - can submit directly or add sightings
+        // Navigation happens via button clicks, not automatic
       }
     }
   }
@@ -145,27 +169,72 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
     }
   }
 
-  const handleSightingsBack = () => {
-    if (watchedHadHarvest) {
-      setCurrentStep('harvest')
-    } else {
-      setCurrentStep('basic')
-    }
+  const handleHarvestComplete = () => {
+    // From harvest, user chooses submit or add sightings via buttons
+    // Navigation happens via button clicks
   }
 
-  const handleSightingsContinue = async () => {
-    // Skip validation for now - just go to review
-    console.log('Going to review with sightings:', getValues('sightings'))
-    setCurrentStep('review')
+  const handleSightingsComplete = () => {
+    // From sightings, submit directly (no review step)
+    handleSubmitHunt()
   }
 
-  const handleDirectSubmit = async () => {
+  const handleSubmitHunt = async () => {
+    console.log('=== handleSubmitHunt called ===')
     const isValid = await trigger(['hunt_date', 'stand_id'])
     if (isValid) {
-      const formData = getValues()
-      await onSubmit(formData)
+      console.log('=== Form is valid ===')
+      const formData = {
+        ...getValues(),
+        member_id: selectedHunter
+      }
+      
+      // Store submitted data and show success BEFORE submitting
+      setSubmittedHuntData({
+        ...formData,
+        hunter_name: members.find(m => m.id === selectedHunter)?.display_name || 
+                    members.find(m => m.id === selectedHunter)?.full_name || 'Unknown',
+        stand_name: stands.find(s => s.id === formData.stand_id)?.name || 'Unknown Stand'
+      })
+      
+      console.log('=== Setting step to success ===')
+      // Show success confirmation immediately
+      setCurrentStep('success')
+      
+      console.log('=== Calling onSubmit in background ===')
+      // Submit in background (don't await to avoid timing issues)
+      onSubmit(formData).catch(error => {
+        console.error('Error submitting hunt:', error)
+        // If submission fails, go back to basic form
+        setCurrentStep('basic')
+        setSubmittedHuntData(null)
+      })
+    } else {
+      console.log('=== Form validation failed ===')
     }
   }
+
+  // const handleSightingsBack = () => {
+  //   if (watchedHadHarvest) {
+  //     setCurrentStep('harvest')
+  //   } else {
+  //     setCurrentStep('basic')
+  //   }
+  // }
+
+  // const handleSightingsContinue = async () => {
+  //   // Skip validation for now - just go to review
+  //   console.log('Going to review with sightings:', getValues('sightings'))
+  //   setCurrentStep('review')
+  // }
+
+  // const handleDirectSubmit = async () => {
+  //   const isValid = await trigger(['hunt_date', 'stand_id'])
+  //   if (isValid) {
+  //     const formData = getValues()
+  //     await onSubmit(formData)
+  //   }
+  // }
 
   // ===========================================
   // RENDER METHODS
@@ -174,10 +243,46 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
   const renderBasicForm = () => (
     <div className="space-y-4">
       {/* Header - More Compact */}
-      <div className="text-center">
+      {/* <div className="text-center">
         <h2 className="text-lg font-bold text-forest-shadow">Log Hunt</h2>
         <p className="text-xs text-weathered-wood">Quick entry • All fields auto-saved</p>
+      </div> */}
+
+      {/* Advanced Options - Hunter Selection */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-2">
+          <h2 className="text-lg font-bold text-forest-shadow">Log Hunt</h2>
+          {members.length > 1 && (
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="text-xs text-weathered-wood hover:text-forest-shadow flex items-center"
+            >
+              <Settings className="w-3 h-3 mr-1" />
+              {showAdvanced ? 'Less' : 'Options'}
+            </button>
+          )}
+        </div>
       </div>
+
+      {showAdvanced && members.length > 1 && (
+        <div className="mb-4 p-3 bg-morning-mist/30 rounded-lg border border-weathered-wood/20">
+          <label className="block text-xs text-weathered-wood mb-1">Log hunt for:</label>
+          <select
+            value={selectedHunter}
+            onChange={(e) => setSelectedHunter(e.target.value)}
+            className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-sm"
+          >
+            {members.map(member => (
+              <option key={member.id} value={member.id}>
+                {member.display_name || member.full_name || member.email}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      <p className="text-xs text-weathered-wood mb-4">Quick entry • All fields auto-save</p>
 
       {/* Hunt Date & Time Period - Same Row */}
       <div className="grid grid-cols-2 gap-3">
@@ -332,40 +437,37 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
           <button
             type="button"
             onClick={() => setCurrentStep('harvest')}
-            className="w-full bg-burnt-orange text-white py-3 rounded-lg text-sm font-medium hover:bg-clay-earth transition-colors flex items-center justify-center"
+            className="w-full bg-burnt-orange text-white py-3 rounded-lg font-medium hover:bg-clay-earth transition-colors"
           >
             Next: Harvest Details
           </button>
         ) : (
           /* No harvest - can submit directly */
-          <button
-            type="button"
-            onClick={handleDirectSubmit}
-            disabled={isSubmitting}
-            className="w-full bg-burnt-orange text-white py-3 rounded-lg text-sm font-medium hover:bg-clay-earth transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-          >
-            {isSubmitting ? 'Submitting...' : 'Submit Hunt Log'}
-          </button>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={handleSubmitHunt}
+              disabled={isSubmitting}
+              className="w-full bg-burnt-orange text-white py-3 rounded-lg font-medium hover:bg-clay-earth transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Submitting Hunt Log...' : 'Submit Hunt Log'}
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => {
+                if (sightingFields.length === 0) {
+                  handleAddSighting()
+                }
+                setCurrentStep('sightings')
+              }}
+              className="w-full bg-muted-gold text-forest-shadow py-2.5 rounded-lg font-medium hover:bg-sunset-amber transition-colors flex items-center justify-center"
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              + Add Sightings
+            </button>
+          </div>
         )}
-
-        {/* Sightings - always available */}
-        <button
-          type="button"
-          onClick={handleBasicNext}
-          className="w-full bg-muted-gold text-forest-shadow py-2.5 rounded-lg text-sm font-medium hover:bg-sunset-amber transition-colors flex items-center justify-center"
-        >
-          <Eye className="w-4 h-4 mr-2" />
-          + Add Sightings
-        </button>
-
-        {/* Cancel */}
-        <button
-          type="button"
-          onClick={onCancel}
-          className="w-full text-weathered-wood py-1.5 text-sm hover:text-forest-shadow transition-colors"
-        >
-          Cancel
-        </button>
       </div>
     </div>
   )
@@ -436,29 +538,31 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
         </div>
       </div>
 
-      {/* Navigation Buttons */}
+      {/* Action Buttons */}
       <div className="flex flex-col space-y-3 pt-2">
-        {/* Submit Hunt with Harvest */}
         <button
           type="button"
-          onClick={handleHarvestSubmit}
+          onClick={handleSubmitHunt}
           disabled={isSubmitting}
-          className="w-full bg-burnt-orange text-white py-3 rounded-lg font-medium hover:bg-clay-earth transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          className="w-full bg-burnt-orange text-white py-3 rounded-lg font-medium hover:bg-clay-earth transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isSubmitting ? 'Submitting...' : 'Submit Hunt Log'}
+          {isSubmitting ? 'Submitting Hunt Log...' : 'Submit Hunt Log'}
         </button>
         
-        {/* Add Sightings */}
         <button
           type="button"
-          onClick={handleHarvestNext}
+          onClick={() => {
+            if (sightingFields.length === 0) {
+              handleAddSighting()
+            }
+            setCurrentStep('sightings')
+          }}
           className="w-full bg-muted-gold text-forest-shadow py-2.5 rounded-lg font-medium hover:bg-sunset-amber transition-colors flex items-center justify-center"
         >
           <Eye className="w-4 h-4 mr-2" />
           + Add Sightings
         </button>
         
-        {/* Back */}
         <button
           type="button"
           onClick={() => setCurrentStep('basic')}
@@ -589,7 +693,13 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
         <div className="flex space-x-3">
           <button
             type="button"
-            onClick={handleSightingsBack}
+            onClick={() => {
+              if (watchedHadHarvest) {
+                setCurrentStep('harvest')
+              } else {
+                setCurrentStep('basic')
+              }
+            }}
             className="flex-1 border border-weathered-wood/30 text-forest-shadow py-2.5 rounded-lg font-medium hover:bg-weathered-wood/5 transition-colors flex items-center justify-center"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -598,111 +708,149 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
           
           <button
             type="button"
-            onClick={() => {
-              console.log('Current sightings:', getValues('sightings'))
-              console.log('Form errors:', errors)
-              handleSightingsContinue()
-            }}
-            className="flex-1 bg-burnt-orange text-white py-2.5 rounded-lg font-medium hover:bg-clay-earth transition-colors"
+            onClick={handleSubmitHunt}
+            disabled={isSubmitting}
+            className="flex-1 bg-burnt-orange text-white py-2.5 rounded-lg font-medium hover:bg-clay-earth transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Continue to Review
+            {isSubmitting ? 'Submitting...' : 'Submit Hunt Log'}
           </button>
         </div>
-        
-        {/* Skip option */}
-        <button
-          type="button"
-          onClick={() => setCurrentStep('review')}
-          className="w-full text-weathered-wood py-1.5 text-sm hover:text-forest-shadow transition-colors"
-        >
-          Skip Sightings & Submit
-        </button>
       </div>
     </div>
   )
 
-  const renderReviewForm = () => (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="text-center">
-        <h2 className="text-lg font-bold text-forest-shadow">Review Hunt Log</h2>
-        <p className="text-xs text-weathered-wood">Confirm details before submitting</p>
+  // const renderReviewForm = () => (
+  //   <div className="space-y-4">
+  //     {/* Header */}
+  //     <div className="text-center">
+  //       <h2 className="text-lg font-bold text-forest-shadow">Review Hunt Log</h2>
+  //       <p className="text-xs text-weathered-wood">Confirm details before submitting</p>
+  //     </div>
+
+  //     {/* Hunt Summary */}
+  //     <div className="bg-morning-mist/50 p-4 rounded-lg border border-weathered-wood/20">
+  //       <h3 className="font-medium text-forest-shadow mb-3">Hunt Details</h3>
+  //       <div className="space-y-2 text-sm">
+  //         <div className="flex justify-between">
+  //           <span className="text-weathered-wood">Date:</span>
+  //           <span className="text-forest-shadow font-medium">{watchedValues.hunt_date}</span>
+  //         </div>
+  //         <div className="flex justify-between">
+  //           <span className="text-weathered-wood">Stand:</span>
+  //           <span className="text-forest-shadow font-medium">
+  //             {stands.find(s => s.id === watchedValues.stand_id)?.name || 'Unknown'}
+  //           </span>
+  //         </div>
+  //         <div className="flex justify-between">
+  //           <span className="text-weathered-wood">Period:</span>
+  //           <span className="text-forest-shadow font-medium">{watchedValues.hunt_type}</span>
+  //         </div>
+  //         {(watchedValues.start_time || watchedValues.end_time) && (
+  //           <div className="flex justify-between">
+  //             <span className="text-weathered-wood">Times:</span>
+  //             <span className="text-forest-shadow font-medium">
+  //               {watchedValues.start_time || '--'} to {watchedValues.end_time || '--'}
+  //             </span>
+  //           </div>
+  //         )}
+  //         <div className="flex justify-between">
+  //           <span className="text-weathered-wood">Harvest:</span>
+  //           <span className="text-forest-shadow font-medium">
+  //             {watchedValues.had_harvest ? 'Yes' : 'No'}
+  //           </span>
+  //         </div>
+  //       </div>
+  //     </div>
+
+  //     {/* Sightings Summary */}
+  //     {watchedValues.sightings && watchedValues.sightings.length > 0 && (
+  //       <div className="bg-morning-mist/50 p-4 rounded-lg border border-weathered-wood/20">
+  //         <h3 className="font-medium text-forest-shadow mb-3">Sightings ({watchedValues.sightings.length})</h3>
+  //         <div className="space-y-2">
+  //           {watchedValues.sightings.map((sighting, index) => (
+  //             <div key={index} className="flex justify-between text-sm">
+  //               <span className="text-weathered-wood">{sighting.animal_type}:</span>
+  //               <span className="text-forest-shadow font-medium">{sighting.count}</span>
+  //             </div>
+  //           ))}
+  //         </div>
+  //       </div>
+  //     )}
+
+  //     {/* Notes */}
+  //     {watchedValues.notes && (
+  //       <div className="bg-morning-mist/50 p-4 rounded-lg border border-weathered-wood/20">
+  //         <h3 className="font-medium text-forest-shadow mb-2">Notes</h3>
+  //         <p className="text-sm text-forest-shadow">{watchedValues.notes}</p>
+  //       </div>
+  //     )}
+
+  //     {/* Submit Button */}
+  //     <div className="flex flex-col space-y-3 pt-2">
+  //       <button
+  //         type="submit"
+  //         disabled={isSubmitting}
+  //         className="w-full bg-burnt-orange text-white py-3 rounded-lg font-medium hover:bg-clay-earth transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+  //       >
+  //         {isSubmitting ? 'Submitting Hunt Log...' : 'Submit Hunt Log'}
+  //       </button>
+        
+  //       <button
+  //         type="button"
+  //         onClick={() => setCurrentStep('sightings')}
+  //         className="w-full text-weathered-wood py-1.5 text-sm hover:text-forest-shadow transition-colors"
+  //       >
+  //         Back to Edit
+  //       </button>
+  //     </div>
+  //   </div>
+  // )
+
+  const renderSuccessForm = () => (
+    <div className="text-center space-y-4">
+      <div className="w-16 h-16 bg-bright-orange/10 rounded-full flex items-center justify-center mx-auto">
+        <Check className="w-8 h-8 text-bright-orange" />
+      </div>
+      
+      <div>
+        <h2 className="text-lg font-bold text-forest-shadow">Hunt Logged Successfully!</h2>
+        <p className="text-sm text-weathered-wood mt-1">
+          {submittedHuntData?.hunt_date ? new Date(submittedHuntData.hunt_date).toLocaleDateString() : ''} • {submittedHuntData?.stand_name}
+        </p>
       </div>
 
-      {/* Hunt Summary */}
-      <div className="bg-morning-mist/50 p-4 rounded-lg border border-weathered-wood/20">
-        <h3 className="font-medium text-forest-shadow mb-3">Hunt Details</h3>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-weathered-wood">Date:</span>
-            <span className="text-forest-shadow font-medium">{watchedValues.hunt_date}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-weathered-wood">Stand:</span>
-            <span className="text-forest-shadow font-medium">
-              {stands.find(s => s.id === watchedValues.stand_id)?.name || 'Unknown'}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-weathered-wood">Period:</span>
-            <span className="text-forest-shadow font-medium">{watchedValues.hunt_type}</span>
-          </div>
-          {(watchedValues.start_time || watchedValues.end_time) && (
-            <div className="flex justify-between">
-              <span className="text-weathered-wood">Times:</span>
-              <span className="text-forest-shadow font-medium">
-                {watchedValues.start_time || '--'} to {watchedValues.end_time || '--'}
-              </span>
-            </div>
+      <div className="bg-morning-mist/50 p-3 rounded-lg text-left">
+        <div className="text-xs text-weathered-wood space-y-1">
+          <div>Hunter: {submittedHuntData?.hunter_name}</div>
+          <div>Harvest: {submittedHuntData?.had_harvest ? 'Yes' : 'No'}</div>
+          {submittedHuntData?.sightings?.length > 0 && (
+            <div>Sightings: {submittedHuntData.sightings.length}</div>
           )}
-          <div className="flex justify-between">
-            <span className="text-weathered-wood">Harvest:</span>
-            <span className="text-forest-shadow font-medium">
-              {watchedValues.had_harvest ? 'Yes' : 'No'}
-            </span>
-          </div>
         </div>
       </div>
 
-      {/* Sightings Summary */}
-      {watchedValues.sightings && watchedValues.sightings.length > 0 && (
-        <div className="bg-morning-mist/50 p-4 rounded-lg border border-weathered-wood/20">
-          <h3 className="font-medium text-forest-shadow mb-3">Sightings ({watchedValues.sightings.length})</h3>
-          <div className="space-y-2">
-            {watchedValues.sightings.map((sighting, index) => (
-              <div key={index} className="flex justify-between text-sm">
-                <span className="text-weathered-wood">{sighting.animal_type}:</span>
-                <span className="text-forest-shadow font-medium">{sighting.count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Notes */}
-      {watchedValues.notes && (
-        <div className="bg-morning-mist/50 p-4 rounded-lg border border-weathered-wood/20">
-          <h3 className="font-medium text-forest-shadow mb-2">Notes</h3>
-          <p className="text-sm text-forest-shadow">{watchedValues.notes}</p>
-        </div>
-      )}
-
-      {/* Submit Button */}
-      <div className="flex flex-col space-y-3 pt-2">
+      <div className="space-y-2">
         <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full bg-burnt-orange text-white py-3 rounded-lg font-medium hover:bg-clay-earth transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          type="button"
+          onClick={() => {
+            onCancel() // Close modal
+          }}
+          className="w-full bg-burnt-orange text-white py-3 rounded-lg font-medium"
         >
-          {isSubmitting ? 'Submitting Hunt Log...' : 'Submit Hunt Log'}
+          Done
         </button>
         
         <button
           type="button"
-          onClick={() => setCurrentStep('sightings')}
-          className="w-full text-weathered-wood py-1.5 text-sm hover:text-forest-shadow transition-colors"
+          onClick={() => {
+            // Reset form for another entry
+            reset()
+            setCurrentStep('basic')
+            setSubmittedHuntData(null)
+          }}
+          className="w-full text-weathered-wood py-2 text-sm hover:text-forest-shadow"
         >
-          Back to Edit
+          Log Another Hunt
         </button>
       </div>
     </div>
@@ -712,13 +860,15 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
   // MAIN RENDER
   // ===========================================
 
+  console.log('=== Rendering HuntEntryForm ===', { currentStep, submittedHuntData })
+
   return (
     <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg club-shadow">
       <form onSubmit={handleSubmit(onSubmit)} className="p-4">
         {currentStep === 'basic' && renderBasicForm()}
         {currentStep === 'harvest' && renderHarvestForm()}
         {currentStep === 'sightings' && renderSightingsForm()}
-        {currentStep === 'review' && renderReviewForm()}
+        {currentStep === 'success' && renderSuccessForm()}
       </form>
     </div>
   )

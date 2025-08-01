@@ -3,7 +3,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { X, Calendar, MapPin, Eye, Target, Clock, Hash } from 'lucide-react'
+import { X, Check, Calendar, MapPin, Eye, Target, Clock, Hash } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import HuntEntryForm from '@/components/hunt-logging/HuntEntryForm'
@@ -142,6 +142,9 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
   const supabase = createClient()
 
+  const [showHuntSuccess, setShowHuntSuccess] = useState(false)
+  const [huntSuccessData, setHuntSuccessData] = useState<any>(null)
+
   // Load all data when user changes
   useEffect(() => {
     if (user) {
@@ -195,6 +198,48 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       }
     }
   }, [currentModal])
+
+  const HuntSuccessScreen = ({ data, onClose, onLogAnother }: any) => (
+    <div className="max-w-md mx-auto text-center space-y-4 p-4">
+      <div className="w-16 h-16 bg-bright-orange/10 rounded-full flex items-center justify-center mx-auto">
+        <Check className="w-8 h-8 text-bright-orange" />
+      </div>
+      
+      <div>
+        <h2 className="text-lg font-bold text-forest-shadow">Hunt Logged Successfully!</h2>
+        <p className="text-sm text-weathered-wood mt-1">
+          {data?.hunt_date ? new Date(data.hunt_date).toLocaleDateString() : ''} • {data?.stand_name}
+        </p>
+      </div>
+
+      <div className="bg-morning-mist/50 p-3 rounded-lg text-left">
+        <div className="text-xs text-weathered-wood space-y-1">
+          <div>Harvest: {data?.had_harvest ? 'Yes' : 'No'}</div>
+          {data?.sightings_count > 0 && (
+            <div>Sightings: {data.sightings_count}</div>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full bg-burnt-orange text-white py-3 rounded-lg font-medium"
+        >
+          Done
+        </button>
+        
+        <button
+          type="button"
+          onClick={onLogAnother}
+          className="w-full text-weathered-wood py-2 text-sm hover:text-forest-shadow"
+        >
+          Log Another Hunt
+        </button>
+      </div>
+    </div>
+  )
 
   // ===========================================
   // DATA LOADING
@@ -542,8 +587,14 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
         if (harvestError) throw harvestError
       }
 
-      setSuccess('Hunt logged successfully!')
-      hideModal()
+      setShowHuntSuccess(true)
+      setHuntSuccessData({
+        hunt_date: formData.hunt_date,
+        stand_name: stands.find(s => s.id === formData.stand_id)?.name || 'Unknown Stand',
+        had_harvest: formData.had_harvest,
+        sightings_count: formData.sightings?.length || 0
+      })
+
       await refreshData()
     } catch (err) {
       const errorMessage = extractErrorMessage(err)
@@ -950,14 +1001,30 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       {/* Modals */}
       {currentModal === 'hunt-form' && (
         <Modal size="lg">
-          <div className="max-w-md mx-auto">
-            <HuntEntryForm
-              stands={stands.filter(s => s.active)}
-              onSubmit={handleHuntSubmit}
-              onCancel={hideModal}
-              isSubmitting={isLoading}
+          {showHuntSuccess ? (
+            <HuntSuccessScreen 
+              data={huntSuccessData}
+              onClose={() => {
+                setShowHuntSuccess(false)
+                setHuntSuccessData(null)
+                hideModal()
+              }}
+              onLogAnother={() => {
+                setShowHuntSuccess(false)
+                setHuntSuccessData(null)
+                // Modal stays open, form resets
+              }}
             />
-          </div>
+          ) : (
+            <div className="max-w-md mx-auto">
+              <HuntEntryForm
+                stands={stands.filter(s => s.active)}
+                onSubmit={handleHuntSubmit}
+                onCancel={hideModal}
+                isSubmitting={isLoading}
+              />
+            </div>
+          )}
         </Modal>
       )}
 
