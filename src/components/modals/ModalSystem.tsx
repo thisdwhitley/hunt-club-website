@@ -61,6 +61,17 @@ interface ModalContextType {
   refreshData: () => void
 }
 
+// Modal size system - standardized across the app
+export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full'
+
+const modalSizes: Record<ModalSize, string> = {
+  sm: 'max-w-sm',      // Simple forms, alerts, confirmations
+  md: 'max-w-md',      // Standard forms, login modal
+  lg: 'max-w-lg',      // Hunt logging, complex forms
+  xl: 'max-w-xl',      // Detailed forms, extended content
+  full: 'max-w-4xl'    // Hunt details, property views, wide tables
+}
+
 // ===========================================
 // UTILITY FUNCTIONS
 // ===========================================
@@ -863,15 +874,39 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
   // MODAL BACKDROP & CONTAINER
   // ===========================================
 
-  const Modal = ({ children }: { children: React.ReactNode }) => (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+  const Modal = ({ 
+    size = 'md', 
+    children 
+  }: { 
+    size?: ModalSize
+    children: React.ReactNode 
+  }) => (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
       <div 
         className="absolute inset-0 bg-forest-shadow/50 backdrop-blur-sm"
         onClick={hideModal}
       />
-      <div className="relative bg-white rounded-lg club-shadow max-w-[90vw] max-h-[90vh] overflow-hidden w-full sm:w-auto">
-        <div className="p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
-          {children}
+      <div className={`
+        relative bg-white rounded-lg club-shadow w-full
+        ${modalSizes[size]}
+        max-h-[95vh] sm:max-h-[90vh]
+        overflow-hidden
+        sm:w-auto sm:max-w-[95vw]
+      `}>
+        {/* Close button - always visible */}
+        <button
+          onClick={hideModal}
+          className="absolute top-3 right-3 z-10 p-1.5 text-weathered-wood hover:text-forest-shadow transition-colors bg-white/80 hover:bg-white rounded-full shadow-sm"
+          aria-label="Close modal"
+        >
+          <X className="w-5 h-5" />
+        </button>
+        
+        {/* Modal content with proper scrolling */}
+        <div className="max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+          <div className="p-4 sm:p-6 pb-6">
+            {children}
+          </div>
         </div>
       </div>
     </div>
@@ -914,7 +949,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
 
       {/* Modals */}
       {currentModal === 'hunt-form' && (
-        <Modal>
+        <Modal size="lg">
           <div className="max-w-md mx-auto">
             <HuntEntryForm
               stands={stands.filter(s => s.active)}
@@ -927,25 +962,25 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       )}
 
       {currentModal === 'stands' && (
-        <Modal>
+        <Modal size="xl">
           <StandsModal />
         </Modal>
       )}
 
       {currentModal === 'hunts' && (
-        <Modal>
+        <Modal size="full">
           <HuntsModal />
         </Modal>
       )}
 
       {currentModal === 'sightings' && (
-        <Modal>
+        <Modal size="xl">
           <SightingsModal />
         </Modal>
       )}
 
       {currentModal === 'harvests' && (
-        <Modal>
+        <Modal size="xl">
           <HarvestsModal />
         </Modal>
       )}
