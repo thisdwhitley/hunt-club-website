@@ -72,9 +72,9 @@ export class HuntService {
   
   async getHunts(filters?: HuntFilters): Promise<HuntWithDetails[]> {
     try {
-      // MAJOR CHANGE: Use hunt_logs_with_temperature view instead of hunt_logs
+      // Build the base hunt logs query
       let huntQuery = supabase
-        .from('hunt_logs_with_temperature')
+        .from('hunt_logs')
         .select('*')
         .order('hunt_date', { ascending: false })
         .order('created_at', { ascending: false })
@@ -115,14 +115,14 @@ export class HuntService {
         return []
       }
 
-      // Get unique member IDs, stand IDs, and hunt IDs for batch queries
+      // Get unique member IDs and stand IDs for batch queries
       const memberIds = [...new Set(hunts.map(hunt => hunt.member_id).filter(Boolean))]
       const standIds = [...new Set(hunts.map(hunt => hunt.stand_id).filter(Boolean))]
       const huntIds = hunts.map(hunt => hunt.id)
 
-      // SIMPLIFIED: No need to fetch weather data separately - it's in the view!
-      const [membersResult, standsResult, harvestsResult, sightingsResult, authUsersResult] = await Promise.all([
-        // Get member data via public.members table
+      // Batch fetch related data - SIMPLIFIED: only members table needed
+      const [membersResult, standsResult, harvestsResult, sightingsResult] = await Promise.all([
+        // Get member data from members table only
         memberIds.length > 0 
           ? supabase.from('members').select('*').in('id', memberIds)
           : { data: [], error: null },
@@ -132,79 +132,57 @@ export class HuntService {
           ? supabase.from('stands').select('*').in('id', standIds)
           : { data: [], error: null },
         
-        // Get harvests
+        // Get harvests for these hunts
         supabase.from('hunt_harvests').select('*').in('hunt_log_id', huntIds),
         
-        // Get sightings
-        supabase.from('hunt_sightings').select('*').in('hunt_log_id', huntIds),
-        
-        // Get auth user info as fallback
-        memberIds.length > 0 
-          ? supabase.from('profiles').select('id, email, full_name, display_name').in('id', memberIds)
-          : { data: [], error: null }
+        // Get sightings for these hunts
+        supabase.from('hunt_sightings').select('*').in('hunt_log_id', huntIds)
       ])
 
-      // Build lookup maps
-      const membersMap = new Map()
-      const standsMap = new Map()
+      // Create lookup maps for efficient joining
+      const membersMap = new Map((membersResult.data || []).map(member => [member.id, member]))
+      const standsMap = new Map((standsResult.data || []).map(stand => [stand.id, stand]))
+      
+      // Group harvests and sightings by hunt_log_id
       const harvestsMap = new Map()
       const sightingsMap = new Map()
-
-      // Process members data (prefer members table, fallback to auth users)
-      if (membersResult.data) {
-        membersResult.data.forEach(member => {
-          membersMap.set(member.id, member)
-        })
-      }
       
-      // Add auth user data for any missing members
-      if (authUsersResult.data) {
-        authUsersResult.data.forEach(user => {
-          if (!membersMap.has(user.id)) {
-            membersMap.set(user.id, user)
-          }
-        })
-      }
+      ;(harvestsResult.data || []).forEach(harvest => {
+        if (!harvestsMap.has(harvest.hunt_log_id)) {
+          harvestsMap.set(harvest.hunt_log_id, [])
+        }
+        harvestsMap.get(harvest.hunt_log_id).push(harvest)
+      })
+      
+      ;(sightingsResult.data || []).forEach(sighting => {
+        if (!sightingsMap.has(sighting.hunt_log_id)) {
+          sightingsMap.set(sighting.hunt_log_id, [])
+        }
+        sightingsMap.get(sighting.hunt_log_id).push(sighting)
+      })
 
-      // Process stands data
-      if (standsResult.data) {
-        standsResult.data.forEach(stand => {
-          standsMap.set(stand.id, stand)
-        })
-      }
+      // Combine all data - SIMPLIFIED: no fallback logic needed
+      const enrichedHunts = hunts.map(hunt => {
+        const memberData = membersMap.get(hunt.member_id)
+        
+        // Create enriched member data with display_name
+        const enrichedMember = memberData ? {
+          ...memberData,
+          display_name: memberData.display_name || memberData.full_name || memberData.email
+        } : null
 
-      // Process harvests data
-      if (harvestsResult.data) {
-        harvestsResult.data.forEach(harvest => {
-          if (!harvestsMap.has(harvest.hunt_log_id)) {
-            harvestsMap.set(harvest.hunt_log_id, [])
-          }
-          harvestsMap.get(harvest.hunt_log_id).push(harvest)
-        })
-      }
+        return {
+          ...hunt,
+          member: enrichedMember,
+          stand: standsMap.get(hunt.stand_id) || null,
+          harvests: harvestsMap.get(hunt.id) || [],
+          sightings: sightingsMap.get(hunt.id) || []
+        }
+      })
 
-      // Process sightings data
-      if (sightingsResult.data) {
-        sightingsResult.data.forEach(sighting => {
-          if (!sightingsMap.has(sighting.hunt_log_id)) {
-            sightingsMap.set(sighting.hunt_log_id, [])
-          }
-          sightingsMap.get(sighting.hunt_log_id).push(sighting)
-        })
-      }
-
-      // UPDATED: Combine all data - weather is already included in hunt view!
-      const huntsWithDetails: HuntWithDetails[] = hunts.map(hunt => ({
-        ...hunt, // This now includes hunt_temperature, temp_dawn, temp_dusk, etc.
-        member: membersMap.get(hunt.member_id) || undefined,
-        stand: standsMap.get(hunt.stand_id) || undefined,
-        harvests: harvestsMap.get(hunt.id) || [],
-        sightings: sightingsMap.get(hunt.id) || []
-      }))
-
-      return huntsWithDetails
+      return enrichedHunts
     } catch (error) {
-      console.error('Error in getHunts:', error)
+      console.error('Error fetching hunts:', error)
       throw error
     }
   }
@@ -225,13 +203,10 @@ export class HuntService {
 
       if (!huntLog) return null
 
-      // Get related data - no need to fetch weather separately!
+      // Get related data - FIXED: Only use members table
       const [memberResult, standResult, harvestsResult, sightingsResult] = await Promise.all([
-        // Get member info - try members table first, then profiles
-        supabase.from('members').select('*').eq('id', huntLog.member_id).single()
-          .then(result => result.error ? 
-            supabase.from('profiles').select('id, email, full_name, display_name').eq('id', huntLog.member_id).single() 
-            : result),
+        // FIXED: Only query members table, no profiles fallback
+        supabase.from('members').select('*').eq('id', huntLog.member_id).single(),
         
         // Get stand info
         huntLog.stand_id 
@@ -245,10 +220,16 @@ export class HuntService {
         supabase.from('hunt_sightings').select('*').eq('hunt_log_id', huntId)
       ])
 
+      // Create enriched member data with display_name (consistent with getHunts)
+      const enrichedMember = memberResult.data ? {
+        ...memberResult.data,
+        display_name: memberResult.data.display_name || memberResult.data.full_name || memberResult.data.email
+      } : undefined
+
       // Build the complete hunt object - weather is already included!
       const hunt: HuntWithDetails = {
         ...huntLog, // Includes all smart temperature data from the view
-        member: memberResult.data || undefined,
+        member: enrichedMember,
         stand: standResult.data || undefined,
         harvests: harvestsResult.data || [],
         sightings: sightingsResult.data || []

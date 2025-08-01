@@ -12,40 +12,12 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
-      profiles: {
-        Row: {
-          id: string
-          email: string
-          full_name: string | null
-          role: 'admin' | 'member'
-          avatar_url: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id: string
-          email: string
-          full_name?: string | null
-          role?: 'admin' | 'member'
-          avatar_url?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          email?: string
-          full_name?: string | null
-          role?: 'admin' | 'member'
-          avatar_url?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
       members: {
         Row: {
           id: string
           email: string
           full_name: string | null
+          display_name: string | null  // ADDED: display_name column
           phone: string | null
           role: string
           avatar_url: string | null
@@ -56,6 +28,7 @@ export interface Database {
           id: string
           email: string
           full_name?: string | null
+          display_name?: string | null  // ADDED: display_name column
           phone?: string | null
           role?: string
           avatar_url?: string | null
@@ -66,6 +39,7 @@ export interface Database {
           id?: string
           email?: string
           full_name?: string | null
+          display_name?: string | null  // ADDED: display_name column
           phone?: string | null
           role?: string
           avatar_url?: string | null

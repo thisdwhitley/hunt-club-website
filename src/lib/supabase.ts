@@ -6,19 +6,24 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
-// Database types
-export interface Profile {
+// REMOVED: Profile interface (no longer needed)
+
+// Member interface (updated with display_name)
+export interface Member {
   id: string
   email: string
   full_name: string | null
-  role: 'admin' | 'member'
+  display_name: string | null  // ADDED: display_name field
+  phone: string | null
+  role: string
   avatar_url: string | null
   created_at: string
   updated_at: string
 }
 
+// Updated AuthUser interface
 export interface AuthUser {
   id: string
   email: string
-  profile: Profile | null
+  member: Member | null  // CHANGED: from 'profile' to 'member'
 }
