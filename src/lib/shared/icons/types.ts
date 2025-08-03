@@ -150,7 +150,7 @@ export interface IconProps {
 /**
  * Icon Registry Interface
  */
-export interface IconRegistry {
+export type IconRegistry = {
   [K in IconName]: LucideIcon
 }
 

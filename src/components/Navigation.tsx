@@ -1,5 +1,6 @@
 // src/components/Navigation.tsx
-// Simple top navigation for Caswell County Yacht Club
+// Redesigned navigation with hamburger-everywhere approach
+// Clean, simple header with all navigation in hamburger menu
 
 'use client'
 
@@ -8,101 +9,86 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { useModal } from '@/components/modals/ModalSystem'
-import { 
-  Calendar,
-  MapPin, 
-  Target, 
-  Settings,
-  User,
-  Plus,
-  Menu,
-  X,
-  Camera,
-  Bell,
-  ChevronDown,
-  LogOut,
-  LogIn,
-  ClipboardList
-} from 'lucide-react'
+import { ICONS } from '@/lib/shared/icons'
 
 // Navigation configuration
 const navigationItems = [
-  { name: 'Calendar', href: '/calendar', icon: Calendar },
-  { name: 'Property Map', href: '/map', icon: MapPin },
-  { name: 'Hunt Logs', href: '/hunts', icon: ClipboardList },
-  { name: 'Management', href: '/management', icon: Settings }
+  { name: 'Calendar', href: '/calendar', icon: 'calendar' as const },
+  { name: 'Property Map', href: '/map', icon: 'map' as const },
+  { name: 'Hunt Logs', href: '/hunts', icon: 'hunts' as const },
 ]
 
-const managementTabs = [
-  { name: 'Trail Cameras', href: '/management/cameras', icon: Camera },
-  { name: 'Stands', href: '/management/stands', icon: Target }
+const managementItems = [
+  { name: 'Stands', href: '/management/stands', icon: 'stands' as const },
+  { name: 'Trail Cameras', href: '/management/cameras', icon: 'cameras' as const },
+  { name: 'Reports', href: '/management/reports', icon: 'analytics' as const },
 ]
-
-// Shared styling constants
-const styles = {
-  navItem: {
-    base: "flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium whitespace-nowrap",
-    active: "bg-pine-needle text-white shadow-club",
-    inactive: "text-green-100 hover:bg-pine-needle hover:text-white"
-  },
-  managementTab: {
-    base: "flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors text-sm font-medium whitespace-nowrap",
-    active: "bg-pine-needle text-white shadow-club", 
-    inactive: "text-green-200 hover:bg-pine-needle hover:text-white"
-  },
-  mobileNavItem: {
-    base: "flex items-center gap-3 px-3 py-3 rounded-lg transition-colors",
-    active: "bg-pine-needle text-white shadow-club",
-    inactive: "text-green-100 hover:bg-pine-needle hover:text-white"
-  }
-}
 
 export default function Navigation() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const [showWipBanner, setShowWipBanner] = useState(true)
-  const [managementExpanded, setManagementExpanded] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isManagementExpanded, setIsManagementExpanded] = useState(false)
   const [headerHeight, setHeaderHeight] = useState(0)
+  const [menuPosition, setMenuPosition] = useState(0)
   const headerRef = useRef<HTMLElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const hamburgerRef = useRef<HTMLButtonElement>(null)
   const pathname = usePathname()
   const { user, signOut, loading } = useAuth()
   const { showModal } = useModal()
 
-  // Computed values
-  const isManagementPage = pathname.startsWith('/management')
-  const isProduction = process.env.NODE_ENV === 'production' || 
-                       process.env.NEXT_PUBLIC_ENVIRONMENT === 'production'
-  const showMinimalNav = !user || isProduction
-  const showFullNavigation = !showMinimalNav
+  // Get icon components from registry
+  const MenuIcon = ICONS.menu
+  const CloseIcon = ICONS.close
+  const PlusIcon = ICONS.plus
+  const LoginIcon = ICONS.login
+  const LogoutIcon = ICONS.logout
+  const UserIcon = ICONS.user
+  const ChevronDownIcon = ICONS.chevronDown
+  const ChevronUpIcon = ICONS.chevronUp
 
-  // Auto-expand management if we're on a management page
+  // Measure header height and calculate menu position
   useEffect(() => {
-    if (isManagementPage) {
-      setManagementExpanded(true)
-    }
-  }, [isManagementPage])
-
-  // Reset mobile state when user changes
-  useEffect(() => {
-    if (!user) {
-      setUserMenuOpen(false)
-      setIsMobileMenuOpen(false)
-      setManagementExpanded(false)
-    }
-  }, [user])
-
-  // Measure header height dynamically
-  useEffect(() => {
-    const updateHeaderHeight = () => {
+    const updatePositions = () => {
       if (headerRef.current) {
         setHeaderHeight(headerRef.current.offsetHeight)
       }
+      
+      if (hamburgerRef.current && window.innerWidth >= 1024) {
+        const hamburgerRect = hamburgerRef.current.getBoundingClientRect()
+        const rightEdge = hamburgerRect.right
+        setMenuPosition(window.innerWidth - rightEdge)
+      }
     }
 
-    updateHeaderHeight()
-    window.addEventListener('resize', updateHeaderHeight)
-    return () => window.removeEventListener('resize', updateHeaderHeight)
-  }, [isMobileMenuOpen, managementExpanded, showWipBanner])
+    updatePositions()
+    window.addEventListener('resize', updatePositions)
+    return () => window.removeEventListener('resize', updatePositions)
+  }, [isMenuOpen])
+
+  // Close menu when route changes
+  useEffect(() => {
+    setIsMenuOpen(false)
+    setIsManagementExpanded(false)
+  }, [pathname])
+
+  // Handle outside clicks on desktop
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isMenuOpen &&
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node) &&
+        headerRef.current &&
+        !headerRef.current.contains(event.target as Node) &&
+        window.innerWidth >= 1024 // Only on desktop
+      ) {
+        closeMenu()
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isMenuOpen])
 
   // Helper functions
   const isActive = (href: string) => {
@@ -110,176 +96,124 @@ export default function Navigation() {
     return pathname.startsWith(href)
   }
 
-  const isManagementTabActive = (href: string) => {
-    return pathname === href || (href === '/management' && pathname === '/management')
-  }
-
-  const handleMobileLogin = () => {
-    setIsMobileMenuOpen(false)
-    setTimeout(() => {
-      showModal('login')
-    }, 100)
+  const closeMenu = () => {
+    setIsMenuOpen(false)
+    setIsManagementExpanded(false)
   }
 
   const handleSignOut = async () => {
     try {
       await signOut()
-      setUserMenuOpen(false)
-      setIsMobileMenuOpen(false)
-      setManagementExpanded(false)
+      closeMenu()
     } catch (error) {
       console.error('Sign out error:', error)
     }
   }
 
-  const handleLogHunt = () => {
-    showModal('hunt-form')
-    setIsMobileMenuOpen(false)
+  const handleSignIn = () => {
+    closeMenu()
+    setTimeout(() => {
+      showModal('login')
+    }, 100)
   }
 
-  const closeMobileMenu = () => setIsMobileMenuOpen(false)
+  const handleLogHunt = () => {
+    closeMenu()
+    setTimeout(() => {
+      showModal('hunt-form')
+    }, 100)
+  }
 
-  // Navigation item renderers
-  const renderNavItem = (item: typeof navigationItems[0], isMobile = false) => {
-    const Icon = item.icon
+  const toggleManagement = () => {
+    setIsManagementExpanded(!isManagementExpanded)
+  }
+
+  // Render navigation item
+  const renderNavItem = (item: typeof navigationItems[0]) => {
+    const IconComponent = ICONS[item.icon]
     const active = isActive(item.href)
-    const styleSet = isMobile ? styles.mobileNavItem : styles.navItem
     
-    if (item.name === 'Management') {
-      const buttonClass = [
-        styleSet.base,
-        managementExpanded || isManagementPage ? styleSet.active : styleSet.inactive,
-        isMobile ? 'w-full' : ''
-      ].join(' ')
-
-      return (
-        <li key={item.name}>
-          <button
-            onClick={() => setManagementExpanded(!managementExpanded)}
-            className={buttonClass}
-          >
-            <Icon size={isMobile ? 20 : 16} />
-            <span className={isMobile ? "font-medium" : ""}>{item.name}</span>
-          </button>
-        </li>
-      )
-    }
-    
-    const linkClass = [
-      styleSet.base,
-      active ? styleSet.active : styleSet.inactive
-    ].join(' ')
-
     return (
       <li key={item.name}>
         <Link
           href={item.href}
-          onClick={isMobile ? closeMobileMenu : undefined}
-          className={linkClass}
+          onClick={closeMenu}
+          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+            active
+              ? 'bg-pine-needle text-white shadow-club'
+              : 'text-green-100 hover:bg-pine-needle hover:text-white'
+          }`}
         >
-          <Icon size={isMobile ? 20 : 16} />
-          <span className={isMobile ? "font-medium" : ""}>{item.name}</span>
+          <IconComponent size={20} />
+          <span className="font-medium">{item.name}</span>
         </Link>
       </li>
     )
   }
 
-  const renderManagementTabs = (isMobile = false) => {
-    if (!managementExpanded) return null
-
-    if (isMobile) {
-      return (
-        <div className="pt-4 border-t border-pine-needle">
-          <h3 className="text-green-200 text-sm font-medium mb-2 px-3">Management</h3>
-          <ul className="space-y-1">
-            {managementTabs.map((tab) => {
-              const Icon = tab.icon
-              const active = isManagementTabActive(tab.href)
-              const linkClass = [
-                styles.mobileNavItem.base,
-                active ? styles.mobileNavItem.active : styles.mobileNavItem.inactive
-              ].join(' ')
-              
-              return (
-                <li key={tab.name}>
-                  <Link
-                    href={tab.href}
-                    onClick={closeMobileMenu}
-                    className={linkClass}
-                  >
-                    <Icon size={18} />
-                    <span className="font-medium">{tab.name}</span>
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-      )
-    }
-
+  // Render management section
+  const renderManagementSection = () => {
+    const ManagementIcon = ICONS.management
+    const ChevronIcon = isManagementExpanded ? ChevronUpIcon : ChevronDownIcon
+    
     return (
-      <div className="flex items-center">
-        <div className="w-px h-6 bg-morning-mist/30 mx-3"></div>
-        <ul className="flex items-center gap-1">
-          {managementTabs.map((tab) => {
-            const Icon = tab.icon
-            const active = isManagementTabActive(tab.href)
-            const linkClass = [
-              styles.managementTab.base,
-              active ? styles.managementTab.active : styles.managementTab.inactive
-            ].join(' ')
-            
-            return (
-              <li key={tab.name}>
-                <Link
-                  href={tab.href}
-                  className={linkClass}
-                >
-                  <Icon size={14} />
-                  <span>{tab.name}</span>
-                </Link>
-              </li>
-            )
-          })}
-        </ul>
-      </div>
+      <>
+        <li>
+          <button
+            onClick={toggleManagement}
+            className="flex items-center justify-between w-full px-4 py-3 rounded-lg transition-colors text-green-100 hover:bg-pine-needle hover:text-white"
+          >
+            <div className="flex items-center gap-3">
+              <ManagementIcon size={20} />
+              <span className="font-medium">Management</span>
+            </div>
+            <ChevronIcon size={16} />
+          </button>
+        </li>
+        
+        {isManagementExpanded && (
+          <li className="ml-4">
+            <ul className="space-y-1">
+              {managementItems.map(item => {
+                const IconComponent = ICONS[item.icon]
+                const active = isActive(item.href)
+                
+                return (
+                  <li key={item.name}>
+                    <Link
+                      href={item.href}
+                      onClick={closeMenu}
+                      className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-sm ${
+                        active
+                          ? 'bg-pine-needle text-white shadow-club'
+                          : 'text-green-200 hover:bg-pine-needle hover:text-white'
+                      }`}
+                    >
+                      <IconComponent size={16} />
+                      <span className="font-medium">{item.name}</span>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </li>
+        )}
+      </>
     )
   }
 
   return (
     <>
-      {/* Fixed Top Header Bar */}
-      <header ref={headerRef} className="fixed top-0 left-0 right-0 bg-olive-green text-white shadow-club-lg z-50">
-        
-        {/* WIP Banner */}
-        {showWipBanner && (
-          <div className="bg-muted-gold text-forest-shadow">
-            <div className="max-w-7xl mx-auto px-4 lg:px-6 py-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Bell size={16} className="text-forest-shadow" />
-                  <span className="text-sm font-medium">
-                    🚧 System under development.
-                  </span>
-                </div>
-                <button
-                  onClick={() => setShowWipBanner(false)}
-                  className="text-forest-shadow hover:text-weathered-wood"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Main Header Row */}
+      {/* Fixed Header */}
+      <header 
+        ref={headerRef} 
+        className="fixed top-0 left-0 right-0 bg-olive-green text-white shadow-club-lg z-50"
+      >
         <div className="max-w-7xl mx-auto px-4 lg:px-6">
-          <div className="flex items-center justify-between py-3">
+          <div className="flex items-center justify-between h-16">
             
             {/* Brand/Title with Logo */}
-            <Link href="/" className="hover:opacity-90 transition-opacity flex items-center gap-3">
+            <Link href="/" className="hover:opacity-90 transition-opacity flex items-center gap-3" onClick={closeMenu}>
               <div className="w-8 h-8 lg:w-12 lg:h-12 bg-morning-mist/20 rounded-lg flex items-center justify-center border border-morning-mist/30">
                 <img 
                   src="/images/club-logo.svg" 
@@ -304,162 +238,145 @@ export default function Navigation() {
               </div>
             </Link>
 
-            {/* Desktop Actions */}
-            <div className="hidden lg:flex items-center gap-4">
-              {/* Quick Hunt Log Button - only for logged in users */}
-              {user && (
+            {/* Right Side Actions */}
+            <div className="flex items-center space-x-3">
+              
+              {/* Sign In Button OR Hunt Log Button */}
+              {user ? (
                 <button
                   onClick={handleLogHunt}
-                  className="bg-burnt-orange hover:bg-clay-earth text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium"
+                  className="bg-burnt-orange hover:bg-clay-earth text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium shadow-club"
                 >
-                  <Plus size={18} />
-                  <span>Log Hunt</span>
+                  <PlusIcon size={16} />
+                  <span className="hidden sm:inline">Hunt Log</span>
                 </button>
-              )}
-              
-              {/* User Menu */}
-              {user ? (
-                <div className="relative">
-                  <button
-                    onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="flex items-center gap-2 text-green-100 hover:text-white hover:bg-pine-needle px-3 py-2 rounded-lg transition-colors"
-                  >
-                    <User size={20} />
-                    <span className="font-medium max-w-32 truncate hidden sm:block">{user.email}</span>
-                    <ChevronDown size={16} />
-                  </button>
-
-                  {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-club-lg py-1 z-50">
-                      <button
-                        onClick={handleSignOut}
-                        className="flex items-center px-4 py-2 text-sm text-weathered-wood hover:bg-morning-mist w-full text-left"
-                      >
-                        <LogOut size={16} className="mr-2" />
-                        Sign Out
-                      </button>
-                    </div>
-                  )}
-                </div>
               ) : (
                 <button
-                  onClick={() => showModal('login')}
-                  className="flex items-center gap-2 bg-burnt-orange hover:bg-clay-earth text-white px-4 py-2 rounded-lg transition-colors font-medium"
+                  onClick={handleSignIn}
+                  className="bg-pine-needle hover:bg-forest-shadow text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium"
                 >
-                  <LogIn size={18} />
+                  <LoginIcon size={16} />
                   <span>Sign In</span>
                 </button>
               )}
-            </div>
 
-            {/* Mobile Menu Toggle */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden p-2 hover:bg-pine-needle rounded-lg transition-colors"
-            >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+              {/* Hamburger Menu Button */}
+              <button
+                ref={hamburgerRef}
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="p-2 hover:bg-pine-needle rounded-lg transition-colors"
+                aria-label="Menu"
+              >
+                {isMenuOpen ? <CloseIcon size={24} /> : <MenuIcon size={24} />}
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Desktop Navigation - Only show for full navigation */}
-        {showFullNavigation && (
-          <>
-            <div className="h-px bg-morning-mist/20"></div>
-            <nav className="hidden lg:block">
-              <div className="max-w-7xl mx-auto px-4 lg:px-6">
-                <div className="py-2">
-                  <div className="flex items-center justify-between">
-                    {/* Main Navigation Items */}
-                    <ul className="flex items-center gap-1">
-                      {navigationItems.map(item => renderNavItem(item))}
-                    </ul>
-
-                    {/* Management Tabs */}
-                    {renderManagementTabs()}
-                  </div>
-                </div>
-              </div>
-            </nav>
-          </>
-        )}
-
-        {/* Orange Separator */}
+        {/* Orange Accent Border */}
         <div className="h-1 bg-burnt-orange"></div>
       </header>
 
-      {/* Mobile Navigation Menu */}
-      {isMobileMenuOpen && (
+      {/* Mobile/Desktop Hamburger Menu */}
+      {isMenuOpen && (
         <>
-          {/* Mobile Backdrop */}
+          {/* Backdrop - Mobile only */}
           <div 
             className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
-            onClick={closeMobileMenu}
+            onClick={closeMenu}
           />
           
-          {/* Mobile Menu Panel */}
+          {/* Menu Panel - Full width on mobile, positioned dropdown on desktop */}
           <div 
-            className="lg:hidden fixed left-0 right-0 bg-olive-green border-t border-pine-needle shadow-club-xl z-50 max-h-[calc(100vh-4rem)] overflow-y-auto"
-            style={{ top: `${headerHeight}px` }}
+            ref={menuRef}
+            className="fixed z-50 max-h-[calc(100vh-4rem)] overflow-y-auto
+                       left-0 right-0 lg:left-auto lg:w-80
+                       bg-olive-green border-t border-pine-needle shadow-club-xl
+                       lg:border lg:rounded-b-lg lg:border-t-0"
+            style={{ 
+              top: `${headerHeight}px`,
+              right: window.innerWidth >= 1024 ? `${menuPosition}px` : '0'
+            }}
           >
-            <div className="max-w-7xl mx-auto px-4">
-              <div className="py-4">
+            <div className="lg:max-w-none max-w-7xl mx-auto lg:mx-0">
+              <div className="p-4">
                 
-                {/* Mobile Quick Actions */}
-                <div className="mb-4 pb-4 border-b border-pine-needle">
-                  {user && (
-                    <button
-                      onClick={handleLogHunt}
-                      className="bg-burnt-orange hover:bg-clay-earth text-white px-4 py-3 rounded-lg flex items-center gap-3 transition-colors font-medium w-full mb-3"
-                    >
-                      <Plus size={20} />
-                      <span>Log Hunt</span>
-                    </button>
-                  )}
-                  
-                  {/* Mobile User Section */}
-                  {user ? (
-                    <button
-                      onClick={handleSignOut}
-                      className="flex items-center gap-3 text-green-100 hover:text-white hover:bg-pine-needle px-3 py-2 rounded-lg transition-colors w-full"
-                    >
-                      <LogOut size={20} />
-                      <span className="font-medium">Sign Out ({user.email})</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleMobileLogin}
-                      className="flex items-center gap-3 text-green-100 hover:text-white hover:bg-pine-needle px-3 py-2 rounded-lg transition-colors w-full text-left"
-                    >
-                      <LogIn size={20} />
-                      <span className="font-medium">Sign In</span>
-                    </button>
-                  )}
-                </div>
-
-                {/* Mobile Navigation Items - Only show for full navigation */}
-                {showFullNavigation && (
+                {user ? (
                   <>
-                    <ul className="space-y-1 mb-4">
-                      {navigationItems.map(item => renderNavItem(item, true))}
-                    </ul>
+                    {/* User Info Section */}
+                    <div className="mb-6 p-4 bg-pine-needle rounded-lg">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 bg-burnt-orange rounded-full flex items-center justify-center">
+                          <UserIcon size={20} className="text-white" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-white">
+                            {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Member'}
+                          </p>
+                          <p className="text-sm text-green-200">{user.email}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleSignOut}
+                        className="flex items-center gap-2 text-green-200 hover:text-white transition-colors"
+                      >
+                        <LogoutIcon size={16} />
+                        <span className="text-sm">Sign Out</span>
+                      </button>
+                    </div>
 
-                    {/* Mobile Management Tabs */}
-                    {renderManagementTabs(true)}
+                    {/* Main Navigation */}
+                    <nav className="mb-6">
+                      <ul className="space-y-2">
+                        {navigationItems.map(renderNavItem)}
+                      </ul>
+                    </nav>
+
+                    {/* Management Section */}
+                    <nav>
+                      <ul className="space-y-2">
+                        {renderManagementSection()}
+                      </ul>
+                    </nav>
+                  </>
+                ) : (
+                  <>
+                    {/* Not Signed In Menu */}
+                    <nav className="mb-6">
+                      <ul className="space-y-2">
+                        <li>
+                          <Link
+                            href="/map"
+                            onClick={closeMenu}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                              isActive('/map')
+                                ? 'bg-pine-needle text-white shadow-club'
+                                : 'text-green-100 hover:bg-pine-needle hover:text-white'
+                            }`}
+                          >
+                            <ICONS.map size={20} />
+                            <span className="font-medium">Property Map</span>
+                          </Link>
+                        </li>
+                      </ul>
+                    </nav>
+
+                    {/* Sign In Option */}
+                    <div className="pt-4 border-t border-pine-needle">
+                      <button
+                        onClick={handleSignIn}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-green-100 hover:bg-pine-needle hover:text-white w-full"
+                      >
+                        <LoginIcon size={20} />
+                        <span className="font-medium">Sign In</span>
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
             </div>
           </div>
         </>
-      )}
-
-      {/* Click outside to close user menu */}
-      {userMenuOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setUserMenuOpen(false)}
-        />
       )}
 
       {/* Dynamic Content Spacer */}
