@@ -74,7 +74,7 @@ export class HuntService {
     try {
       // Build the base hunt logs query
       let huntQuery = supabase
-        .from('hunt_logs')
+        .from('hunt_logs_with_temperature')
         .select('*')
         .order('hunt_date', { ascending: false })
         .order('created_at', { ascending: false })
