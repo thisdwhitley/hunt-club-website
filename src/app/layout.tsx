@@ -6,6 +6,7 @@ import "../styles/leaflet.css"; // Import Leaflet styles
 import "../styles/hunting-map.css"; // Import Map styles 
 import { ModalProvider } from '@/components/modals/ModalSystem'
 import Navigation from "@/components/Navigation";
+import NotificationToast from '@/components/ui/NotificationToast'
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -36,6 +37,13 @@ export default function RootLayout({
           <Navigation />
           {children}
         </ModalProvider>
+        {/* WIP Notification Toast - Non-layout-affecting overlay */}
+        <NotificationToast 
+          message="🔧 System under development"
+          showInProduction={true}
+          autoHideDuration={10000}
+          className="top-20"
+        />
       </body>
     </html>
   );
