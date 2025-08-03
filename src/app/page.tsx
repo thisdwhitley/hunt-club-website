@@ -747,7 +747,7 @@ const renderHunts = () => {
     return (
       <div className="min-h-screen bg-morning-mist">
         <div className="pt-16 px-4">
-          <div className="max-w-5xl mx-auto text-center">
+          <div className="max-w-7xl mx-auto text-center">
             {/* Logo Image */}
             <div className="mb-8">
               <img 

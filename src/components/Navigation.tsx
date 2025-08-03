@@ -255,7 +255,7 @@ export default function Navigation() {
         {/* WIP Banner */}
         {showWipBanner && (
           <div className="bg-muted-gold text-forest-shadow">
-            <div className="max-w-5xl mx-auto px-4 lg:px-6 py-3">
+            <div className="max-w-7xl mx-auto px-4 lg:px-6 py-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Bell size={16} className="text-forest-shadow" />
@@ -275,7 +275,7 @@ export default function Navigation() {
         )}
 
         {/* Main Header Row */}
-        <div className="max-w-5xl mx-auto px-4 lg:px-6">
+        <div className="max-w-7xl mx-auto px-4 lg:px-6">
           <div className="flex items-center justify-between py-3">
             
             {/* Brand/Title with Logo */}
@@ -367,7 +367,7 @@ export default function Navigation() {
           <>
             <div className="h-px bg-morning-mist/20"></div>
             <nav className="hidden lg:block">
-              <div className="max-w-5xl mx-auto px-4 lg:px-6">
+              <div className="max-w-7xl mx-auto px-4 lg:px-6">
                 <div className="py-2">
                   <div className="flex items-center justify-between">
                     {/* Main Navigation Items */}
@@ -402,7 +402,7 @@ export default function Navigation() {
             className="lg:hidden fixed left-0 right-0 bg-olive-green border-t border-pine-needle shadow-club-xl z-50 max-h-[calc(100vh-4rem)] overflow-y-auto"
             style={{ top: `${headerHeight}px` }}
           >
-            <div className="max-w-5xl mx-auto px-4">
+            <div className="max-w-7xl mx-auto px-4">
               <div className="py-4">
                 
                 {/* Mobile Quick Actions */}
