@@ -804,9 +804,38 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
   const LoginModal = () => {
     const [localEmail, setLocalEmail] = useState('')
     const [localPassword, setLocalPassword] = useState('')
-    const [localIsSignUp, setLocalIsSignUp] = useState(false)
+    // SECURITY UPDATE: Disable signup functionality for club security
+    const [localIsSignUp] = useState(false) // Always false - no signup allowed
+
+    // SECURITY UPDATE: Add forgot password state  
+    const [showForgotPassword, setShowForgotPassword] = useState(false)
+    const [resetEmail, setResetEmail] = useState('')
+    const [resetLoading, setResetLoading] = useState(false)
+    const [resetSuccess, setResetSuccess] = useState(false)
     const [localLoading, setLocalLoading] = useState(false)
     const [localError, setLocalError] = useState<string | null>(null)
+
+    // SECURITY UPDATE: Handle password reset
+    const handlePasswordReset = async (e: React.FormEvent) => {
+      e.preventDefault()
+      setLocalError(null)
+      setResetLoading(true)
+
+      try {
+        const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+          redirectTo: `${window.location.origin}/auth/reset-password`
+        })
+        
+        if (error) throw error
+        
+        setResetSuccess(true)
+        setSuccess('Password reset email sent! Check your inbox.')
+      } catch (err) {
+        setLocalError(extractErrorMessage(err))
+      } finally {
+        setResetLoading(false)
+      }
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault()
@@ -814,13 +843,9 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       setLocalError(null)
 
       try {
+        // SECURITY UPDATE: Only allow sign in, no signup
         if (localIsSignUp) {
-          const { error } = await supabase.auth.signUp({
-            email: localEmail,
-            password: localPassword,
-          })
-          if (error) throw error
-          setSuccess('Check your email for verification link!')
+          throw new Error('Account creation is disabled. Please contact your administrator.')
         } else {
           const { error } = await supabase.auth.signInWithPassword({
             email: localEmail,
@@ -837,14 +862,103 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // SECURITY UPDATE: Forgot password form
+    if (showForgotPassword) {
+      if (resetSuccess) {
+        return (
+          <div className="w-full max-w-md mx-auto text-center">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-forest-shadow">Check Your Email</h2>
+              <p className="text-weathered-wood mt-2">
+                We've sent password reset instructions to {resetEmail}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setShowForgotPassword(false)
+                setResetSuccess(false)
+                setResetEmail('')
+              }}
+              className="text-olive-green hover:text-pine-needle transition-colors"
+            >
+              Back to Sign In
+            </button>
+          </div>
+        )
+      }
+
+      return (
+        <div className="w-full max-w-md mx-auto">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-forest-shadow">Reset Password</h2>
+            <p className="text-weathered-wood mt-2">
+              Enter your email to receive reset instructions
+            </p>
+          </div>
+
+          {localError && (
+            <div className="mb-4 p-3 bg-clay-earth/10 border border-clay-earth/30 rounded-lg text-clay-earth text-sm">
+              {localError}
+            </div>
+          )}
+
+          <form onSubmit={handlePasswordReset} className="space-y-4">
+            <div>
+              <label htmlFor="reset-email" className="block text-sm font-medium text-forest-shadow mb-1">
+                Email
+              </label>
+              <input
+                id="reset-email"
+                type="email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-weathered-wood/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-olive-green/50 focus:border-olive-green"
+                required
+                disabled={resetLoading}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={resetLoading}
+              className="w-full bg-olive-green text-white py-2 px-4 rounded-lg hover:bg-pine-needle transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {resetLoading ? (
+                <span className="flex items-center justify-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Sending...</span>
+                </span>
+              ) : (
+                'Send Reset Email'
+              )}
+            </button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForgotPassword(false)
+                  setLocalError(null)
+                }}
+                className="text-sm text-olive-green hover:text-pine-needle transition-colors"
+                disabled={resetLoading}
+              >
+                Back to Sign In
+              </button>
+            </div>
+          </form>
+        </div>
+      )
+    }
+
     return (
       <div className="w-full max-w-md mx-auto">
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-forest-shadow">
-            {localIsSignUp ? 'Create Account' : 'Sign In'}
+            Sign In
           </h2>
           <p className="text-weathered-wood mt-2">
-            {localIsSignUp ? 'Join the hunting club' : 'Welcome back to the club'}
+            Welcome Back
           </p>
         </div>
 
@@ -885,6 +999,28 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
             />
           </div>
 
+          {/* SECURITY UPDATE: Forgot password link instead of signup toggle */}
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setShowForgotPassword(true)
+                setLocalError(null)
+              }}
+              className="text-sm text-olive-green hover:text-pine-needle transition-colors"
+              disabled={localLoading}
+            >
+              Forgot your password?
+            </button>
+          </div>
+
+          {/* SECURITY UPDATE: Add admin contact info for new accounts */}
+          <div className="text-center mt-4 p-3 bg-olive-green/5 border border-olive-green/20 rounded-lg">
+            <p className="text-xs text-weathered-wood">
+              Need an account? Contact your club administrator.
+            </p>
+          </div>
+
           <button
             type="submit"
             disabled={localLoading}
@@ -893,29 +1029,14 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
             {localLoading ? (
               <span className="flex items-center justify-center space-x-2">
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                <span>Processing...</span>
+                <span>Signing in...</span>
               </span>
             ) : (
-              <span>{localIsSignUp ? 'Create Account' : 'Sign In'}</span>
+              'Sign In'
             )}
           </button>
 
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setLocalIsSignUp(!localIsSignUp)
-                setLocalError(null)
-              }}
-              className="text-sm text-olive-green hover:text-pine-needle transition-colors"
-              disabled={localLoading}
-            >
-              {localIsSignUp 
-                ? 'Already have an account? Sign in'
-                : "Don't have an account? Sign up"
-              }
-            </button>
-          </div>
+        {/* Removed signup toggle - security update */}
         </form>
       </div>
     )
