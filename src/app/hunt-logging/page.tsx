@@ -174,7 +174,7 @@ export default function HuntLoggingPage() {
 
       // Insert hunt log
       const huntData = {
-        member_id: user.id,
+        member_id: formData.member_id || user.id,
         stand_id: formData.stand_id,
         hunt_date: formData.hunt_date,
         start_time: formData.start_time || null,
@@ -229,6 +229,7 @@ export default function HuntLoggingPage() {
       setIsLoading(false)
     }
   }
+
 
   const handleFormCancel = () => {
     setShowForm(false)

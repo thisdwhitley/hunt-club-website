@@ -35,6 +35,14 @@
 
 ---
 
+### 2025-08-11: Enable Cross-User Hunt Logging
+- Modified 'Users can insert their own hunt logs' policy  
+- Added: auth.uid() IS NOT NULL condition
+- Allows authenticated users to log hunts for any member
+- Enables hunt logging user selection feature
+
+---
+
 ### 2025-08-01: Authentication System Cleanup Migration
 
 **Type**: Schema Modification + Table Removal  

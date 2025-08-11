@@ -108,6 +108,7 @@ export const SightingSchema = z.object({
 export const HuntFormSchema = z.object({
   hunt_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Please select a valid date'),
   stand_id: z.string().uuid('Please select a hunting stand').min(1, 'Stand selection is required'),
+  member_id: z.string().uuid().optional(),
   start_time: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal('')),
   end_time: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal('')),
   had_harvest: z.boolean().default(false),
