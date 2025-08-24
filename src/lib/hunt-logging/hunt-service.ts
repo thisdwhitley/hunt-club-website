@@ -139,6 +139,12 @@ export class HuntService {
         supabase.from('hunt_sightings').select('*').in('hunt_log_id', huntIds)
       ])
 
+      // ADD THIS DEBUG BLOCK RIGHT HERE:
+      console.log('🔍 HUNT SERVICE SIGHTINGS DEBUG')
+      console.log('🔍 Hunt IDs:', huntIds)
+      console.log('🔍 Sightings from database:', sightingsResult.data)
+      console.log('🔍 Sightings count:', sightingsResult.data?.length || 0)
+
       // Create lookup maps for efficient joining
       const membersMap = new Map((membersResult.data || []).map(member => [member.id, member]))
       const standsMap = new Map((standsResult.data || []).map(stand => [stand.id, stand]))
@@ -161,10 +167,17 @@ export class HuntService {
         sightingsMap.get(sighting.hunt_log_id).push(sighting)
       })
 
+      console.log('🔍 SightingsMap keys:', Array.from(sightingsMap.keys()))
+      console.log('🔍 SightingsMap:', sightingsMap)
+
       // Combine all data - SIMPLIFIED: no fallback logic needed
       const enrichedHunts = hunts.map(hunt => {
         const memberData = membersMap.get(hunt.member_id)
-        
+        const huntSightings = sightingsMap.get(hunt.id) || []
+  
+        // ADD THIS DEBUG LINE:
+        console.log(`🔍 Hunt ${hunt.id} (${memberData?.display_name}): looking for sightings, found ${huntSightings.length}`)
+
         // Create enriched member data with display_name
         const enrichedMember = memberData ? {
           ...memberData,
@@ -176,7 +189,8 @@ export class HuntService {
           member: enrichedMember,
           stand: standsMap.get(hunt.stand_id) || null,
           harvests: harvestsMap.get(hunt.id) || [],
-          sightings: sightingsMap.get(hunt.id) || []
+          // sightings: sightingsMap.get(hunt.id) || []
+          sightings: huntSightings  // This should now have the sightings
         }
       })
 
