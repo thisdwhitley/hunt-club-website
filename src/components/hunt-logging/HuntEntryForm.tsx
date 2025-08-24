@@ -94,25 +94,49 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
     }
   })
 
+  // useEffect(() => {
+  //   const loadMembers = async () => {
+  //     try {
+  //       const supabase = createClient()
+  //       const { data } = await supabase
+  //         .from('members')
+  //         .select('id, email, full_name, display_name')  // Get both display_name and full_name
+  //         .order('display_name')
+        
+  //       setMembers(data || [])
+        
+  //       if (!selectedHunter && user?.id) {
+  //         setSelectedHunter(user.id)
+  //       }
+  //     } catch (error) {
+  //       console.error('Error loading members:', error)
+  //     }
+  //   }
+
+  //   loadMembers()
+  // }, [user, selectedHunter])
+
   useEffect(() => {
     const loadMembers = async () => {
       try {
         const supabase = createClient()
         const { data } = await supabase
           .from('members')
-          .select('id, email, full_name, display_name')  // Get both display_name and full_name
+          .select('id, email, full_name, display_name')
           .order('display_name')
         
+        console.log('🎯 Loaded members from database:', data)
         setMembers(data || [])
         
         if (!selectedHunter && user?.id) {
+          console.log('🎯 Setting initial selectedHunter to user.id:', user.id)
           setSelectedHunter(user.id)
         }
       } catch (error) {
         console.error('Error loading members:', error)
       }
     }
-
+    
     loadMembers()
   }, [user, selectedHunter])
 
@@ -181,6 +205,9 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
 
   const handleSubmitHunt = async () => {
     console.log('=== handleSubmitHunt called ===')
+    console.log('🎯 handleSubmitHunt - selectedHunter:', selectedHunter)
+    console.log('🎯 handleSubmitHunt - members list:', members)
+    
     const isValid = await trigger(['hunt_date', 'stand_id'])
     if (isValid) {
       console.log('=== Form is valid ===')
@@ -188,6 +215,17 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
         ...getValues(),
         member_id: selectedHunter
       }
+      
+    console.log('🎯 formData being sent to onSubmit:', formData)
+    console.log('🎯 formData.member_id specifically:', formData.member_id)
+
+    // const isValid = await trigger(['hunt_date', 'stand_id'])
+    // if (isValid) {
+    //   console.log('=== Form is valid ===')
+    //   const formData = {
+    //     ...getValues(),
+    //     member_id: selectedHunter
+    //   }
       
       // Store submitted data and show success BEFORE submitting
       setSubmittedHuntData({
@@ -270,7 +308,13 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
           <label className="block text-xs text-weathered-wood mb-1">Log hunt for:</label>
           <select
             value={selectedHunter}
-            onChange={(e) => setSelectedHunter(e.target.value)}
+            onChange={(e) => {
+              console.log('🎯 Dropdown changed to:', e.target.value)
+              const selectedMember = members.find(m => m.id === e.target.value)
+              console.log('🎯 Selected member:', selectedMember)
+              setSelectedHunter(e.target.value)
+            }}
+
             className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-sm"
           >
             {members.map(member => (

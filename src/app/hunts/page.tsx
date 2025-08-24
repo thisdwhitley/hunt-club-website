@@ -58,6 +58,12 @@ export default function HuntManagementPage() {
         huntService.getHuntStats()
       ])
       
+    // ADD THIS DEBUG LOG:
+    console.log('🔍 Loaded hunts data:', huntsData)
+    huntsData.forEach(hunt => {
+      console.log(`🔍 Hunt ${hunt.hunt_date} by ${hunt.member?.display_name}: ${hunt.sightings?.length || 0} sightings`, hunt.sightings)
+    })
+
       setHunts(huntsData)
       setStats(statsData)
     } catch (err) {
