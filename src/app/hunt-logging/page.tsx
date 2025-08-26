@@ -1,3 +1,6 @@
+// NOTE: This page is not actively used. Users log hunts via the "+Hunt Log" 
+// modal in the navigation and view hunts on the /hunts page.
+
 'use client'
 
 // src/app/hunt-logging/page.tsx
