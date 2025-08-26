@@ -6,6 +6,7 @@
 import React from 'react'
 import { HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
 import { getTemperatureContext, getWeatherQuality } from '@/lib/hunt-logging/temperature-utils' // NEW IMPORT
+import { formatDate, formatHuntDate, formatTime } from '@/lib/utils/date'
 import { 
   Calendar,
   MapPin,
@@ -99,7 +100,8 @@ const HuntCard: React.FC<HuntCardProps> = ({
           <div className="flex items-center space-x-2">
             <Calendar className="w-4 h-4 text-weathered-wood" />
             <span className="font-medium text-forest-shadow">
-              {new Date(hunt.hunt_date).toLocaleDateString()}
+              {/* {new Date(hunt.hunt_date).toLocaleDateString()} */}
+              {formatHuntDate(hunt.hunt_date)}
             </span>
           </div>
           <div className="flex items-center space-x-2">
@@ -185,7 +187,8 @@ const HuntCard: React.FC<HuntCardProps> = ({
             <Calendar className="w-4 h-4 mr-2 text-weathered-wood" />
             <div>
               <div className="text-sm font-medium text-forest-shadow">
-                {new Date(hunt.hunt_date).toLocaleDateString()}
+                {/* {new Date(hunt.hunt_date).toLocaleDateString()} */}
+                {formatHuntDate(hunt.hunt_date)}
               </div>
               {hunt.hunt_type && (
                 <div className="text-xs text-weathered-wood">{hunt.hunt_type}</div>
@@ -364,7 +367,8 @@ const HuntCard: React.FC<HuntCardProps> = ({
             </div>
             <p className="text-sm text-weathered-wood flex items-center">
               <Calendar className="w-4 h-4 mr-1" />
-              {new Date(hunt.hunt_date).toLocaleDateString()}
+              {/* {new Date(hunt.hunt_date).toLocaleDateString()} */}
+              {formatHuntDate(hunt.hunt_date)}
             </p>
           </div>
         </div>

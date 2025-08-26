@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { huntService, type HuntWithDetails, type HuntStats, type HuntFilters } from '@/lib/hunt-logging/hunt-service'
 import { getTemperatureContext } from '@/lib/hunt-logging/temperature-utils' // NEW IMPORT
 import HuntDataManagement from '@/components/hunt-logging/HuntDataManagement'
+import { formatDate, formatHuntDate, formatTime } from '@/lib/utils/date'
 import { 
   Target, 
   Calendar, 
@@ -154,7 +155,8 @@ export default function HuntManagementPage() {
                       <div className="flex items-center space-x-2">
                         <Calendar className="w-4 h-4 text-weathered-wood" />
                         <span className="font-medium text-forest-shadow">
-                          {new Date(hunt.hunt_date).toLocaleDateString()}
+                          {/* {new Date(hunt.hunt_date).toLocaleDateString()} */}
+                          {formatHuntDate(hunt.hunt_date)}
                         </span>
                       </div>
                       {(hunt.had_harvest || hunt.harvest_count > 0) && (

@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import HuntEntryForm from '@/components/hunt-logging/HuntEntryForm'
 import { type HuntFormData } from '@/lib/hunt-logging/hunt-validation'
+import { formatDate } from '@/lib/utils/date'
 
 // ===========================================
 // TYPES & INTERFACES
@@ -208,7 +209,8 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       <div>
         <h2 className="text-lg font-bold text-forest-shadow">Hunt Logged Successfully!</h2>
         <p className="text-sm text-weathered-wood mt-1">
-          {data?.hunt_date ? new Date(data.hunt_date).toLocaleDateString() : ''} • {data?.stand_name}
+          {/* {data?.hunt_date ? new Date(data.hunt_date).toLocaleDateString() : ''} • {data?.stand_name} */}
+          {data?.hunt_date ? formatDate(data.hunt_date) : ''} • {data?.stand_name}
         </p>
       </div>
 
@@ -679,7 +681,8 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
                     <span>Type: {stand.type || 'Unknown'}</span>
                     <span>Used: {stand.hunt_count || 0} times</span>
                     {stand.last_used && (
-                      <span>Last: {new Date(stand.last_used).toLocaleDateString()}</span>
+                      // <span>Last: {new Date(stand.last_used).toLocaleDateString()}</span>
+                      <span>Last: {formatDate(stand.last_used)}</span>
                     )}
                   </div>
                 </div>
@@ -713,7 +716,8 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
                   <div className="flex items-center space-x-2 mb-1">
                     <Calendar className="w-4 h-4 text-muted-gold" />
                     <h4 className="font-medium text-forest-shadow">
-                      {new Date(hunt.hunt_date).toLocaleDateString()}
+                      {/* {new Date(hunt.hunt_date).toLocaleDateString()} */}
+                      {formatDate(hunt.hunt_date)}
                     </h4>
                     <span className="text-sm text-weathered-wood">
                       {hunt.hunt_type || 'AM'}
@@ -775,7 +779,8 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
                     </h4>
                   </div>
                   <div className="text-sm text-weathered-wood mb-1">
-                    {sighting.stand_name} • {new Date(sighting.hunt_date).toLocaleDateString()}
+                    {/* {sighting.stand_name} • {new Date(sighting.hunt_date).toLocaleDateString()} */}
+                    {sighting.stand_name} • {formatDate(sighting.hunt_date)}
                     {sighting.time_observed && ` • ${sighting.time_observed}`}
                   </div>
                   {sighting.behavior && (
@@ -817,7 +822,8 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
                     </h4>
                   </div>
                   <div className="text-sm text-weathered-wood mb-1">
-                    {harvest.hunt_logs?.stands?.name || 'Unknown Stand'} • {new Date(harvest.hunt_logs?.hunt_date || harvest.created_at).toLocaleDateString()}
+                    {harvest.hunt_logs?.stands?.name || 'Unknown Stand'} • {formatDate(harvest.hunt_logs?.hunt_date || harvest.created_at)}
+                    {/* {harvest.hunt_logs?.stands?.name || 'Unknown Stand'} • {new Date(harvest.hunt_logs?.hunt_date || harvest.created_at).toLocaleDateString()} */}
                   </div>
                   <div className="flex items-center space-x-4 text-sm text-weathered-wood">
                     {harvest.estimated_weight && (

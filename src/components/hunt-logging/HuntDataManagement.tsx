@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react'
 import { huntService, type HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
 import { getTemperatureContext, getPrimaryTemperatureExplanation, getTemperatureRange } from '@/lib/hunt-logging/temperature-utils' // NEW IMPORTS
 import HuntCard from './HuntCard'
+import { formatDate, formatHuntDate, formatTime } from '@/lib/utils/date'
 import { 
   Table, 
   Trash2, 
@@ -85,7 +86,8 @@ const HuntDetailsModal: React.FC<{
         <div className="flex items-center justify-between p-6 border-b border-weathered-wood/20">
           <h2 className="text-xl font-semibold text-forest-shadow flex items-center">
             <Eye className="w-6 h-6 mr-2 text-olive-green" />
-            Hunt Details - {new Date(hunt.hunt_date).toLocaleDateString()}
+            {/* Hunt Details - {new Date(hunt.hunt_date).toLocaleDateString()} */}
+            Hunt Details - {formatHuntDate(hunt.hunt_date)}
           </h2>
           <button
             onClick={onClose}
@@ -108,7 +110,8 @@ const HuntDetailsModal: React.FC<{
                   <Calendar className="w-5 h-5 mr-3 text-olive-green" />
                   <div>
                     <span className="font-medium text-forest-shadow">Date:</span>
-                    <span className="ml-2 text-weathered-wood">{new Date(hunt.hunt_date).toLocaleDateString()}</span>
+                    {/* <span className="ml-2 text-weathered-wood">{new Date(hunt.hunt_date).toLocaleDateString()}</span> */}
+                    <span className="ml-2 text-weathered-wood">{formatHuntDate(hunt.hunt_date)}</span>
                   </div>
                 </div>
 
@@ -491,13 +494,15 @@ const HuntDetailsModal: React.FC<{
               <div>
                 <span className="text-weathered-wood">Created:</span>
                 <span className="ml-2 font-medium text-forest-shadow">
-                  {new Date(hunt.created_at).toLocaleString()}
+                  {/* {new Date(hunt.created_at).toLocaleString()} */}
+                  {formatHuntDate(hunt.created_at, { style: 'full' })}
                 </span>
               </div>
               <div>
                 <span className="text-weathered-wood">Last Updated:</span>
                 <span className="ml-2 font-medium text-forest-shadow">
-                  {new Date(hunt.updated_at).toLocaleString()}
+                  {/* {new Date(hunt.updated_at).toLocaleString()} */}
+                  {formatHuntDate(hunt.updated_at, { style: 'full' })}
                 </span>
               </div>
             </div>

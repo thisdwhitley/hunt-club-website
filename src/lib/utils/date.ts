@@ -30,8 +30,8 @@ export function parseDBDate(dateString: string | null): Date | null {
  * Format options for date display
  */
 export interface FormatDateOptions {
-  /** Display style: 'full', 'short', or 'relative' */
-  style?: 'full' | 'short' | 'relative'
+  /** Display style: 'full', 'short', 'relative', or 'hunt' */
+  style?: 'full' | 'short' | 'relative' | 'hunt'
   /** Include year in display */
   includeYear?: boolean
 }
@@ -57,6 +57,25 @@ export function formatDate(
   const now = new Date()
   const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
   
+  // UPDATED: Hunt-focused formatting - only Today/Yesterday, then actual dates
+  if (style === 'hunt') {
+    // For anything else, show the actual date
+    const formatOptions: Intl.DateTimeFormatOptions = {
+      weekday: 'short',
+      month: 'short', 
+      day: 'numeric'
+    }
+    if (includeYear || date.getFullYear() !== now.getFullYear()) {
+      formatOptions.year = 'numeric'
+    }
+    const dateString = date.toLocaleDateString('en-US', formatOptions)
+
+    if (diffInDays === 0) return `Today (${dateString})`
+    if (diffInDays === 1) return `Yesterday (${dateString})`
+
+    return dateString
+  }
+
   // Relative formatting for recent dates
   if (style === 'relative' || (style === 'short' && Math.abs(diffInDays) < 7)) {
     if (diffInDays === 0) return 'Today'
@@ -97,7 +116,7 @@ export function formatDate(
  * @returns Formatted date string optimized for hunt context
  */
 export function formatHuntDate(dateString: string | null): string {
-  return formatDate(dateString, { style: 'short', includeYear: false })
+  return formatDate(dateString, { style: 'hunt', includeYear: false })
 }
 
 /**
