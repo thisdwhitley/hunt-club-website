@@ -5,6 +5,7 @@
 // Fixed version of your superior design
 
 import React, { useState } from 'react'
+import { formatDate } from '@/lib/utils/date'
 import { 
   MapPin, 
   Eye, 
@@ -57,11 +58,11 @@ const formatHeight = (feet: number | null): string => {
   return `${feet} ft`
 }
 
-const formatDate = (dateString: string | null): string => {
-  if (!dateString) return 'Never'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
+// const formatDate = (dateString: string | null): string => {
+//   if (!dateString) return 'Never'
+//   const date = new Date(dateString)
+//   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+// }
 
 interface StandCardProps {
   stand: Stand

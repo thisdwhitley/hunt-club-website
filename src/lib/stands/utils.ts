@@ -3,6 +3,7 @@
 
 import { Stand, StandFilters, StandSort, StandCardData } from './types'
 import { STAND_TYPES, TIME_OF_DAY_OPTIONS, FOOD_SOURCE_OPTIONS, PERFORMANCE_THRESHOLDS } from './constants'
+import { formatDate } from '@/lib/utils/date'
 
 /**
  * Format stand data for display in cards/lists
@@ -145,24 +146,24 @@ export function formatCapacity(capacity: number | null): string {
   return capacity === 1 ? '1 hunter' : `${capacity} hunters`
 }
 
-/**
- * Format date for display
- */
-export function formatDate(dateString: string | null): string {
-  if (!dateString) return 'Never'
+// /**
+//  * Format date for display
+//  */
+// export function formatDate(dateString: string | null): string {
+//   if (!dateString) return 'Never'
   
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+//   const date = new Date(dateString)
+//   const now = new Date()
+//   const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
   
-  if (diffInDays === 0) return 'Today'
-  if (diffInDays === 1) return 'Yesterday'
-  if (diffInDays < 7) return `${diffInDays} days ago`
-  if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`
-  if (diffInDays < 365) return `${Math.floor(diffInDays / 30)} months ago`
+//   if (diffInDays === 0) return 'Today'
+//   if (diffInDays === 1) return 'Yesterday'
+//   if (diffInDays < 7) return `${diffInDays} days ago`
+//   if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`
+//   if (diffInDays < 365) return `${Math.floor(diffInDays / 30)} months ago`
   
-  return date.toLocaleDateString()
-}
+//   return date.toLocaleDateString()
+// }
 
 /**
  * Filter stands based on criteria

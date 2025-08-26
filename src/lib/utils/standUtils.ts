@@ -1,5 +1,6 @@
 // src/lib/utils/standUtils.ts
 import type { StandInsert, HuntingSeason, StandStyle, StandCondition } from '@/lib/types/database';
+import { formatDate } from '@/lib/utils/date'
 
 // GPX Waypoint interface
 export interface GPXWaypoint {
@@ -79,22 +80,22 @@ export const waypointToStand = (waypoint: GPXWaypoint): StandInsert => {
   };
 };
 
-// Format date for display
-export const formatLastUsed = (dateString?: string | null): string => {
-  if (!dateString) return 'Never';
+// // Format date for display
+// export const formatLastUsed = (dateString?: string | null): string => {
+//   if (!dateString) return 'Never';
   
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+//   const date = new Date(dateString);
+//   const now = new Date();
+//   const diffTime = Math.abs(now.getTime() - date.getTime());
+//   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-  return `${Math.floor(diffDays / 365)} years ago`;
-};
+//   if (diffDays === 0) return 'Today';
+//   if (diffDays === 1) return 'Yesterday';
+//   if (diffDays < 7) return `${diffDays} days ago`;
+//   if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+//   if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+//   return `${Math.floor(diffDays / 365)} years ago`;
+// };
 
 // Format success rate
 export const formatSuccessRate = (rate?: number | null): string => {
@@ -244,7 +245,10 @@ export const commonQueries = [
 export const standUtils = {
   parseGPXFile,
   waypointToStand,
-  formatLastUsed,
+  formatLastUsed: (dateString: string | null): string => {
+    if (!dateString) return 'Never'
+    return formatDate(dateString) // Use centralized utility
+  },
   formatSuccessRate,
   getSeasonInfo,
   getConditionInfo,

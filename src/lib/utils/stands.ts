@@ -2,6 +2,7 @@
 // Utility functions for stand management
 
 import { Stand } from '@/lib/database/stands'
+import { formatDate } from '@/lib/utils/date'
 
 /**
  * Calculate distance between two coordinates using Haversine formula
@@ -59,24 +60,29 @@ export function getUsageLevel(seasonHunts: number): 'high' | 'medium' | 'low' | 
   return 'unused'
 }
 
-/**
- * Format last used date in human-readable format
- */
+// /**
+//  * Format last used date in human-readable format
+//  */
+// export function formatLastUsed(dateString: string | null): string {
+//   if (!dateString) return 'Never'
+  
+//   const date = new Date(dateString)
+//   const now = new Date()
+//   const diffTime = Math.abs(now.getTime() - date.getTime())
+//   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  
+//   if (diffDays === 0) return 'Today'
+//   if (diffDays === 1) return 'Yesterday'
+//   if (diffDays < 7) return `${diffDays} days ago`
+//   if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
+//   if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`
+//   return `${Math.floor(diffDays / 365)} years ago`
+// }
 export function formatLastUsed(dateString: string | null): string {
   if (!dateString) return 'Never'
-  
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffTime = Math.abs(now.getTime() - date.getTime())
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  
-  if (diffDays === 0) return 'Today'
-  if (diffDays === 1) return 'Yesterday'
-  if (diffDays < 7) return `${diffDays} days ago`
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`
-  return `${Math.floor(diffDays / 365)} years ago`
+  return formatDate(dateString) // Use centralized utility
 }
+
 
 /**
  * Format walking time in human-readable format

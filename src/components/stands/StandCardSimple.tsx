@@ -4,6 +4,7 @@
 // Simplified StandCard without zod dependencies - for immediate testing
 
 import React from 'react'
+import { formatDate } from '@/lib/utils/date'
 import { 
   MapPin, 
   Eye, 
@@ -149,19 +150,19 @@ function formatDistance(yards: number | null): string {
   return `${Math.round(yards / 10) * 10} yds`
 }
 
-function formatDate(dateString: string | null): string {
-  if (!dateString) return 'Never'
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+// function formatDate(dateString: string | null): string {
+//   if (!dateString) return 'Never'
+//   const date = new Date(dateString)
+//   const now = new Date()
+//   const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
   
-  if (diffInDays === 0) return 'Today'
-  if (diffInDays === 1) return 'Yesterday'
-  if (diffInDays < 7) return `${diffInDays} days ago`
-  if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`
+//   if (diffInDays === 0) return 'Today'
+//   if (diffInDays === 1) return 'Yesterday'
+//   if (diffInDays < 7) return `${diffInDays} days ago`
+//   if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`
   
-  return date.toLocaleDateString()
-}
+//   return date.toLocaleDateString()
+// }
 
 function getPerformanceRating(successRate: number) {
   if (successRate >= 25) return { rating: 'excellent', color: '#059669', label: 'Excellent' }
