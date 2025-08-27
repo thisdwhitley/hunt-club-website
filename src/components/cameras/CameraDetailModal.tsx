@@ -5,6 +5,7 @@
 
 import React from 'react'
 import { X, Camera, MapPin, Calendar, Settings, Battery, Signal, HardDrive, Zap, Images, AlertTriangle, Navigation, Edit3 } from 'lucide-react'
+import { formatDate } from '@/lib/utils/date'
 import type { CameraWithStatus } from '@/lib/cameras/types'
 
 // Hunting club color constants
@@ -25,14 +26,14 @@ interface CameraDetailModalProps {
 
 export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: CameraDetailModalProps) {
   // Helper functions
-  const formatDate = (dateString: string | null): string => {
-    if (!dateString) return 'Not set'
-    return new Date(dateString).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    })
-  }
+  // const formatDate = (dateString: string | null): string => {
+  //   if (!dateString) return 'Not set'
+  //   return new Date(dateString).toLocaleDateString('en-US', { 
+  //     year: 'numeric', 
+  //     month: 'long', 
+  //     day: 'numeric' 
+  //   })
+  // }
 
   const formatDateTime = (dateString: string | null): string => {
     if (!dateString) return 'Not set'

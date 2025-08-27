@@ -12,6 +12,7 @@
 //   * Full: All data with clear report data timestamps and freshness indicators
 
 import React from 'react'
+import { formatDate, formatHuntDate } from '@/lib/utils/date'
 import { 
   MapPin, 
   Camera, 
@@ -70,19 +71,19 @@ const tealSquareStyle = {
   // boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
 }
 
-// Helper functions
-const formatDate = (dateString: string | null): string => {
-  if (!dateString) return 'Never'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
+// // Helper functions
+// const formatDate = (dateString: string | null): string => {
+//   if (!dateString) return 'Never'
+//   const date = new Date(dateString)
+//   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+// }
 
-const formatDaysAgo = (days: number | null): string => {
-  if (days === null) return 'Unknown'
-  if (days === 0) return 'Today'
-  if (days === 1) return '1 day ago'
-  return `${days} days ago`
-}
+// const formatDaysAgo = (days: number | null): string => {
+//   if (days === null) return 'Unknown'
+//   if (days === 0) return 'Today'
+//   if (days === 1) return '1 day ago'
+//   return `${days} days ago`
+// }
 
 const formatStorageSpace = (mb: number | null): string => {
   if (!mb) return 'Unknown'
