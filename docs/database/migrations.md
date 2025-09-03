@@ -532,3 +532,34 @@ Enhanced Camera Management System Migration (see camera-system-implementation.md
 - Renamed columns: stand_style → type, best_time_of_day → time_of_day
 - Ready for new component architecture
 
+
+---
+
+### 2025-09-03: Database Security Fixes
+
+**Type**: Security Enhancement  
+**Affected Items**: 17 functions, 1 view, 2 tables (dropped)  
+**Breaking Changes**: No  
+**Rollback Available**: Yes (simple function modifications)
+
+**Purpose**: Eliminate all Supabase Security Advisor warnings by implementing proper security practices.
+
+**Changes Made**:
+- **Dropped**: `trail_cameras_backup`, `profiles_backup` tables
+- **Modified**: Removed `SECURITY DEFINER` from `hunt_logs_with_temperature` view  
+- **Enhanced**: Added `SET search_path = 'public'` to all 17 database functions
+- **Configured**: Reduced OTP timeout to 60 minutes
+
+**Files Modified**:
+- supabase/schema.sql (exported updated schema)
+- docs/database/migrations.md (this entry)
+- docs/database/migrations/2025-09-03-security-fixes.md (detailed log)
+
+**Verification Steps**:
+- [x] Security warnings eliminated (except cached dashboard display)
+- [x] Database functions preserved existing functionality
+- [ ] Web application testing completed
+- [ ] Smart temperature view working correctly
+
+**Claude Context**: Include this migration when asking Claude about database security, function search paths, or hunt temperature display issues.
+

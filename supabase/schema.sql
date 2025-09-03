@@ -157,6 +157,7 @@ ALTER TYPE "public"."wind_direction" OWNER TO "postgres";
 
 CREATE FUNCTION "public"."backfill_hunt_weather_data"() RETURNS TABLE("updated_hunts" integer)
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 DECLARE
   update_count INTEGER;
@@ -246,6 +247,7 @@ ALTER FUNCTION "public"."backfill_hunt_weather_data"() OWNER TO "postgres";
 
 CREATE FUNCTION "public"."backfill_legal_hunting_times"() RETURNS TABLE("updated_count" integer)
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 DECLARE
   update_count INTEGER;
@@ -276,6 +278,7 @@ ALTER FUNCTION "public"."backfill_legal_hunting_times"() OWNER TO "postgres";
 
 CREATE FUNCTION "public"."calculate_activity_score"("images_added_today" integer, "avg_images_per_day" numeric DEFAULT 50.0) RETURNS integer
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 DECLARE
   score integer;
@@ -300,6 +303,7 @@ ALTER FUNCTION "public"."calculate_activity_score"("images_added_today" integer,
 
 CREATE FUNCTION "public"."calculate_activity_trend"("current_images" integer, "previous_images" integer, "days_back" integer DEFAULT 7) RETURNS "text"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 DECLARE
   trend text := 'stable';
@@ -333,6 +337,7 @@ ALTER FUNCTION "public"."calculate_activity_trend"("current_images" integer, "pr
 
 CREATE FUNCTION "public"."calculate_legal_hunting_times"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
   -- Calculate legal hunting start time (30 minutes before sunrise)
@@ -357,6 +362,7 @@ ALTER FUNCTION "public"."calculate_legal_hunting_times"() OWNER TO "postgres";
 
 CREATE FUNCTION "public"."calculate_weather_quality_score"("weather_data" "jsonb") RETURNS TABLE("quality_score" integer, "missing_fields" "text"[])
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 DECLARE
   score integer := 100;
@@ -396,6 +402,7 @@ ALTER FUNCTION "public"."calculate_weather_quality_score"("weather_data" "jsonb"
 
 CREATE FUNCTION "public"."detect_camera_location_change"("current_coordinates" "text", "previous_coordinates" "text", "threshold_meters" numeric DEFAULT 50.0) RETURNS TABLE("changed" boolean, "distance_meters" numeric)
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 DECLARE
   distance numeric;
@@ -435,6 +442,7 @@ ALTER FUNCTION "public"."detect_camera_location_change"("current_coordinates" "t
 
 CREATE FUNCTION "public"."detect_missing_cameras"("check_date" "date" DEFAULT CURRENT_DATE) RETURNS integer
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 DECLARE
   missing_count integer = 0;
@@ -496,6 +504,7 @@ ALTER FUNCTION "public"."detect_missing_cameras"("check_date" "date") OWNER TO "
 
 CREATE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
   INSERT INTO public.members (
@@ -520,6 +529,7 @@ ALTER FUNCTION "public"."handle_new_user"() OWNER TO "postgres";
 
 CREATE FUNCTION "public"."handle_updated_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
     NEW.updated_at = NOW();
@@ -536,6 +546,7 @@ ALTER FUNCTION "public"."handle_updated_at"() OWNER TO "postgres";
 
 CREATE FUNCTION "public"."interpolate_dawn_dusk_temps"("sunrise_time" time without time zone, "sunset_time" time without time zone, "tempmin" numeric, "tempmax" numeric, "current_temp" numeric) RETURNS TABLE("temp_dawn" numeric, "temp_dusk" numeric)
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 DECLARE
   dawn_temp numeric;
@@ -561,6 +572,7 @@ ALTER FUNCTION "public"."interpolate_dawn_dusk_temps"("sunrise_time" time withou
 
 CREATE FUNCTION "public"."update_camera_alert_status"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
   -- Reset alert status
@@ -618,6 +630,7 @@ ALTER FUNCTION "public"."update_camera_alert_status"() OWNER TO "postgres";
 
 CREATE FUNCTION "public"."update_hunt_logs_weather"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 DECLARE
   hunt_record RECORD;
@@ -702,6 +715,7 @@ ALTER FUNCTION "public"."update_hunt_logs_weather"() OWNER TO "postgres";
 
 CREATE FUNCTION "public"."update_stand_activity_on_hunt"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
     -- Only update if hunt has a stand assigned
@@ -751,6 +765,7 @@ ALTER FUNCTION "public"."update_stand_activity_on_hunt"() OWNER TO "postgres";
 
 CREATE FUNCTION "public"."update_stand_stats_from_hunt"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
     -- Handle INSERT
@@ -839,6 +854,7 @@ ALTER FUNCTION "public"."update_stand_stats_from_hunt"() OWNER TO "postgres";
 
 CREATE FUNCTION "public"."update_updated_at_column"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
     NEW.updated_at = now();
@@ -855,6 +871,7 @@ ALTER FUNCTION "public"."update_updated_at_column"() OWNER TO "postgres";
 
 CREATE FUNCTION "public"."validate_coordinates"("coordinates" "text") RETURNS boolean
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
   -- Check format: "lat,lng" with valid numeric values
@@ -1323,6 +1340,13 @@ CREATE VIEW "public"."hunt_logs_with_temperature" AS
 ALTER VIEW "public"."hunt_logs_with_temperature" OWNER TO "postgres";
 
 --
+-- Name: VIEW "hunt_logs_with_temperature"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON VIEW "public"."hunt_logs_with_temperature" IS 'Hunt logs enhanced with smart temperature display: AM=dawn, PM=dusk, All Day=average. Includes weather context and availability flags.';
+
+
+--
 -- Name: hunt_sightings; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -1398,28 +1422,11 @@ CREATE TABLE "public"."members" (
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
     "display_name" "text",
-    CONSTRAINT "members_role_check" CHECK (("role" = ANY (ARRAY['admin'::"text", 'member'::"text"])))
+    CONSTRAINT "members_role_check" CHECK (("role" = ANY (ARRAY['admin'::"text", 'member'::"text", 'guest'::"text", 'commodore'::"text"])))
 );
 
 
 ALTER TABLE "public"."members" OWNER TO "postgres";
-
---
--- Name: profiles_backup; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE "public"."profiles_backup" (
-    "id" "uuid",
-    "email" "text",
-    "full_name" "text",
-    "role" "text",
-    "avatar_url" "text",
-    "created_at" timestamp with time zone,
-    "updated_at" timestamp with time zone
-);
-
-
-ALTER TABLE "public"."profiles_backup" OWNER TO "postgres";
 
 --
 -- Name: property_boundaries; Type: TABLE; Schema: public; Owner: postgres
@@ -1532,30 +1539,6 @@ COMMENT ON COLUMN "public"."stands"."last_harvest_by" IS 'Member who had the las
 
 COMMENT ON COLUMN "public"."stands"."success_rate" IS 'Percentage of hunts that resulted in harvest (total_harvests/total_hunts * 100)';
 
-
---
--- Name: trail_cameras_backup; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE "public"."trail_cameras_backup" (
-    "id" "uuid",
-    "name" character varying(100),
-    "description" "text",
-    "latitude" numeric(10,8),
-    "longitude" numeric(11,8),
-    "brand" character varying(50),
-    "model" character varying(50),
-    "battery_level" integer,
-    "sd_card_space_gb" integer,
-    "last_photo_date" timestamp with time zone,
-    "status" character varying(20),
-    "notes" "text",
-    "created_at" timestamp with time zone,
-    "updated_at" timestamp with time zone
-);
-
-
-ALTER TABLE "public"."trail_cameras_backup" OWNER TO "postgres";
 
 --
 -- Name: trails; Type: TABLE; Schema: public; Owner: postgres
@@ -2438,13 +2421,6 @@ CREATE POLICY "Allow authenticated users to view all maintenance tasks" ON "publ
 
 
 --
--- Name: members Allow authenticated users to view all members; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Allow authenticated users to view all members" ON "public"."members" FOR SELECT USING (("auth"."role"() = 'authenticated'::"text"));
-
-
---
 -- Name: stands Allow authenticated users to view stands; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -2459,17 +2435,28 @@ CREATE POLICY "Allow users to manage their own hunt logs" ON "public"."hunt_logs
 
 
 --
--- Name: members Allow users to update their own profile; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Allow users to update their own profile" ON "public"."members" FOR UPDATE USING (("auth"."uid"() = "id"));
-
-
---
 -- Name: hunt_logs Allow users to view hunt logs; Type: POLICY; Schema: public; Owner: postgres
 --
 
 CREATE POLICY "Allow users to view hunt logs" ON "public"."hunt_logs" FOR SELECT TO "authenticated" USING (true);
+
+
+--
+-- Name: hunt_harvests Authenticated users can insert harvests; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Authenticated users can insert harvests" ON "public"."hunt_harvests" FOR INSERT WITH CHECK ((("auth"."role"() = 'authenticated'::"text") AND (EXISTS ( SELECT 1
+   FROM "public"."hunt_logs"
+  WHERE ("hunt_logs"."id" = "hunt_harvests"."hunt_log_id")))));
+
+
+--
+-- Name: hunt_sightings Authenticated users can insert sightings; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Authenticated users can insert sightings" ON "public"."hunt_sightings" FOR INSERT WITH CHECK ((("auth"."role"() = 'authenticated'::"text") AND (EXISTS ( SELECT 1
+   FROM "public"."hunt_logs"
+  WHERE ("hunt_logs"."id" = "hunt_sightings"."hunt_log_id")))));
 
 
 --
@@ -2501,28 +2488,74 @@ CREATE POLICY "Public can view boundaries" ON "public"."property_boundaries" FOR
 
 
 --
--- Name: hunt_harvests Users can delete harvests from their hunts; Type: POLICY; Schema: public; Owner: postgres
+-- Name: hunt_harvests Users and admins can delete harvests; Type: POLICY; Schema: public; Owner: postgres
 --
 
-CREATE POLICY "Users can delete harvests from their hunts" ON "public"."hunt_harvests" FOR DELETE USING ((EXISTS ( SELECT 1
+CREATE POLICY "Users and admins can delete harvests" ON "public"."hunt_harvests" FOR DELETE USING ((EXISTS ( SELECT 1
    FROM "public"."hunt_logs"
-  WHERE (("hunt_logs"."id" = "hunt_harvests"."hunt_log_id") AND ("hunt_logs"."member_id" = "auth"."uid"())))));
+  WHERE (("hunt_logs"."id" = "hunt_harvests"."hunt_log_id") AND (("hunt_logs"."member_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+           FROM "public"."members"
+          WHERE (("members"."id" = "auth"."uid"()) AND ("members"."role" = 'admin'::"text")))))))));
 
 
 --
--- Name: hunt_sightings Users can delete sightings from their hunts; Type: POLICY; Schema: public; Owner: postgres
+-- Name: hunt_logs Users and admins can delete hunt logs; Type: POLICY; Schema: public; Owner: postgres
 --
 
-CREATE POLICY "Users can delete sightings from their hunts" ON "public"."hunt_sightings" FOR DELETE USING ((EXISTS ( SELECT 1
+CREATE POLICY "Users and admins can delete hunt logs" ON "public"."hunt_logs" FOR DELETE USING ((("auth"."uid"() = "member_id") OR (EXISTS ( SELECT 1
+   FROM "public"."members"
+  WHERE (("members"."id" = "auth"."uid"()) AND ("members"."role" = 'admin'::"text"))))));
+
+
+--
+-- Name: hunt_sightings Users and admins can delete sightings; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users and admins can delete sightings" ON "public"."hunt_sightings" FOR DELETE USING ((EXISTS ( SELECT 1
    FROM "public"."hunt_logs"
-  WHERE (("hunt_logs"."id" = "hunt_sightings"."hunt_log_id") AND ("hunt_logs"."member_id" = "auth"."uid"())))));
+  WHERE (("hunt_logs"."id" = "hunt_sightings"."hunt_log_id") AND (("hunt_logs"."member_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+           FROM "public"."members"
+          WHERE (("members"."id" = "auth"."uid"()) AND ("members"."role" = 'admin'::"text")))))))));
 
 
 --
--- Name: hunt_logs Users can delete their own hunt logs; Type: POLICY; Schema: public; Owner: postgres
+-- Name: hunt_logs Users and admins can insert hunt logs; Type: POLICY; Schema: public; Owner: postgres
 --
 
-CREATE POLICY "Users can delete their own hunt logs" ON "public"."hunt_logs" FOR DELETE USING (("auth"."uid"() = "member_id"));
+CREATE POLICY "Users and admins can insert hunt logs" ON "public"."hunt_logs" FOR INSERT WITH CHECK ((("auth"."uid"() = "member_id") OR (EXISTS ( SELECT 1
+   FROM "public"."members"
+  WHERE (("members"."id" = "auth"."uid"()) AND ("members"."role" = 'admin'::"text"))))));
+
+
+--
+-- Name: hunt_harvests Users and admins can update harvests; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users and admins can update harvests" ON "public"."hunt_harvests" FOR UPDATE USING ((EXISTS ( SELECT 1
+   FROM "public"."hunt_logs"
+  WHERE (("hunt_logs"."id" = "hunt_harvests"."hunt_log_id") AND (("hunt_logs"."member_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+           FROM "public"."members"
+          WHERE (("members"."id" = "auth"."uid"()) AND ("members"."role" = 'admin'::"text")))))))));
+
+
+--
+-- Name: hunt_logs Users and admins can update hunt logs; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users and admins can update hunt logs" ON "public"."hunt_logs" FOR UPDATE USING ((("auth"."uid"() = "member_id") OR (EXISTS ( SELECT 1
+   FROM "public"."members"
+  WHERE (("members"."id" = "auth"."uid"()) AND ("members"."role" = 'admin'::"text"))))));
+
+
+--
+-- Name: hunt_sightings Users and admins can update sightings; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users and admins can update sightings" ON "public"."hunt_sightings" FOR UPDATE USING ((EXISTS ( SELECT 1
+   FROM "public"."hunt_logs"
+  WHERE (("hunt_logs"."id" = "hunt_sightings"."hunt_log_id") AND (("hunt_logs"."member_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+           FROM "public"."members"
+          WHERE (("members"."id" = "auth"."uid"()) AND ("members"."role" = 'admin'::"text")))))))));
 
 
 --
@@ -2537,31 +2570,6 @@ CREATE POLICY "Users can insert camera snapshots" ON "public"."daily_camera_snap
 --
 
 CREATE POLICY "Users can insert collection log" ON "public"."daily_collection_log" FOR INSERT WITH CHECK (("auth"."role"() = 'authenticated'::"text"));
-
-
---
--- Name: hunt_harvests Users can insert harvests for their hunts; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can insert harvests for their hunts" ON "public"."hunt_harvests" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
-   FROM "public"."hunt_logs"
-  WHERE (("hunt_logs"."id" = "hunt_harvests"."hunt_log_id") AND ("hunt_logs"."member_id" = "auth"."uid"())))));
-
-
---
--- Name: hunt_sightings Users can insert sightings for their hunts; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can insert sightings for their hunts" ON "public"."hunt_sightings" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
-   FROM "public"."hunt_logs"
-  WHERE (("hunt_logs"."id" = "hunt_sightings"."hunt_log_id") AND ("hunt_logs"."member_id" = "auth"."uid"())))));
-
-
---
--- Name: hunt_logs Users can insert their own hunt logs; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can insert their own hunt logs" ON "public"."hunt_logs" FOR INSERT WITH CHECK (("auth"."uid"() = "member_id"));
 
 
 --
@@ -2586,35 +2594,24 @@ CREATE POLICY "Users can update collection log" ON "public"."daily_collection_lo
 
 
 --
--- Name: hunt_harvests Users can update harvests from their hunts; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can update harvests from their hunts" ON "public"."hunt_harvests" FOR UPDATE USING ((EXISTS ( SELECT 1
-   FROM "public"."hunt_logs"
-  WHERE (("hunt_logs"."id" = "hunt_harvests"."hunt_log_id") AND ("hunt_logs"."member_id" = "auth"."uid"())))));
-
-
---
--- Name: hunt_sightings Users can update sightings from their hunts; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can update sightings from their hunts" ON "public"."hunt_sightings" FOR UPDATE USING ((EXISTS ( SELECT 1
-   FROM "public"."hunt_logs"
-  WHERE (("hunt_logs"."id" = "hunt_sightings"."hunt_log_id") AND ("hunt_logs"."member_id" = "auth"."uid"())))));
-
-
---
--- Name: hunt_logs Users can update their own hunt logs; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can update their own hunt logs" ON "public"."hunt_logs" FOR UPDATE USING (("auth"."uid"() = "member_id"));
-
-
---
 -- Name: daily_weather_snapshots Users can update weather snapshots; Type: POLICY; Schema: public; Owner: postgres
 --
 
 CREATE POLICY "Users can update weather snapshots" ON "public"."daily_weather_snapshots" FOR UPDATE USING (("auth"."role"() = 'authenticated'::"text"));
+
+
+--
+-- Name: hunt_harvests Users can view all harvests; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can view all harvests" ON "public"."hunt_harvests" FOR SELECT USING (("auth"."role"() = 'authenticated'::"text"));
+
+
+--
+-- Name: hunt_sightings Users can view all sightings; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Users can view all sightings" ON "public"."hunt_sightings" FOR SELECT USING (("auth"."role"() = 'authenticated'::"text"));
 
 
 --
@@ -2629,24 +2626,6 @@ CREATE POLICY "Users can view camera snapshots" ON "public"."daily_camera_snapsh
 --
 
 CREATE POLICY "Users can view collection log" ON "public"."daily_collection_log" FOR SELECT USING (("auth"."role"() = 'authenticated'::"text"));
-
-
---
--- Name: hunt_harvests Users can view harvests from their hunts; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can view harvests from their hunts" ON "public"."hunt_harvests" FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM "public"."hunt_logs"
-  WHERE (("hunt_logs"."id" = "hunt_harvests"."hunt_log_id") AND ("hunt_logs"."member_id" = "auth"."uid"())))));
-
-
---
--- Name: hunt_sightings Users can view sightings from their hunts; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can view sightings from their hunts" ON "public"."hunt_sightings" FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM "public"."hunt_logs"
-  WHERE (("hunt_logs"."id" = "hunt_sightings"."hunt_log_id") AND ("hunt_logs"."member_id" = "auth"."uid"())))));
 
 
 --
@@ -2767,6 +2746,27 @@ ALTER TABLE "public"."maintenance_tasks" ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE "public"."members" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: members members_insert_own; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "members_insert_own" ON "public"."members" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "id"));
+
+
+--
+-- Name: members members_select_authenticated; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "members_select_authenticated" ON "public"."members" FOR SELECT TO "authenticated" USING (true);
+
+
+--
+-- Name: members members_update_own; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "members_update_own" ON "public"."members" FOR UPDATE TO "authenticated" USING (("auth"."uid"() = "id")) WITH CHECK (("auth"."uid"() = "id"));
+
 
 --
 -- Name: property_boundaries; Type: ROW SECURITY; Schema: public; Owner: postgres
@@ -3596,15 +3596,6 @@ GRANT ALL ON TABLE "public"."members" TO "service_role";
 
 
 --
--- Name: TABLE "profiles_backup"; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON TABLE "public"."profiles_backup" TO "anon";
-GRANT ALL ON TABLE "public"."profiles_backup" TO "authenticated";
-GRANT ALL ON TABLE "public"."profiles_backup" TO "service_role";
-
-
---
 -- Name: TABLE "property_boundaries"; Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -3620,15 +3611,6 @@ GRANT ALL ON TABLE "public"."property_boundaries" TO "service_role";
 GRANT ALL ON TABLE "public"."stands" TO "anon";
 GRANT ALL ON TABLE "public"."stands" TO "authenticated";
 GRANT ALL ON TABLE "public"."stands" TO "service_role";
-
-
---
--- Name: TABLE "trail_cameras_backup"; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON TABLE "public"."trail_cameras_backup" TO "anon";
-GRANT ALL ON TABLE "public"."trail_cameras_backup" TO "authenticated";
-GRANT ALL ON TABLE "public"."trail_cameras_backup" TO "service_role";
 
 
 --
