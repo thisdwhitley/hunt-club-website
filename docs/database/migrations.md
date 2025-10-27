@@ -563,3 +563,35 @@ Enhanced Camera Management System Migration (see camera-system-implementation.md
 
 **Claude Context**: Include this migration when asking Claude about database security, function search paths, or hunt temperature display issues.
 
+---
+
+### 2025-10-27: Add Ground Blind Stand Type
+
+**Type**: Schema Modification
+**Affected Tables**: stands (via stand_type enum)
+**Breaking Changes**: No
+**Rollback Available**: Yes
+
+**Purpose**: Add 'ground_blind' as a new stand type option to support ground-level hunting positions.
+
+**Changes Made**:
+- **Added**: 'ground_blind' value to `stand_type` enum
+- **Updated**: Enum now includes: ladder_stand, bale_blind, box_stand, tripod, ground_blind
+
+**Migration SQL**:
+```sql
+ALTER TYPE stand_type ADD VALUE 'ground_blind';
+```
+
+**Verification Steps**:
+- [x] Enum value added successfully
+- [x] Schema exported and updated
+- [ ] New stands created using ground_blind type
+- [ ] Stand cards display ground_blind correctly
+
+**Files Modified**:
+- supabase/schema.sql (exported updated schema)
+- docs/database/migrations.md (this entry)
+
+**Claude Context**: Include this migration when asking Claude about stand types, ground blinds, or hunting position options.
+

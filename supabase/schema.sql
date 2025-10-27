@@ -114,7 +114,8 @@ CREATE TYPE "public"."stand_type" AS ENUM (
     'ladder_stand',
     'bale_blind',
     'box_stand',
-    'tripod'
+    'tripod',
+    'ground_blind'
 );
 
 
