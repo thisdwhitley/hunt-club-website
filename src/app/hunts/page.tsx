@@ -521,19 +521,21 @@ export default function HuntManagementPage() {
           </div>
         )}
 
-        {/* Search Bar */}
-        <div className="bg-white rounded-lg club-shadow p-4 mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-weathered-wood w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search hunts by stand, member, notes, or game type..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-weathered-wood/20 rounded-lg text-forest-shadow focus:outline-none focus:ring-2 focus:ring-olive-green bg-morning-mist"
-            />
+        {/* Search Bar - Only show when not in Data Management mode */}
+        {!showManagement && (
+          <div className="bg-white rounded-lg club-shadow p-4 mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-weathered-wood w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search hunts by stand, member, notes, or game type..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-weathered-wood/20 rounded-lg text-forest-shadow focus:outline-none focus:ring-2 focus:ring-olive-green bg-morning-mist"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Main Content - Dashboard View */}
         {!showManagement && (
