@@ -10,7 +10,7 @@ import { getTemperatureContext } from '@/lib/hunt-logging/temperature-utils' // 
 import { getStandIcon } from '@/lib/utils/standUtils'
 import { getIcon } from '@/lib/shared/icons'
 import HuntDataManagement from '@/components/hunt-logging/HuntDataManagement'
-import { formatDate, formatHuntDate, formatTime } from '@/lib/utils/date'
+import { formatDate, formatHuntDate, formatTime, getHuntTypeBadge } from '@/lib/utils/date'
 import {
   Target,
   Calendar,
@@ -150,6 +150,8 @@ export default function HuntManagementPage() {
           const tempContext = getTemperatureContext(hunt)
           // Get stand-specific icon
           const StandIcon = getIcon(getStandIcon(hunt.stand?.type) as any)
+          // Get hunt type badge
+          const huntTypeBadge = getHuntTypeBadge(hunt.hunt_type)
 
           return (
             <div key={hunt.id} className="bg-white rounded-lg club-shadow hover:shadow-lg transition-shadow">
@@ -158,9 +160,10 @@ export default function HuntManagementPage() {
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
                       <div className="flex items-center space-x-2">
-                        <Calendar className="w-4 h-4 text-weathered-wood" />
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ${huntTypeBadge.className}`}>
+                          {huntTypeBadge.label}
+                        </span>
                         <span className="font-medium text-forest-shadow">
-                          {/* {new Date(hunt.hunt_date).toLocaleDateString()} */}
                           {formatHuntDate(hunt.hunt_date)}
                         </span>
                       </div>
@@ -168,11 +171,6 @@ export default function HuntManagementPage() {
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-bright-orange/10 text-bright-orange">
                           <Trophy className="w-3 h-3 mr-1" />
                           Harvest
-                        </span>
-                      )}
-                      {hunt.hunt_type && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-olive-green/10 text-olive-green">
-                          {hunt.hunt_type}
                         </span>
                       )}
                     </div>
@@ -186,13 +184,15 @@ export default function HuntManagementPage() {
                         <StandIcon className="w-3 h-3 mr-1" />
                         {hunt.stand?.name || 'Unknown Stand'}
                       </div>
-                      <div className="flex items-center">
-                        <Clock className="w-3 h-3 mr-1" />
-                        {hunt.start_time || 'N/A'} - {hunt.end_time || 'N/A'}
-                        {hunt.hunt_duration_minutes && (
-                          <span className="ml-1 text-xs">({hunt.hunt_duration_minutes}m)</span>
-                        )}
-                      </div>
+                      {(hunt.start_time || hunt.end_time) && (
+                        <div className="flex items-center">
+                          <Clock className="w-3 h-3 mr-1" />
+                          {hunt.start_time || 'N/A'} - {hunt.end_time || 'N/A'}
+                          {hunt.hunt_duration_minutes && (
+                            <span className="ml-1 text-xs">({hunt.hunt_duration_minutes}m)</span>
+                          )}
+                        </div>
+                      )}
                       <div className="flex items-center">
                         <Binoculars className="w-3 h-3 mr-1" />
                         {hunt.sightings?.length || 0} sightings

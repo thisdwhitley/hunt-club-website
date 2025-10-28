@@ -301,23 +301,71 @@ export function getRelativeTimeString(dateString: string | null): string {
   return formatDate(dateString, { style: 'relative' })
 }
 
+/**
+ * Get hunt type badge styling and label
+ * Returns consistent styling for AM/PM/ALL DAY hunt type badges
+ *
+ * @param huntType - Hunt type string ('AM', 'PM', 'All Day', etc.)
+ * @returns Badge configuration with label and styling classes
+ */
+export function getHuntTypeBadge(huntType?: string | null): {
+  label: string
+  className: string
+} {
+  if (!huntType) {
+    return {
+      label: '?',
+      className: 'bg-weathered-wood/10 text-weathered-wood border border-weathered-wood/30'
+    }
+  }
+
+  const type = huntType.toUpperCase()
+
+  if (type === 'AM' || type.includes('MORNING')) {
+    return {
+      label: 'AM',
+      className: 'bg-bright-orange/10 text-bright-orange border border-bright-orange/30'
+    }
+  }
+
+  if (type === 'PM' || type.includes('EVENING') || type.includes('AFTERNOON')) {
+    return {
+      label: 'PM',
+      className: 'bg-burnt-orange/10 text-burnt-orange border border-burnt-orange/30'
+    }
+  }
+
+  if (type === 'ALL DAY' || type.includes('ALL') || type === 'FULL') {
+    return {
+      label: 'ALL',
+      className: 'bg-olive-green/10 text-olive-green border border-olive-green/30'
+    }
+  }
+
+  // Default fallback
+  return {
+    label: type.substring(0, 3),
+    className: 'bg-weathered-wood/10 text-weathered-wood border border-weathered-wood/30'
+  }
+}
+
 // Export common combinations for convenience
 export const DateFormatters = {
   /** Standard date formatting for most UI contexts */
   standard: (date: string | null) => formatDate(date, { style: 'short' }),
-  
+
   /** Full date formatting for detailed displays */
   full: (date: string | null) => formatDate(date, { style: 'full' }),
-  
+
   /** Relative formatting (Today, Yesterday, X days ago) */
   relative: (date: string | null) => formatDate(date, { style: 'relative' }),
-  
+
   /** Hunt-specific formatting */
   hunt: formatHuntDate,
-  
+
   /** Input field formatting */
   input: formatDateForInput,
-  
+
   /** Database storage formatting */
   database: formatForDB
 } as const

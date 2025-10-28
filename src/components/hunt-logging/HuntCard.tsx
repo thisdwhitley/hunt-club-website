@@ -8,7 +8,7 @@ import { HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
 import { getTemperatureContext } from '@/lib/hunt-logging/temperature-utils' // NEW IMPORT
 import { getStandIcon } from '@/lib/utils/standUtils'
 import { getIcon } from '@/lib/shared/icons'
-import { formatDate, formatHuntDate, formatTime } from '@/lib/utils/date'
+import { formatDate, formatHuntDate, formatTime, getHuntTypeBadge } from '@/lib/utils/date'
 import {
   Calendar,
   MapPin,
@@ -81,6 +81,9 @@ const HuntCard: React.FC<HuntCardProps> = ({
   // Get stand-specific icon
   const StandIcon = getIcon(getStandIcon(hunt.stand?.type) as any)
 
+  // Get hunt type badge
+  const huntTypeBadge = getHuntTypeBadge(hunt.hunt_type)
+
   // Compact mode for lists
   if (mode === 'compact') {
     return (
@@ -95,9 +98,10 @@ const HuntCard: React.FC<HuntCardProps> = ({
             />
           )}
           <div className="flex items-center space-x-2">
-            <Calendar className="w-4 h-4 text-weathered-wood" />
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ${huntTypeBadge.className}`}>
+              {huntTypeBadge.label}
+            </span>
             <span className="font-medium text-forest-shadow">
-              {/* {new Date(hunt.hunt_date).toLocaleDateString()} */}
               {formatHuntDate(hunt.hunt_date)}
             </span>
           </div>
@@ -181,14 +185,21 @@ const HuntCard: React.FC<HuntCardProps> = ({
         </td>
         <td className="px-4 py-3">
           <div className="flex items-center">
-            <Calendar className="w-4 h-4 mr-2 text-weathered-wood" />
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold mr-2 ${huntTypeBadge.className}`}>
+              {huntTypeBadge.label}
+            </span>
             <div>
               <div className="text-sm font-medium text-forest-shadow">
-                {/* {new Date(hunt.hunt_date).toLocaleDateString()} */}
                 {formatHuntDate(hunt.hunt_date)}
               </div>
-              {hunt.hunt_type && (
-                <div className="text-xs text-weathered-wood">{hunt.hunt_type}</div>
+              {(hunt.start_time || hunt.end_time) && (
+                <div className="text-xs text-weathered-wood flex items-center">
+                  <Clock className="w-3 h-3 mr-1" />
+                  {formatTime(hunt.start_time) || 'N/A'} - {formatTime(hunt.end_time) || 'N/A'}
+                  {hunt.hunt_duration_minutes && (
+                    <span className="ml-1">({formatDuration(hunt.hunt_duration_minutes)})</span>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -208,20 +219,6 @@ const HuntCard: React.FC<HuntCardProps> = ({
               <div className="text-sm text-forest-shadow font-medium">
                 {hunt.stand?.name || 'Unknown'}
               </div>
-            </div>
-          </div>
-        </td>
-        <td className="px-4 py-3">
-          <div className="flex items-center">
-            <Clock className="w-4 h-4 mr-2 text-weathered-wood" />
-            <div className="text-sm text-forest-shadow">
-              <div>{formatTime(hunt.start_time)} - {formatTime(hunt.end_time)}</div>
-              {hunt.hunt_duration_minutes && (
-                <div className="text-xs text-weathered-wood flex items-center">
-                  <Timer className="w-3 h-3 mr-1" />
-                  {formatDuration(hunt.hunt_duration_minutes)}
-                </div>
-              )}
             </div>
           </div>
         </td>
@@ -342,21 +339,17 @@ const HuntCard: React.FC<HuntCardProps> = ({
               <h3 className="font-medium text-forest-shadow">
                 {hunt.member?.display_name || hunt.member?.full_name || 'Unknown Member'}
               </h3>
+              <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold ${huntTypeBadge.className}`}>
+                {huntTypeBadge.label}
+              </span>
               {(hunt.had_harvest || hunt.harvest_count > 0) && (
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-bright-orange/10 text-bright-orange">
                   <Trophy className="w-3 h-3 mr-1" />
                   Harvest
                 </span>
               )}
-              {hunt.hunt_type && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-olive-green/10 text-olive-green">
-                  {hunt.hunt_type}
-                </span>
-              )}
             </div>
-            <p className="text-sm text-weathered-wood flex items-center">
-              <Calendar className="w-4 h-4 mr-1" />
-              {/* {new Date(hunt.hunt_date).toLocaleDateString()} */}
+            <p className="text-sm text-weathered-wood">
               {formatHuntDate(hunt.hunt_date)}
             </p>
           </div>
@@ -403,16 +396,18 @@ const HuntCard: React.FC<HuntCardProps> = ({
             <StandIcon className="w-4 h-4 mr-2" />
             <span>{hunt.stand?.name || 'Unknown Stand'}</span>
           </div>
-          <div className="flex items-center text-weathered-wood">
-            <Clock className="w-4 h-4 mr-2" />
-            <span>{formatTime(hunt.start_time)} - {formatTime(hunt.end_time)}</span>
-            {hunt.hunt_duration_minutes && (
-              <span className="ml-2 text-xs flex items-center">
-                <Timer className="w-3 h-3 mr-1" />
-                {formatDuration(hunt.hunt_duration_minutes)}
-              </span>
-            )}
-          </div>
+          {(hunt.start_time || hunt.end_time) && (
+            <div className="flex items-center text-weathered-wood">
+              <Clock className="w-4 h-4 mr-2" />
+              <span>{formatTime(hunt.start_time) || 'N/A'} - {formatTime(hunt.end_time) || 'N/A'}</span>
+              {hunt.hunt_duration_minutes && (
+                <span className="ml-2 text-xs flex items-center">
+                  <Timer className="w-3 h-3 mr-1" />
+                  {formatDuration(hunt.hunt_duration_minutes)}
+                </span>
+              )}
+            </div>
+          )}
         </div>
         
         {/* Harvest Info */}
