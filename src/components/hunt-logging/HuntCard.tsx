@@ -5,7 +5,7 @@
 
 import React from 'react'
 import { HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
-import { getTemperatureContext, getWeatherQuality } from '@/lib/hunt-logging/temperature-utils' // NEW IMPORT
+import { getTemperatureContext } from '@/lib/hunt-logging/temperature-utils' // NEW IMPORT
 import { formatDate, formatHuntDate, formatTime } from '@/lib/utils/date'
 import { 
   Calendar,
@@ -73,16 +73,8 @@ const HuntCard: React.FC<HuntCardProps> = ({
     return phaseNames[index]
   }
 
-  // UPDATED: Get contextual temperature and weather quality
+  // UPDATED: Get contextual temperature
   const tempContext = getTemperatureContext(hunt)
-  const weatherQuality = getWeatherQuality(hunt)
-
-  const weatherColors = {
-    excellent: 'text-bright-orange',
-    good: 'text-olive-green',
-    fair: 'text-muted-gold',
-    poor: 'text-clay-earth'
-  }
 
   // Compact mode for lists
   if (mode === 'compact') {
@@ -274,11 +266,6 @@ const HuntCard: React.FC<HuntCardProps> = ({
                 <span className="text-forest-shadow">{getMoonPhaseDisplay(hunt.moonphase)}</span>
               </div>
             )}
-            {weatherQuality.score && (
-              <div className={`text-xs font-medium ${weatherColors[weatherQuality.score]}`}>
-                {weatherQuality.score.toUpperCase()}
-              </div>
-            )}
           </div>
         </td>
         <td className="px-4 py-3">
@@ -452,16 +439,11 @@ const HuntCard: React.FC<HuntCardProps> = ({
         {/* UPDATED: Weather Info with contextual temperature */}
         {(tempContext.temperature !== null || hunt.windspeed !== null || hunt.humidity !== null || hunt.moonphase !== null) && (
           <div className="bg-morning-mist rounded-lg p-3">
-            <div className="flex items-center justify-between mb-2">
+            <div className="mb-2">
               <h4 className="text-sm font-medium text-forest-shadow flex items-center">
                 <CloudSun className="w-4 h-4 mr-2" />
                 Weather Conditions
               </h4>
-              {weatherQuality.score && (
-                <span className={`text-xs font-medium px-2 py-1 rounded ${weatherColors[weatherQuality.score]} bg-white`}>
-                  {weatherQuality.score.toUpperCase()}
-                </span>
-              )}
             </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
               {/* UPDATED: Show contextual temperature prominently */}
