@@ -393,28 +393,6 @@ const HuntCard: React.FC<HuntCardProps> = ({
             </div>
           )}
         </div>
-        
-        {/* Harvest Info */}
-        <div className="flex items-center text-sm">
-          {(hunt.had_harvest || hunt.harvest_count > 0) ? (
-            <>
-              <Target className="w-4 h-4 mr-2 text-bright-orange" />
-              <span className="text-bright-orange font-medium">
-                {hunt.harvest_count} {hunt.game_type || 'harvest'}
-              </span>
-              {hunt.harvests?.[0]?.estimated_weight && (
-                <span className="ml-2 text-xs text-weathered-wood">
-                  (~{hunt.harvests[0].estimated_weight} lbs)
-                </span>
-              )}
-            </>
-          ) : (
-            <>
-              <Target className="w-4 h-4 mr-2 text-weathered-wood" />
-              <span className="text-weathered-wood">No harvest</span>
-            </>
-          )}
-        </div>
 
         {/* UPDATED: Weather Info with contextual temperature */}
         {(tempContext.temperature !== null || hunt.windspeed !== null || hunt.humidity !== null || hunt.moonphase !== null) && (
