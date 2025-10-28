@@ -456,19 +456,19 @@ const HuntCard: React.FC<HuntCardProps> = ({
               {hunt.windspeed !== null && (
                 <div className="flex items-center">
                   <Wind className="w-3 h-3 mr-1 text-dark-teal" />
-                  <span>{hunt.windspeed} mph</span>
+                  <span className="text-forest-shadow">{hunt.windspeed} mph</span>
                 </div>
               )}
               {hunt.humidity !== null && (
                 <div className="flex items-center">
                   <Droplets className="w-3 h-3 mr-1 text-dark-teal" />
-                  <span>{hunt.humidity}% humidity</span>
+                  <span className="text-forest-shadow">{hunt.humidity}% humidity</span>
                 </div>
               )}
               {hunt.moonphase !== null && (
                 <div className="flex items-center">
                   <Moon className="w-3 h-3 mr-1 text-muted-gold" />
-                  <span>{getMoonPhaseDisplay(hunt.moonphase)}</span>
+                  <span className="text-forest-shadow">{getMoonPhaseDisplay(hunt.moonphase)}</span>
                 </div>
               )}
             </div>
