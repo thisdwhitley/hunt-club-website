@@ -69,6 +69,22 @@ import {
   Trees,
   Mountain,
   MapPin as Trail,
+
+  // Stand Types
+  TrainTrack as LadderStand,
+  Omega as BaleBlind,
+  Box as BoxStand,
+  Pyramid as TripodStand,
+  Tent as GroundBlind,
+
+  // Stand Features
+  Footprints as Walking,
+  Ruler as Height,
+  Droplet as Water,
+  BowArrow as Archery,
+  Award as Harvest,
+  Wheat as Field,
+  HandPlatter as Feeder,
   
   // Data & Charts
   LineChart,
@@ -208,6 +224,22 @@ export const ICONS: IconRegistry = {
   tree: Trees,
   mountains: Mountain,
   trail: Trail,
+
+  // Stand Types
+  ladderStand: LadderStand,
+  baleBlind: BaleBlind,
+  boxStand: BoxStand,
+  tripodStand: TripodStand,
+  groundBlind: GroundBlind,
+
+  // Stand Features
+  walking: Walking,
+  height: Height,
+  water: Water,
+  archery: Archery,
+  harvest: Harvest,
+  field: Field,
+  feeder: Feeder,
   
   // Data & Charts
   chartLine: LineChart,

@@ -75,6 +75,22 @@ export type IconName =
   | 'tree'
   | 'mountains'
   | 'trail'
+
+  // Stand Types
+  | 'ladderStand'
+  | 'baleBlind'
+  | 'boxStand'
+  | 'tripodStand'
+  | 'groundBlind'
+
+  // Stand Features
+  | 'walking'
+  | 'height'
+  | 'water'
+  | 'archery'
+  | 'harvest'
+  | 'field'
+  | 'feeder'
   
   // Data & Charts
   | 'chartLine'

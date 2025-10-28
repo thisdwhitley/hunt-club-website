@@ -16,7 +16,7 @@ export interface Stand {
   id: string
   name: string
   description: string | null
-  type: 'ladder_stand' | 'bale_blind' | 'box_stand' | 'tripod'
+  type: 'ladder_stand' | 'bale_blind' | 'box_stand' | 'tripod' | 'ground_blind'
   active: boolean
   latitude: number | null
   longitude: number | null

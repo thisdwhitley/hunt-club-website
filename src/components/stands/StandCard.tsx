@@ -6,32 +6,17 @@
 
 import React, { useState } from 'react'
 import { formatDate } from '@/lib/utils/date'
-import { 
-  MapPin, 
-  Eye, 
-  Clock, 
-  Users, 
+import { ICONS } from '@/lib/shared/icons'
+import type { IconName } from '@/lib/shared/icons'
+import {
+  MapPin,
+  Eye,
+  Clock,
+  Users,
   MoreHorizontal,
   Edit3,
   Trash2,
-  Navigation,
-  TrainTrack as LadderIcon,
-  Omega as BaleIcon, 
-  Box as BoxIcon,
-  Pyramid as TripodIcon,
-  Sun as AMIcon,
-  Moon as PMIcon,
-  SunMoon as AllDayIcon,
-  Droplet as WaterIcon,
-  Wheat as FieldIcon,
-  HandPlatter as FeederIcon,
-  Camera as CameraIcon,
-  Target as HuntsIcon,
-  Award as HarvestsIcon,
-  Calendar as SeasonIcon,
-  Footprints as WalkingIcon,
-  Ruler as HeightIcon,
-  BowArrow as ArcheryIcon
+  Navigation
 } from 'lucide-react'
 
 // Import your Stand type from database service
@@ -90,43 +75,49 @@ interface StandCardProps {
 
 // Enhanced STAND_TYPES with hunting club styling (all orange icons)
 const HUNTING_CLUB_STAND_TYPES = {
-  ladder_stand: { 
-    label: 'Ladder Stand', 
-    icon: LadderIcon, 
+  ladder_stand: {
+    label: 'Ladder Stand',
+    iconName: 'ladderStand' as IconName,
     color: '#FA7921',  // Hunting orange for all stands
     description: 'Elevated ladder stand with platform'
   },
-  bale_blind: { 
-    label: 'Bale Blind', 
-    icon: BaleIcon, 
-    color: '#FA7921', 
+  bale_blind: {
+    label: 'Bale Blind',
+    iconName: 'baleBlind' as IconName,
+    color: '#FA7921',
     description: 'Round hay bale ground blind'
   },
-  box_stand: { 
-    label: 'Box Stand', 
-    icon: BoxIcon, 
+  box_stand: {
+    label: 'Box Stand',
+    iconName: 'boxStand' as IconName,
     color: '#FA7921',
     description: 'Enclosed box blind with windows'
   },
-  tripod: { 
-    label: 'Tripod', 
-    icon: TripodIcon, 
+  tripod: {
+    label: 'Tripod',
+    iconName: 'tripodStand' as IconName,
     color: '#FA7921',
     description: 'Tripod stand with platform'
+  },
+  ground_blind: {
+    label: 'Ground Blind',
+    iconName: 'groundBlind' as IconName,
+    color: '#FA7921',
+    description: 'Ground-level hunting blind'
   }
 }
 
 // Time of day options
 const TIME_OF_DAY_OPTIONS = {
-  AM: { label: 'Morning', icon: AMIcon, color: '#FE9920' },
-  PM: { label: 'Evening', icon: PMIcon, color: '#B9A44C' },
-  ALL: { label: 'All Day', icon: AllDayIcon, color: '#566E3D' }
+  AM: { label: 'Morning', iconName: 'sun' as IconName, color: '#FE9920' },
+  PM: { label: 'Evening', iconName: 'moon' as IconName, color: '#B9A44C' },
+  ALL: { label: 'All Day', iconName: 'clock' as IconName, color: '#566E3D' }
 }
 
 // Food source options
 const FOOD_SOURCE_OPTIONS = {
-  field: { label: 'Field', icon: FieldIcon, color: '#B9A44C' },
-  feeder: { label: 'Feeder', icon: FeederIcon, color: '#FA7921' }
+  field: { label: 'Field', iconName: 'field' as IconName, color: '#B9A44C' },
+  feeder: { label: 'Feeder', iconName: 'feeder' as IconName, color: '#FA7921' }
 }
 
 // Hunting club color palette
@@ -156,13 +147,13 @@ export default function StandCard({
 }: StandCardProps) {
   // FIXED: Renamed state variable to avoid conflict with prop
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
-  
+
   const standType = HUNTING_CLUB_STAND_TYPES[stand.type]
-  
-  // Icon components
-  const StandTypeIcon = standType.icon
-  const TimeIcon = stand.time_of_day ? TIME_OF_DAY_OPTIONS[stand.time_of_day].icon : Clock
-  const FoodIcon = stand.food_source ? FOOD_SOURCE_OPTIONS[stand.food_source].icon : null
+
+  // Icon components from centralized library
+  const StandTypeIcon = ICONS[standType.iconName]
+  const TimeIcon = stand.time_of_day ? ICONS[TIME_OF_DAY_OPTIONS[stand.time_of_day].iconName] : Clock
+  const FoodIcon = stand.food_source ? ICONS[FOOD_SOURCE_OPTIONS[stand.food_source].iconName] : null
 
   // Base styles for different modes with hunting club theme
   const getCardStyles = () => {
@@ -266,6 +257,7 @@ export default function StandCard({
     }
 
     if (stand.walking_time_minutes) {
+      const WalkingIcon = ICONS.walking
       details.push(
         <div key="walk" className="flex items-center gap-2">
           <WalkingIcon size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
@@ -288,6 +280,7 @@ export default function StandCard({
     }
 
     if (stand.height_feet) {
+      const HeightIcon = ICONS.height
       details.push(
         <div key="height" className="flex items-center gap-2">
           <HeightIcon size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
@@ -299,6 +292,7 @@ export default function StandCard({
     }
 
     if (stand.trail_camera_name) {
+      const CameraIcon = ICONS.camera
       details.push(
         <div key="camera" className="flex items-center gap-2" style={{ gridColumn: '1/-1' }}>
           <CameraIcon size={14} style={{ color: HUNTING_COLORS.forestGreen }} />
@@ -346,7 +340,7 @@ export default function StandCard({
             fontSize: '12px',
           }}
         >
-          <HuntsIcon size={14} /> HISTORY
+          <ICONS.target size={14} /> HISTORY
         </div>
 
         <div
@@ -437,7 +431,7 @@ export default function StandCard({
 
     if (stand.time_of_day) {
       const timeOption = TIME_OF_DAY_OPTIONS[stand.time_of_day]
-      const TimeIcon = timeOption.icon
+      const TimeIcon = ICONS[timeOption.iconName]
       features.push(
         <div key="time" className="flex items-center gap-1" title={`Best time: ${timeOption.label}`}>
           <TimeIcon size={14} style={{ color: timeOption.color }} />
@@ -446,6 +440,7 @@ export default function StandCard({
     }
 
     if (stand.nearby_water_source) {
+      const WaterIcon = ICONS.water
       features.push(
         <div key="water" className="flex items-center gap-1" title="Near water source">
           <WaterIcon size={14} style={{ color: HUNTING_COLORS.darkTeal }} />
@@ -463,6 +458,7 @@ export default function StandCard({
     }
 
     if (stand.archery_season) {
+      const ArcheryIcon = ICONS.archery
       features.push(
         <div key="archery" className="flex items-center gap-1" title="Good for archery season">
           <ArcheryIcon size={14} style={{ color: HUNTING_COLORS.huntingOrange }} />
@@ -487,7 +483,7 @@ export default function StandCard({
 
     if (stand.time_of_day) {
       const timeOption = TIME_OF_DAY_OPTIONS[stand.time_of_day]
-      const TimeIcon = timeOption.icon
+      const TimeIcon = ICONS[timeOption.iconName]
       features.push(
         <div key="time" className="flex items-center gap-2">
           <TimeIcon size={14} style={{ color: timeOption.color }} />
@@ -499,6 +495,7 @@ export default function StandCard({
     }
 
     if (stand.nearby_water_source) {
+      const WaterIcon = ICONS.water
       features.push(
         <div key="water" className="flex items-center gap-2">
           <WaterIcon size={14} style={{ color: HUNTING_COLORS.darkTeal }} />
@@ -522,6 +519,7 @@ export default function StandCard({
     }
 
     if (stand.archery_season) {
+      const ArcheryIcon = ICONS.archery
       features.push(
         <div key="archery" className="flex items-center gap-2">
           <ArcheryIcon size={14} style={{ color: HUNTING_COLORS.huntingOrange }} />
