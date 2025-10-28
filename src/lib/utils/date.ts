@@ -331,7 +331,7 @@ export function getHuntTypeBadge(huntType?: string | null): {
   if (type === 'PM' || type.includes('EVENING') || type.includes('AFTERNOON')) {
     return {
       label: 'PM',
-      className: 'bg-burnt-orange/10 text-burnt-orange border border-burnt-orange/30'
+      className: 'bg-clay-earth/10 text-clay-earth border border-clay-earth/30'
     }
   }
 

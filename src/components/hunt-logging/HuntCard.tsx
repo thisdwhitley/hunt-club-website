@@ -101,6 +101,9 @@ const HuntCard: React.FC<HuntCardProps> = ({
             <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ${huntTypeBadge.className}`}>
               {huntTypeBadge.label}
             </span>
+            {(hunt.had_harvest || hunt.harvest_count > 0) && (
+              <Trophy className="w-4 h-4 text-bright-orange" />
+            )}
             <span className="font-medium text-forest-shadow">
               {formatHuntDate(hunt.hunt_date)}
             </span>
@@ -172,7 +175,7 @@ const HuntCard: React.FC<HuntCardProps> = ({
   // List mode for table-like display
   if (mode === 'list') {
     return (
-      <tr className={`hover:bg-morning-mist transition-colors ${isSelected ? 'bg-olive-green/10' : ''} ${className}`}>
+      <tr className={`hover:bg-morning-mist transition-colors ${isSelected ? 'bg-olive-green/10' : ''} ${(hunt.had_harvest || hunt.harvest_count > 0) ? 'border-l-4 border-bright-orange' : ''} ${className}`}>
         <td className="px-4 py-3">
           {onSelect && (
             <input
@@ -188,6 +191,9 @@ const HuntCard: React.FC<HuntCardProps> = ({
             <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold mr-2 ${huntTypeBadge.className}`}>
               {huntTypeBadge.label}
             </span>
+            {(hunt.had_harvest || hunt.harvest_count > 0) && (
+              <Trophy className="w-4 h-4 mr-2 text-bright-orange" />
+            )}
             <div>
               <div className="text-sm font-medium text-forest-shadow">
                 {formatHuntDate(hunt.hunt_date)}
@@ -221,28 +227,6 @@ const HuntCard: React.FC<HuntCardProps> = ({
               </div>
             </div>
           </div>
-        </td>
-        <td className="px-4 py-3">
-          {(hunt.had_harvest || hunt.harvest_count > 0) ? (
-            <div className="flex items-center">
-              <Trophy className="w-4 h-4 mr-2 text-bright-orange" />
-              <div>
-                <div className="text-sm text-bright-orange font-medium">
-                  {hunt.harvest_count} {hunt.game_type || 'harvest'}
-                </div>
-                {hunt.harvests?.[0]?.estimated_weight && (
-                  <div className="text-xs text-weathered-wood">
-                    ~{hunt.harvests[0].estimated_weight} lbs
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center text-weathered-wood">
-              <Target className="w-4 h-4 mr-2" />
-              <span className="text-sm">No harvest</span>
-            </div>
-          )}
         </td>
         <td className="px-4 py-3">
           {/* UPDATED: Weather display with contextual temperature */}
