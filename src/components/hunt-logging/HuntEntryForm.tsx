@@ -315,7 +315,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
               setSelectedHunter(e.target.value)
             }}
 
-            className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-sm"
+            className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow text-sm"
           >
             {members.map(member => (
               <option key={member.id} value={member.id}>
@@ -338,7 +338,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
           <input
             type="date"
             {...register('hunt_date')}
-            className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm h-10"
+            className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm h-10"
           />
           {errors.hunt_date && (
             <p className="text-xs text-clay-earth mt-1 flex items-center">
@@ -387,7 +387,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
         <div className="relative">
           <select
             {...register('stand_id')}
-            className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white focus:ring-2 focus:ring-olive-green focus:border-olive-green appearance-none text-sm h-10"
+            className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green appearance-none text-sm h-10"
           >
             <option value="">Select a stand...</option>
             {stands.filter(stand => stand.active).map((stand) => (
@@ -425,7 +425,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
               <input
                 type="time"
                 {...register('start_time')}
-                className="w-full p-2 border border-weathered-wood/30 rounded bg-white focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm h-10"
+                className="w-full p-2 border border-weathered-wood/30 rounded bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm h-10"
               />
             </div>
             <div>
@@ -433,7 +433,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
               <input
                 type="time"
                 {...register('end_time')}
-                className="w-full p-2 border border-weathered-wood/30 rounded bg-white focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm h-10"
+                className="w-full p-2 border border-weathered-wood/30 rounded bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm h-10"
               />
               {errors.end_time && (
                 <p className="text-xs text-clay-earth mt-1">{errors.end_time.message}</p>
@@ -467,7 +467,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
           {...register('notes')}
           rows={2}
           placeholder="Weather conditions, stand setup, observations..."
-          className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white focus:ring-2 focus:ring-olive-green focus:border-olive-green resize-none text-sm"
+          className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green resize-none text-sm"
         />
         {errors.notes && (
           <p className="text-sm text-clay-earth mt-1">{errors.notes.message}</p>
@@ -531,7 +531,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs text-weathered-wood mb-1">Animal Type</label>
-            <select className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm">
+            <select className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm">
               <option value="Deer">Deer</option>
               <option value="Turkey">Turkey</option>
               <option value="Coyote">Coyote</option>
@@ -539,10 +539,10 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
               <option value="Other">Other</option>
             </select>
           </div>
-          
+
           <div>
             <label className="block text-xs text-weathered-wood mb-1">Gender</label>
-            <select className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm">
+            <select className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm">
               <option value="Buck">Buck</option>
               <option value="Doe">Doe</option>
               <option value="Unknown">Unknown</option>
@@ -556,10 +556,10 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
               min="10"
               max="400"
               placeholder="150"
-              className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
+              className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
             />
           </div>
-          
+
           <div>
             <label className="block text-xs text-weathered-wood mb-1">Shot Distance (yards)</label>
             <input
@@ -567,7 +567,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
               min="5"
               max="500"
               placeholder="25"
-              className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
+              className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
             />
           </div>
         </div>
@@ -577,7 +577,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
           <textarea
             rows={2}
             placeholder="Shot placement, tracking notes..."
-            className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm resize-none"
+            className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm resize-none"
           />
         </div>
       </div>
@@ -650,7 +650,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
                   <label className="block text-xs text-weathered-wood mb-1">Animal Type</label>
                   <select
                     {...register(`sightings.${index}.animal_type`)}
-                    className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
+                    className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
                   >
                     {animalTypes.map((type) => (
                       <option key={type} value={type}>{type}</option>
@@ -660,7 +660,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
                     <input
                       type="text"
                       placeholder="Specify animal..."
-                      className="w-full p-1 mt-1 border border-weathered-wood/30 rounded bg-white focus:ring-1 focus:ring-olive-green text-xs"
+                      className="w-full p-1 mt-1 border border-weathered-wood/30 rounded bg-white text-forest-shadow focus:ring-1 focus:ring-olive-green text-xs"
                     />
                   )}
                   {errors.sightings?.[index]?.animal_type && (
@@ -676,7 +676,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
                     max="50"
                     defaultValue={1}
                     {...register(`sightings.${index}.count`, { valueAsNumber: true })}
-                    className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
+                    className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
                   />
                   {errors.sightings?.[index]?.count && (
                     <p className="text-xs text-clay-earth mt-1">{errors.sightings[index]?.count?.message}</p>
@@ -689,7 +689,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
                   </label>
                   <select
                     {...register(`sightings.${index}.gender`)}
-                    className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
+                    className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
                     disabled={genderOptions.length === 1 && genderOptions[0] === 'Unknown'}
                   >
                     {genderOptions.map((option) => (
@@ -703,7 +703,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
                   <input
                     type="time"
                     {...register(`sightings.${index}.time_observed`)}
-                    className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
+                    className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
                   />
                 </div>
               </div>
@@ -714,7 +714,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
                   type="text"
                   placeholder="Feeding, alert, moving..."
                   {...register(`sightings.${index}.behavior`)}
-                  className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
+                  className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
                 />
               </div>
             </div>
