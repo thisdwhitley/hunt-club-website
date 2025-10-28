@@ -1259,6 +1259,7 @@ CREATE TABLE "public"."hunt_logs" (
     "had_harvest" boolean DEFAULT false,
     "weather_fetched_at" timestamp with time zone,
     "stand_coordinates" "jsonb",
+    "season" character varying(10) DEFAULT '2025'::character varying NOT NULL,
     CONSTRAINT "hunt_logs_hunt_type_check" CHECK ((("hunt_type")::"text" = ANY ((ARRAY['AM'::character varying, 'PM'::character varying, 'All Day'::character varying])::"text"[]))),
     CONSTRAINT "hunt_logs_moon_illumination_check" CHECK ((("moon_illumination" >= (0)::numeric) AND ("moon_illumination" <= (100)::numeric)))
 );

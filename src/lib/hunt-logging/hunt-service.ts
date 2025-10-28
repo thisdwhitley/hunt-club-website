@@ -281,25 +281,47 @@ export class HuntService {
     }
   }
 
-  async getHuntStats(): Promise<HuntStats> {
+  async getHuntStats(season?: string): Promise<HuntStats> {
     try {
       const currentYear = new Date().getFullYear()
+      const currentSeason = season || String(currentYear)
+
+      // Build base queries with season filter
+      let thisSeasonQuery = supabase
+        .from('hunt_logs')
+        .select('id, hunt_date, harvest_count')
+        .eq('season', currentSeason)
+
+      let allHuntsQuery = supabase
+        .from('hunt_logs')
+        .select('id, had_harvest, harvest_count')
+        .eq('season', currentSeason)
+
+      let standHuntCountsQuery = supabase
+        .from('hunt_logs')
+        .select('stand_id')
+        .eq('season', currentSeason)
 
       const [huntsResult, allHuntsResult, sightingsResult, standsResult, standHuntCounts] = await Promise.all([
-        // Total hunts and this season's hunts - use base table for stats
-        supabase.from('hunt_logs').select('id, hunt_date, harvest_count').gte('hunt_date', `${currentYear}-01-01`),
+        // This season's hunts filtered by season
+        thisSeasonQuery,
 
-        // All hunts (for total harvest count)
-        supabase.from('hunt_logs').select('id, had_harvest, harvest_count'),
+        // All hunts for this season (for harvest count)
+        allHuntsQuery,
 
         // Total deer sightings only (we'll sum the counts, not count records)
-        supabase.from('hunt_sightings').select('id, count').eq('animal_type', 'Deer'),
+        // Filter sightings to only those from hunts in the current season
+        supabase
+          .from('hunt_sightings')
+          .select('id, count, hunt_log_id, hunt_logs!inner(season)')
+          .eq('animal_type', 'Deer')
+          .eq('hunt_logs.season', currentSeason),
 
         // Active stands
         supabase.from('stands').select('id, name, type, active').eq('active', true),
 
         // Get actual hunt counts per stand from hunt_logs (real-time, not cached)
-        supabase.from('hunt_logs').select('stand_id')
+        standHuntCountsQuery
       ])
 
       const totalHunts = huntsResult.data?.length || 0
@@ -319,6 +341,7 @@ export class HuntService {
 
       // Debug logging
       console.log('📊 Hunt Stats Debug:')
+      console.log('  Season filter:', currentSeason)
       console.log('  All hunts data:', allHuntsResult.data)
       console.log('  Hunts with harvest:', allHuntsResult.data?.filter(hunt => hunt.had_harvest || (hunt.harvest_count && hunt.harvest_count > 0)))
       console.log('  Total harvests count:', totalHarvests)

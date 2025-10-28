@@ -136,6 +136,7 @@ export interface Database {
           had_harvest: boolean | null
           weather_fetched_at: string | null
           stand_coordinates: Json | null
+          season: string
           created_at: string
           updated_at: string
         }
@@ -168,6 +169,7 @@ export interface Database {
           had_harvest?: boolean | null
           weather_fetched_at?: string | null
           stand_coordinates?: Json | null
+          season?: string
           created_at?: string
           updated_at?: string
         }
@@ -200,6 +202,7 @@ export interface Database {
           had_harvest?: boolean | null
           weather_fetched_at?: string | null
           stand_coordinates?: Json | null
+          season?: string
           created_at?: string
           updated_at?: string
         }
@@ -237,9 +240,10 @@ export interface Database {
           had_harvest: boolean | null
           weather_fetched_at: string | null
           stand_coordinates: Json | null
+          season: string
           created_at: string
           updated_at: string
-          
+
           // Smart temperature based on hunt timing
           hunt_temperature: number | null
           

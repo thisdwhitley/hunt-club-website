@@ -188,7 +188,10 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
     // Skip sightings and go straight to submit
     const isValid = await trigger(['hunt_date', 'stand_id'])
     if (isValid) {
-      const formData = getValues()
+      const formData = {
+        ...getValues(),
+        season: String(new Date().getFullYear())
+      }
       await onSubmit(formData)
     }
   }
@@ -213,7 +216,8 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
       console.log('=== Form is valid ===')
       const formData = {
         ...getValues(),
-        member_id: selectedHunter
+        member_id: selectedHunter,
+        season: String(new Date().getFullYear())
       }
       
     console.log('🎯 formData being sent to onSubmit:', formData)

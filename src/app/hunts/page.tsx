@@ -41,13 +41,14 @@ export default function HuntManagementPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [showManagement, setShowManagement] = useState(false)
+  const [selectedSeason, setSelectedSeason] = useState<string>(String(new Date().getFullYear()))
 
-  // Fetch data on component mount and when filters change
+  // Fetch data on component mount and when filters or season change
   useEffect(() => {
     if (user) {
       loadData()
     }
-  }, [user, filters])
+  }, [user, filters, selectedSeason])
 
   const loadData = async () => {
     try {
@@ -56,7 +57,7 @@ export default function HuntManagementPage() {
       
       const [huntsData, statsData] = await Promise.all([
         huntService.getHunts(filters),
-        huntService.getHuntStats()
+        huntService.getHuntStats(selectedSeason)
       ])
       
     // ADD THIS DEBUG LOG:
@@ -303,6 +304,23 @@ export default function HuntManagementPage() {
               <p className="text-weathered-wood mt-2">
                 View and analyze all hunt logs, harvests, and sightings
               </p>
+
+              {/* Season Selector */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-forest-shadow mb-2">
+                  Season
+                </label>
+                <select
+                  value={selectedSeason}
+                  onChange={(e) => setSelectedSeason(e.target.value)}
+                  className="px-4 py-2 border border-weathered-wood/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-olive-green bg-white text-forest-shadow"
+                >
+                  <option value="2025">2025 Season</option>
+                  <option value="2024">2024 Season</option>
+                  <option value="2023">2023 Season</option>
+                  <option value="2022">2022 Season</option>
+                </select>
+              </div>
             </div>
             <div className="flex items-center space-x-3">
               <button 
