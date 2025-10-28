@@ -795,7 +795,7 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
             setItemsPerPage(Number(e.target.value))
             setCurrentPage(1)
           }}
-          className="border border-weathered-wood/20 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-olive-green bg-morning-mist"
+          className="border border-weathered-wood/20 rounded px-2 py-1 text-sm text-forest-shadow focus:outline-none focus:ring-2 focus:ring-olive-green bg-morning-mist"
         >
           <option value={10}>10 per page</option>
           <option value={25}>25 per page</option>
@@ -894,7 +894,7 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
                   placeholder="Search by member, stand, notes, or game type..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-weathered-wood/20 rounded-lg focus:ring-2 focus:ring-olive-green focus:border-olive-green bg-morning-mist transition-colors"
+                  className="w-full pl-10 pr-4 py-2 border border-weathered-wood/20 rounded-lg text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green bg-morning-mist transition-colors"
                 />
               </div>
             </div>
@@ -903,7 +903,7 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
               <select
                 value={filterHarvest}
                 onChange={(e) => setFilterHarvest(e.target.value as 'all' | 'harvest' | 'no-harvest')}
-                className="border border-weathered-wood/20 rounded-lg px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green bg-morning-mist transition-colors"
+                className="border border-weathered-wood/20 rounded-lg px-3 py-2 text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green bg-morning-mist transition-colors"
               >
                 <option value="all">All Hunts</option>
                 <option value="harvest">With Harvest</option>
