@@ -861,7 +861,7 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
               <button
                 onClick={exportData}
                 disabled={loading}
-                className="flex items-center px-4 py-2 bg-bright-orange text-white rounded-lg hover:bg-burnt-orange transition-colors disabled:opacity-50"
+                className="flex items-center px-4 py-2 bg-olive-green text-white rounded-lg hover:bg-pine-needle transition-colors disabled:opacity-50"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Export CSV
@@ -873,7 +873,7 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
                   clearSelection()
                 }}
                 disabled={loading}
-                className="flex items-center px-4 py-2 bg-olive-green text-white rounded-lg hover:bg-pine-needle transition-colors disabled:opacity-50"
+                className="flex items-center px-4 py-2 bg-burnt-orange text-white rounded-lg hover:bg-clay-earth transition-colors disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 Refresh

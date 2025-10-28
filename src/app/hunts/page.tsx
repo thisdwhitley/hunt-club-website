@@ -327,7 +327,7 @@ export default function HuntManagementPage() {
                 <Database className="w-4 h-4 mr-2" />
                 {showManagement ? 'Hide' : 'Show'} Data Management
               </button>
-              <button 
+              <button
                 onClick={exportHunts}
                 className="flex items-center px-4 py-2 bg-olive-green text-white rounded-lg hover:bg-pine-needle transition-colors"
               >
@@ -385,7 +385,7 @@ export default function HuntManagementPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-2xl font-bold text-forest-shadow">{stats.totalSightings}</p>
-                  <p className="text-sm text-weathered-wood">Total Sightings</p>
+                  <p className="text-sm text-weathered-wood">Deer Sightings</p>
                 </div>
               </div>
             </div>
@@ -393,13 +393,24 @@ export default function HuntManagementPage() {
             <div className="bg-white rounded-lg club-shadow p-6">
               <div className="flex items-center">
                 <div className="p-3 bg-burnt-orange/10 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-burnt-orange" />
+                  <MapPin className="w-6 h-6 text-burnt-orange" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-2xl font-bold text-forest-shadow">
-                    {stats.totalHunts > 0 ? Math.round((stats.totalHarvests / stats.totalHunts) * 100) : 0}%
-                  </p>
-                  <p className="text-sm text-weathered-wood">Success Rate</p>
+                  {stats.mostHuntedStand ? (
+                    <>
+                      <p className="text-2xl font-bold text-forest-shadow truncate max-w-[150px]">
+                        {stats.mostHuntedStand.name}
+                      </p>
+                      <p className="text-sm text-weathered-wood">
+                        Most Hunted ({stats.mostHuntedStand.hunt_count} hunts)
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-2xl font-bold text-forest-shadow">—</p>
+                      <p className="text-sm text-weathered-wood">Most Hunted Stand</p>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
