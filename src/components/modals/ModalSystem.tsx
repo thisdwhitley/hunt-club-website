@@ -953,7 +953,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
                 type="email"
                 value={resetEmail}
                 onChange={(e) => setResetEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-weathered-wood/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-olive-green/50 focus:border-olive-green"
+                className="w-full px-3 py-2 border border-weathered-wood/30 rounded-lg text-forest-shadow focus:outline-none focus:ring-2 focus:ring-olive-green/50 focus:border-olive-green"
                 required
                 disabled={resetLoading}
               />
@@ -1019,7 +1019,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
               type="email"
               value={localEmail}
               onChange={(e) => setLocalEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-weathered-wood/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-olive-green/50 focus:border-olive-green"
+              className="w-full px-3 py-2 border border-weathered-wood/30 rounded-lg text-forest-shadow focus:outline-none focus:ring-2 focus:ring-olive-green/50 focus:border-olive-green"
               required
               disabled={localLoading}
             />
@@ -1034,7 +1034,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
               type="password"
               value={localPassword}
               onChange={(e) => setLocalPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-weathered-wood/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-olive-green/50 focus:border-olive-green"
+              className="w-full px-3 py-2 border border-weathered-wood/30 rounded-lg text-forest-shadow focus:outline-none focus:ring-2 focus:ring-olive-green/50 focus:border-olive-green"
               required
               disabled={localLoading}
             />
