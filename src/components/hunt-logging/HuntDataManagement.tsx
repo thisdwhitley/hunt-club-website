@@ -6,15 +6,17 @@
 import React, { useState, useEffect } from 'react'
 import { huntService, type HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
 import { getTemperatureContext, getPrimaryTemperatureExplanation, getTemperatureRange } from '@/lib/hunt-logging/temperature-utils' // NEW IMPORTS
+import { getStandIcon } from '@/lib/utils/standUtils'
+import { getIcon } from '@/lib/shared/icons'
 import HuntCard from './HuntCard'
 import { formatDate, formatHuntDate, formatTime } from '@/lib/utils/date'
-import { 
-  Table, 
-  Trash2, 
-  Edit, 
-  Eye, 
-  CheckCircle2, 
-  XCircle, 
+import {
+  Table,
+  Trash2,
+  Edit,
+  Eye,
+  CheckCircle2,
+  XCircle,
   Calendar,
   MapPin,
   Target,
@@ -79,6 +81,9 @@ const HuntDetailsModal: React.FC<{
   const primaryTemp = getPrimaryTemperatureExplanation(hunt)
   const tempRange = getTemperatureRange(hunt)
 
+  // Get stand-specific icon
+  const StandIcon = getIcon(getStandIcon(hunt.stand?.type) as any)
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
@@ -129,13 +134,10 @@ const HuntDetailsModal: React.FC<{
                 </div>
 
                 <div className="flex items-center">
-                  <MapPin className="w-5 h-5 mr-3 text-olive-green" />
+                  <StandIcon className="w-5 h-5 mr-3 text-olive-green" />
                   <div>
                     <span className="font-medium text-forest-shadow">Stand:</span>
                     <span className="ml-2 text-weathered-wood">{hunt.stand?.name || 'Unknown Stand'}</span>
-                    {hunt.stand?.type && (
-                      <span className="block text-sm text-weathered-wood ml-8">Type: {hunt.stand.type}</span>
-                    )}
                   </div>
                 </div>
 

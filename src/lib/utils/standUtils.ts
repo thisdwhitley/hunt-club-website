@@ -159,6 +159,24 @@ export const getStandStyleInfo = (style?: StandStyle | null) => {
   }
 };
 
+// Get stand icon component from centralized icon registry
+// Maps stand types to Lucide icons from /lib/shared/icons
+export const getStandIcon = (standType?: string | null) => {
+  if (!standType) return 'mapPin'; // Default fallback
+
+  const type = standType.toLowerCase();
+
+  // Map various stand type names to icon registry names
+  if (type.includes('ladder')) return 'ladderStand';
+  if (type.includes('bale') || type.includes('hay')) return 'baleBlind';
+  if (type.includes('box') || type.includes('tower') || type.includes('elevated')) return 'boxStand';
+  if (type.includes('tripod')) return 'tripodStand';
+  if (type.includes('ground') || type.includes('blind') || type.includes('popup') || type.includes('permanent')) return 'groundBlind';
+  if (type.includes('tree')) return 'ladderStand'; // Use ladder stand for tree stands
+
+  return 'mapPin'; // Fallback to map pin for unknown types
+};
+
 // Validate stand data
 export const validateStandData = (data: Partial<StandInsert>): string[] => {
   const errors: string[] = [];

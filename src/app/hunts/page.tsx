@@ -7,14 +7,16 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { huntService, type HuntWithDetails, type HuntStats, type HuntFilters } from '@/lib/hunt-logging/hunt-service'
 import { getTemperatureContext } from '@/lib/hunt-logging/temperature-utils' // NEW IMPORT
+import { getStandIcon } from '@/lib/utils/standUtils'
+import { getIcon } from '@/lib/shared/icons'
 import HuntDataManagement from '@/components/hunt-logging/HuntDataManagement'
 import { formatDate, formatHuntDate, formatTime } from '@/lib/utils/date'
-import { 
-  Target, 
-  Calendar, 
-  TrendingUp, 
-  Binoculars, 
-  MapPin, 
+import {
+  Target,
+  Calendar,
+  TrendingUp,
+  Binoculars,
+  MapPin,
   Clock,
   Trophy,
   Filter,
@@ -146,7 +148,9 @@ export default function HuntManagementPage() {
         {filteredHunts.slice(0, 10).map((hunt) => {
           // UPDATED: Get contextual temperature for this hunt
           const tempContext = getTemperatureContext(hunt)
-          
+          // Get stand-specific icon
+          const StandIcon = getIcon(getStandIcon(hunt.stand?.type) as any)
+
           return (
             <div key={hunt.id} className="bg-white rounded-lg club-shadow hover:shadow-lg transition-shadow">
               <div className="p-4">
@@ -179,9 +183,8 @@ export default function HuntManagementPage() {
                         {hunt.member?.display_name || hunt.member?.full_name || 'Unknown'}
                       </div>
                       <div className="flex items-center">
-                        <MapPin className="w-3 h-3 mr-1" />
+                        <StandIcon className="w-3 h-3 mr-1" />
                         {hunt.stand?.name || 'Unknown Stand'}
-                        {hunt.stand?.type && <span className="ml-1 text-xs">({hunt.stand.type})</span>}
                       </div>
                       <div className="flex items-center">
                         <Clock className="w-3 h-3 mr-1" />
@@ -572,7 +575,7 @@ export default function HuntManagementPage() {
                           <div>
                             <p className="font-medium text-forest-shadow">{stand.name}</p>
                             <p className="text-sm text-weathered-wood">
-                              {stand.hunt_count} hunts • {stand.type || 'Stand'}
+                              {stand.hunt_count} hunts
                             </p>
                           </div>
                         </div>

@@ -6,8 +6,10 @@
 import React from 'react'
 import { HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
 import { getTemperatureContext } from '@/lib/hunt-logging/temperature-utils' // NEW IMPORT
+import { getStandIcon } from '@/lib/utils/standUtils'
+import { getIcon } from '@/lib/shared/icons'
 import { formatDate, formatHuntDate, formatTime } from '@/lib/utils/date'
-import { 
+import {
   Calendar,
   MapPin,
   Clock,
@@ -76,6 +78,9 @@ const HuntCard: React.FC<HuntCardProps> = ({
   // UPDATED: Get contextual temperature
   const tempContext = getTemperatureContext(hunt)
 
+  // Get stand-specific icon
+  const StandIcon = getIcon(getStandIcon(hunt.stand?.type) as any)
+
   // Compact mode for lists
   if (mode === 'compact') {
     return (
@@ -103,7 +108,7 @@ const HuntCard: React.FC<HuntCardProps> = ({
             </span>
           </div>
           <div className="flex items-center space-x-2">
-            <MapPin className="w-4 h-4 text-weathered-wood" />
+            <StandIcon className="w-4 h-4 text-weathered-wood" />
             <span className="text-sm text-forest-shadow">
               {hunt.stand?.name || 'Unknown Stand'}
             </span>
@@ -198,14 +203,11 @@ const HuntCard: React.FC<HuntCardProps> = ({
         </td>
         <td className="px-4 py-3">
           <div className="flex items-center">
-            <MapPin className="w-4 h-4 mr-2 text-weathered-wood" />
+            <StandIcon className="w-4 h-4 mr-2 text-weathered-wood" />
             <div>
               <div className="text-sm text-forest-shadow font-medium">
                 {hunt.stand?.name || 'Unknown'}
               </div>
-              {hunt.stand?.type && (
-                <div className="text-xs text-weathered-wood">{hunt.stand.type}</div>
-              )}
             </div>
           </div>
         </td>
@@ -398,9 +400,8 @@ const HuntCard: React.FC<HuntCardProps> = ({
         {/* Location and Time */}
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center text-weathered-wood">
-            <MapPin className="w-4 h-4 mr-2" />
+            <StandIcon className="w-4 h-4 mr-2" />
             <span>{hunt.stand?.name || 'Unknown Stand'}</span>
-            {hunt.stand?.type && <span className="ml-2 text-xs">({hunt.stand.type})</span>}
           </div>
           <div className="flex items-center text-weathered-wood">
             <Clock className="w-4 h-4 mr-2" />
