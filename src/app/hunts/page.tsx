@@ -530,7 +530,7 @@ export default function HuntManagementPage() {
               placeholder="Search hunts by stand, member, notes, or game type..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-weathered-wood/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-olive-green bg-morning-mist"
+              className="w-full pl-10 pr-4 py-3 border border-weathered-wood/20 rounded-lg text-forest-shadow focus:outline-none focus:ring-2 focus:ring-olive-green bg-morning-mist"
             />
           </div>
         </div>
