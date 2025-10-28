@@ -732,9 +732,6 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
               Stand
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-forest-shadow uppercase tracking-wider">
-              Time
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-forest-shadow uppercase tracking-wider">
               Result
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-forest-shadow uppercase tracking-wider">
