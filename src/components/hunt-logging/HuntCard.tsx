@@ -259,19 +259,19 @@ const HuntCard: React.FC<HuntCardProps> = ({
             {tempContext.temperature !== null && (
               <div className="flex items-center text-xs">
                 <Thermometer className="w-3 h-3 mr-1 text-burnt-orange" />
-                <span className="font-medium">{tempContext.fullDisplay}</span>
+                <span className="font-medium text-forest-shadow">{tempContext.fullDisplay}</span>
               </div>
             )}
             {hunt.windspeed !== null && (
               <div className="flex items-center text-xs">
                 <Wind className="w-3 h-3 mr-1 text-dark-teal" />
-                <span>{hunt.windspeed} mph</span>
+                <span className="text-forest-shadow">{hunt.windspeed} mph</span>
               </div>
             )}
             {hunt.moonphase !== null && (
               <div className="flex items-center text-xs">
                 <Moon className="w-3 h-3 mr-1 text-muted-gold" />
-                <span>{getMoonPhaseDisplay(hunt.moonphase)}</span>
+                <span className="text-forest-shadow">{getMoonPhaseDisplay(hunt.moonphase)}</span>
               </div>
             )}
             {weatherQuality.score && (
