@@ -9,7 +9,10 @@ import { getTemperatureContext, getPrimaryTemperatureExplanation, getTemperature
 import { getStandIcon } from '@/lib/utils/standUtils'
 import { getIcon } from '@/lib/shared/icons'
 import HuntCard from './HuntCard'
+import HuntEntryForm from './HuntEntryForm'
+import { useStands } from '@/hooks/useStands'
 import { formatDate, formatHuntDate, formatTime } from '@/lib/utils/date'
+import type { HuntFormData } from '@/lib/hunt-logging/hunt-validation'
 import {
   Table,
   Trash2,
@@ -515,11 +518,12 @@ const HuntDetailsModal: React.FC<{
   )
 }
 
-const HuntDataManagement: React.FC<HuntDataManagementProps> = ({ 
-  hunts: initialHunts, 
-  onHuntUpdate, 
-  onHuntDelete 
+const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
+  hunts: initialHunts,
+  onHuntUpdate,
+  onHuntDelete
 }) => {
+  const { stands } = useStands({ active: true })
   const [hunts, setHunts] = useState<HuntWithDetails[]>(initialHunts)
   const [selectedIds, setSelectedIds] = useState(new Set<string>())
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table')
@@ -535,6 +539,8 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
   const [loading, setLoading] = useState(false)
   const [viewingHunt, setViewingHunt] = useState<HuntWithDetails | null>(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [showEditForm, setShowEditForm] = useState(false)
+  const [editingHunt, setEditingHunt] = useState<HuntWithDetails | null>(null)
 
   // Update hunts when props change
   useEffect(() => {
@@ -606,8 +612,8 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
 
   // Action handlers
   const handleEdit = (hunt: HuntWithDetails) => {
-    // For now, just enable inline editing of notes
-    handleInlineEdit(hunt.id, 'notes', hunt.notes)
+    setEditingHunt(hunt)
+    setShowEditForm(true)
   }
 
   const handleView = (hunt: HuntWithDetails) => {
@@ -636,13 +642,13 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
       try {
         setLoading(true)
         const result = await huntService.bulkDeleteHunts(Array.from(selectedIds))
-        
+
         if (result.failed.length > 0) {
           alert(`${result.succeeded.length} hunts deleted successfully. ${result.failed.length} failed to delete.`)
         } else {
           console.log(`${result.succeeded.length} hunts deleted successfully`)
         }
-        
+
         clearSelection()
         onHuntDelete() // This will refresh the parent data
       } catch (error) {
@@ -651,6 +657,35 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
       } finally {
         setLoading(false)
       }
+    }
+  }
+
+  const handleFormSubmit = async (data: HuntFormData) => {
+    if (!editingHunt) return
+
+    try {
+      setLoading(true)
+
+      // Extract only the fields that belong to hunt_logs table
+      const huntUpdates = {
+        hunt_date: data.hunt_date,
+        stand_id: data.stand_id,
+        start_time: data.start_time || null,
+        end_time: data.end_time || null,
+        hunt_type: data.hunt_type || null,
+        notes: data.notes || null,
+      }
+
+      await huntService.updateHunt(editingHunt.id, huntUpdates)
+      setShowEditForm(false)
+      setEditingHunt(null)
+      onHuntUpdate() // Reload data
+      console.log('Hunt updated successfully')
+    } catch (error) {
+      console.error('Error updating hunt:', error)
+      alert('Failed to update hunt. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -1007,6 +1042,25 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
           setViewingHunt(null)
         }}
       />
+
+      {/* Edit Form Modal */}
+      {showEditForm && editingHunt && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
+            <HuntEntryForm
+              stands={stands}
+              hunt={editingHunt}
+              mode="edit"
+              onSubmit={handleFormSubmit}
+              onCancel={() => {
+                setShowEditForm(false)
+                setEditingHunt(null)
+              }}
+              isSubmitting={loading}
+            />
+          </div>
+        </div>
+      )}
     </>
   )
 }

@@ -59,9 +59,11 @@ interface HuntEntryFormProps {
   onSubmit: (data: HuntFormData) => Promise<void>
   onCancel: () => void
   isSubmitting?: boolean
+  hunt?: any  // Existing hunt data for edit mode
+  mode?: 'create' | 'edit'  // Form mode
 }
 
-export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting = false }: HuntEntryFormProps) {
+export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting = false, hunt, mode = 'create' }: HuntEntryFormProps) {
   const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState<FormStep>('basic')
   const [showExactTimes, setShowExactTimes] = useState(false)
@@ -82,7 +84,16 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
     getValues
   } = useForm<HuntFormData>({
     resolver: zodResolver(HuntFormSchema),
-    defaultValues: {
+    defaultValues: mode === 'edit' && hunt ? {
+      hunt_date: hunt.hunt_date || new Date().toISOString().split('T')[0],
+      stand_id: hunt.stand_id || '',
+      start_time: hunt.start_time || '',
+      end_time: hunt.end_time || '',
+      had_harvest: hunt.had_harvest || false,
+      notes: hunt.notes || '',
+      hunt_type: hunt.hunt_type || getCurrentTimePeriod(),
+      sightings: hunt.sightings || []
+    } : {
       hunt_date: new Date().toISOString().split('T')[0], // Today
       stand_id: '',
       start_time: '',
