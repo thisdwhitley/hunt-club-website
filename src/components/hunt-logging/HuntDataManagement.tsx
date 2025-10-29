@@ -567,19 +567,58 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
     return matchesSearch && matchesFilter
   })
 
-  // Sorting logic
+  // Sorting logic with special handling for nested/computed fields
   const sortedHunts = [...filteredHunts].sort((a, b) => {
-    let aVal = a[sortField]
-    let bVal = b[sortField]
-    
-    if (sortField === 'hunt_date') {
-      aVal = new Date(aVal as string)
-      bVal = new Date(bVal as string)
+    let aVal: any
+    let bVal: any
+
+    // Handle different field types
+    switch (sortField) {
+      case 'hunt_date':
+        aVal = new Date(a.hunt_date)
+        bVal = new Date(b.hunt_date)
+        break
+
+      case 'member':
+        // Extract member name from nested object
+        aVal = a.member?.display_name || a.member?.full_name || ''
+        bVal = b.member?.display_name || b.member?.full_name || ''
+        break
+
+      case 'stand':
+        // Extract stand name from nested object
+        aVal = a.stand?.name || ''
+        bVal = b.stand?.name || ''
+        break
+
+      case 'temperature':
+        // Get contextual temperature (may be null if no weather data)
+        aVal = getTemperatureContext(a).temperature ?? -999 // Use very low value for null temps
+        bVal = getTemperatureContext(b).temperature ?? -999
+        break
+
+      default:
+        // Direct field access for other fields
+        aVal = a[sortField]
+        bVal = b[sortField]
     }
-    
-    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
-    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
-    return 0
+
+    // Handle null/undefined values
+    if (aVal == null && bVal == null) return 0
+    if (aVal == null) return 1  // null values go to end
+    if (bVal == null) return -1
+
+    // Compare values
+    if (typeof aVal === 'number' && typeof bVal === 'number') {
+      return sortDirection === 'asc' ? aVal - bVal : bVal - aVal
+    } else {
+      // String comparison (case-insensitive)
+      const aStr = String(aVal).toLowerCase()
+      const bStr = String(bVal).toLowerCase()
+      if (aStr < bStr) return sortDirection === 'asc' ? -1 : 1
+      if (aStr > bStr) return sortDirection === 'asc' ? 1 : -1
+      return 0
+    }
   })
 
   // Pagination
