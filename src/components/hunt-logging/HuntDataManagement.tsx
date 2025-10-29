@@ -1119,8 +1119,33 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
 
       {/* Edit Form Modal */}
       {showEditForm && editingHunt && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            // Click backdrop to close
+            setShowEditForm(false)
+            setEditingHunt(null)
+          }}
+        >
+          <div
+            className="bg-white rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto relative"
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
+          >
+            {/* Modal Header with Close Button */}
+            <div className="sticky top-0 bg-olive-green text-white px-6 py-4 rounded-t-lg flex items-center justify-between z-10">
+              <h2 className="text-xl font-semibold">Edit Hunt Log</h2>
+              <button
+                onClick={() => {
+                  setShowEditForm(false)
+                  setEditingHunt(null)
+                }}
+                className="p-1 hover:bg-pine-needle rounded transition-colors"
+                title="Close"
+              >
+                <XIcon size={20} />
+              </button>
+            </div>
+
             <HuntEntryForm
               stands={stands}
               hunt={editingHunt}
