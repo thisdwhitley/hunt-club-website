@@ -8,7 +8,7 @@ import { HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
 import { getTemperatureContext } from '@/lib/hunt-logging/temperature-utils' // NEW IMPORT
 import { getStandIcon } from '@/lib/utils/standUtils'
 import { getIcon } from '@/lib/shared/icons'
-import { formatDate, formatHuntDate, formatTime, getHuntTypeBadge } from '@/lib/utils/date'
+import { formatDate, formatHuntDate, formatTime, getHuntTypeBadge, parseDBDate } from '@/lib/utils/date'
 import {
   Calendar,
   MapPin,
@@ -86,8 +86,8 @@ const HuntCard: React.FC<HuntCardProps> = ({
 
   // Compact mode for lists - Option D: Colored MM/DD badge with 2-line layout
   if (mode === 'compact') {
-    // Helper to get date parts
-    const date = new Date(hunt.hunt_date)
+    // Helper to get date parts - IMPORTANT: Use parseDBDate to avoid timezone issues
+    const date = parseDBDate(hunt.hunt_date)
     const monthNumber = String(date.getMonth() + 1).padStart(2, '0')
     const dayNumberPadded = String(date.getDate()).padStart(2, '0')
     const fullDate = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
