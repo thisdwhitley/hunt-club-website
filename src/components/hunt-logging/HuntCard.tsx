@@ -227,7 +227,10 @@ const HuntCard: React.FC<HuntCardProps> = ({
               )}
               <span className="whitespace-nowrap">{formatHuntDate(hunt.hunt_date)}</span>
               {hunt.sightings && hunt.sightings.length > 0 && (
-                <span className="flex items-center gap-1 text-xs text-dark-teal">
+                <span
+                  className="flex items-center gap-1 text-xs text-dark-teal cursor-help"
+                  title={hunt.sightings.map(s => `${s.count} ${s.animal_type}`).join(', ')}
+                >
                   <Binoculars className="w-3 h-3" />
                   {hunt.sightings.length}
                 </span>
@@ -249,9 +252,6 @@ const HuntCard: React.FC<HuntCardProps> = ({
           <div className="text-sm font-medium text-forest-shadow">
             {hunt.member?.display_name || hunt.member?.full_name || 'Unknown'}
           </div>
-          {hunt.member?.email && (
-            <div className="text-xs text-weathered-wood">{hunt.member.email}</div>
-          )}
         </td>
         <td className="px-4 py-3">
           <div className="flex items-center">
