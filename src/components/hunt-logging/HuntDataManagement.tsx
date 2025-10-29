@@ -527,6 +527,7 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
   const [hunts, setHunts] = useState<HuntWithDetails[]>(initialHunts)
   const [selectedIds, setSelectedIds] = useState(new Set<string>())
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table')
+  const [isMobile, setIsMobile] = useState(false)
   const [sortField, setSortField] = useState<keyof HuntWithDetails>('hunt_date')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [filterHarvest, setFilterHarvest] = useState<'all' | 'harvest' | 'no-harvest'>('all')
@@ -546,6 +547,21 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
   useEffect(() => {
     setHunts(initialHunts)
   }, [initialHunts])
+
+  // Detect mobile and force card view
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768 // md breakpoint
+      setIsMobile(mobile)
+      if (mobile) {
+        setViewMode('cards')
+      }
+    }
+
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Filter and search logic using actual database fields
   const filteredHunts = hunts.filter(hunt => {
@@ -837,17 +853,17 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
   )
 
   const HuntCardView = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
       {paginatedHunts.map((hunt) => (
         <HuntCard
           key={hunt.id}
           hunt={hunt}
-          mode="full"
+          mode={isMobile ? 'compact' : 'full'}
           onEdit={handleEdit}
           onView={handleView}
           onDelete={handleDelete}
-          isSelected={selectedIds.has(hunt.id)}
-          onSelect={toggleSelection}
+          isSelected={isMobile ? false : selectedIds.has(hunt.id)}
+          onSelect={isMobile ? undefined : toggleSelection}
           showActions={true}
         />
       ))}
@@ -855,34 +871,38 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
   )
 
   const PaginationControls = () => (
-    <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-weathered-wood/20">
+    <div className={`flex items-center justify-between px-4 py-3 bg-white border-t border-weathered-wood/20 ${isMobile ? 'flex-col gap-3' : ''}`}>
+      {!isMobile && (
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-weathered-wood">
+            Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, sortedHunts.length)} of {sortedHunts.length} results
+          </span>
+          <select
+            value={itemsPerPage}
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value))
+              setCurrentPage(1)
+            }}
+            className="border border-weathered-wood/20 rounded px-2 py-1 text-sm text-forest-shadow focus:outline-none focus:ring-2 focus:ring-olive-green bg-morning-mist"
+          >
+            <option value={10}>10 per page</option>
+            <option value={25}>25 per page</option>
+            <option value={50}>50 per page</option>
+            <option value={100}>100 per page</option>
+          </select>
+        </div>
+      )}
+
       <div className="flex items-center space-x-2">
-        <span className="text-sm text-weathered-wood">
-          Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, sortedHunts.length)} of {sortedHunts.length} results
-        </span>
-        <select
-          value={itemsPerPage}
-          onChange={(e) => {
-            setItemsPerPage(Number(e.target.value))
-            setCurrentPage(1)
-          }}
-          className="border border-weathered-wood/20 rounded px-2 py-1 text-sm text-forest-shadow focus:outline-none focus:ring-2 focus:ring-olive-green bg-morning-mist"
-        >
-          <option value={10}>10 per page</option>
-          <option value={25}>25 per page</option>
-          <option value={50}>50 per page</option>
-          <option value={100}>100 per page</option>
-        </select>
-      </div>
-      
-      <div className="flex items-center space-x-2">
-        <button
-          onClick={() => setCurrentPage(1)}
-          disabled={currentPage === 1}
-          className="p-2 rounded border border-weathered-wood/20 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-morning-mist text-forest-shadow transition-colors"
-        >
-          <ChevronsLeft className="w-4 h-4" />
-        </button>
+        {!isMobile && (
+          <button
+            onClick={() => setCurrentPage(1)}
+            disabled={currentPage === 1}
+            className="p-2 rounded border border-weathered-wood/20 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-morning-mist text-forest-shadow transition-colors"
+          >
+            <ChevronsLeft className="w-4 h-4" />
+          </button>
+        )}
         <button
           onClick={() => setCurrentPage(currentPage - 1)}
           disabled={currentPage === 1}
@@ -890,11 +910,11 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
-        
-        <span className="px-3 py-2 text-sm text-weathered-wood">
+
+        <span className="px-3 py-2 text-sm text-weathered-wood whitespace-nowrap">
           Page {currentPage} of {totalPages}
         </span>
-        
+
         <button
           onClick={() => setCurrentPage(currentPage + 1)}
           disabled={currentPage === totalPages}
@@ -902,14 +922,22 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
         >
           <ChevronRight className="w-4 h-4" />
         </button>
-        <button
-          onClick={() => setCurrentPage(totalPages)}
-          disabled={currentPage === totalPages}
-          className="p-2 rounded border border-weathered-wood/20 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-morning-mist text-forest-shadow transition-colors"
-        >
-          <ChevronsRight className="w-4 h-4" />
-        </button>
+        {!isMobile && (
+          <button
+            onClick={() => setCurrentPage(totalPages)}
+            disabled={currentPage === totalPages}
+            className="p-2 rounded border border-weathered-wood/20 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-morning-mist text-forest-shadow transition-colors"
+          >
+            <ChevronsRight className="w-4 h-4" />
+          </button>
+        )}
       </div>
+
+      {isMobile && (
+        <span className="text-xs text-weathered-wood">
+          Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedHunts.length)} of {sortedHunts.length}
+        </span>
+      )}
     </div>
   )
 
@@ -969,21 +997,23 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
 
             {/* Stats and View Toggle */}
             <div className="flex items-center gap-4">
-              {/* Stats */}
-              <div className="flex items-center gap-4 text-sm text-weathered-wood">
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-olive-green rounded-full"></div>
-                  <span>
-                    {sortedHunts.length} of {hunts.length} hunts
-                  </span>
+              {/* Stats - hide on mobile */}
+              {!isMobile && (
+                <div className="flex items-center gap-4 text-sm text-weathered-wood">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-olive-green rounded-full"></div>
+                    <span>
+                      {sortedHunts.length} of {hunts.length} hunts
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Trophy className="w-4 h-4" />
+                    <span>
+                      {sortedHunts.filter(h => h.had_harvest || h.harvest_count > 0).length} harvests
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Trophy className="w-4 h-4" />
-                  <span>
-                    {sortedHunts.filter(h => h.had_harvest || h.harvest_count > 0).length} harvests
-                  </span>
-                </div>
-              </div>
+              )}
 
               {/* Filter Dropdown */}
               <select
@@ -996,8 +1026,9 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
                 <option value="no-harvest">No Harvest</option>
               </select>
 
-              {/* View Toggle */}
-              <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+              {/* View Toggle - hide on mobile (auto-forced to cards) */}
+              {!isMobile && (
+                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
                 <button
                   onClick={() => setViewMode('table')}
                   className={`px-3 py-2 transition-colors ${viewMode === 'table' ? 'bg-olive-green/10 text-olive-green' : 'text-weathered-wood hover:bg-gray-50'}`}
@@ -1018,13 +1049,15 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
                   </div>
                 </button>
               </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Bulk Actions */}
-        <div className="p-4 border-b border-gray-200">
-          {showBulkActions && (
+        {/* Bulk Actions - hide on mobile */}
+        {!isMobile && (
+          <div className="p-4 border-b border-gray-200">
+            {showBulkActions && (
             <div className="flex items-center justify-between p-3 bg-olive-green/10 border border-olive-green/20 rounded-lg">
               <span className="text-sm text-olive-green font-medium">
                 {selectedIds.size} hunt record{selectedIds.size > 1 ? 's' : ''} selected
@@ -1047,7 +1080,8 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
               </div>
             </div>
           )}
-        </div>
+          </div>
+        )}
 
         {/* Data Display */}
         <div className="min-h-96">
