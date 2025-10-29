@@ -575,8 +575,9 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
     // Handle different field types
     switch (sortField) {
       case 'hunt_date':
-        aVal = new Date(a.hunt_date)
-        bVal = new Date(b.hunt_date)
+        // Convert to timestamp (number) for proper numeric comparison
+        aVal = new Date(a.hunt_date).getTime()
+        bVal = new Date(b.hunt_date).getTime()
         break
 
       case 'member':
