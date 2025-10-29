@@ -825,9 +825,6 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
             <th className="px-4 py-3 text-left text-xs font-medium text-forest-shadow uppercase tracking-wider">
               Weather
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-forest-shadow uppercase tracking-wider">
-              Sightings
-            </th>
             <th className="px-4 py-3 text-right text-xs font-medium text-forest-shadow uppercase tracking-wider">
               Actions
             </th>

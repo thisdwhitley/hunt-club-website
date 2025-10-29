@@ -216,27 +216,33 @@ const HuntCard: React.FC<HuntCardProps> = ({
           )}
         </td>
         <td className="px-4 py-3">
-          <div className="flex items-center">
-            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold mr-2 ${huntTypeBadge.className}`}>
-              {huntTypeBadge.label}
-            </span>
-            {(hunt.had_harvest || hunt.harvest_count > 0) && (
-              <Trophy className="w-4 h-4 mr-2 text-bright-orange" />
-            )}
-            <div>
-              <div className="text-sm font-medium text-forest-shadow">
-                {formatHuntDate(hunt.hunt_date)}
-              </div>
-              {(hunt.start_time || hunt.end_time) && (
-                <div className="text-xs text-weathered-wood flex items-center">
-                  <Clock className="w-3 h-3 mr-1" />
-                  {formatTime(hunt.start_time) || 'N/A'} - {formatTime(hunt.end_time) || 'N/A'}
-                  {hunt.hunt_duration_minutes && (
-                    <span className="ml-1">({formatDuration(hunt.hunt_duration_minutes)})</span>
-                  )}
-                </div>
+          <div>
+            {/* Line 1: Badges + Date + Sightings - all on one line */}
+            <div className="flex items-center gap-1.5 text-sm font-medium text-forest-shadow">
+              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ${huntTypeBadge.className}`}>
+                {huntTypeBadge.label}
+              </span>
+              {(hunt.had_harvest || hunt.harvest_count > 0) && (
+                <Trophy className="w-4 h-4 text-bright-orange flex-shrink-0" />
+              )}
+              <span className="whitespace-nowrap">{formatHuntDate(hunt.hunt_date)}</span>
+              {hunt.sightings && hunt.sightings.length > 0 && (
+                <span className="flex items-center gap-1 text-xs text-dark-teal">
+                  <Binoculars className="w-3 h-3" />
+                  {hunt.sightings.length}
+                </span>
               )}
             </div>
+            {/* Line 2: Time details (only if present) */}
+            {(hunt.start_time || hunt.end_time) && (
+              <div className="text-xs text-weathered-wood flex items-center mt-1">
+                <Clock className="w-3 h-3 mr-1" />
+                {formatTime(hunt.start_time) || 'N/A'} - {formatTime(hunt.end_time) || 'N/A'}
+                {hunt.hunt_duration_minutes && (
+                  <span className="ml-1">({formatDuration(hunt.hunt_duration_minutes)})</span>
+                )}
+              </div>
+            )}
           </div>
         </td>
         <td className="px-4 py-3">
@@ -258,41 +264,27 @@ const HuntCard: React.FC<HuntCardProps> = ({
           </div>
         </td>
         <td className="px-4 py-3">
-          {/* UPDATED: Weather display with contextual temperature */}
-          <div className="space-y-1">
+          {/* Horizontal compact weather display - all on one line */}
+          <div className="flex items-center gap-2 text-xs flex-wrap">
             {tempContext.temperature !== null && (
-              <div className="flex items-center text-xs">
-                <Thermometer className="w-3 h-3 mr-1 text-burnt-orange" />
+              <span className="flex items-center gap-1 whitespace-nowrap">
+                <Thermometer className="w-3 h-3 text-burnt-orange" />
                 <span className="font-medium text-forest-shadow">{tempContext.fullDisplay}</span>
-              </div>
+              </span>
             )}
             {hunt.windspeed !== null && (
-              <div className="flex items-center text-xs">
-                <Wind className="w-3 h-3 mr-1 text-dark-teal" />
+              <span className="flex items-center gap-1 whitespace-nowrap">
+                <Wind className="w-3 h-3 text-dark-teal" />
                 <span className="text-forest-shadow">{hunt.windspeed} mph</span>
-              </div>
+              </span>
             )}
             {hunt.moonphase !== null && (
-              <div className="flex items-center text-xs">
-                <Moon className="w-3 h-3 mr-1 text-muted-gold" />
+              <span className="flex items-center gap-1 whitespace-nowrap">
+                <Moon className="w-3 h-3 text-muted-gold" />
                 <span className="text-forest-shadow">{getMoonPhaseDisplay(hunt.moonphase)}</span>
-              </div>
+              </span>
             )}
           </div>
-        </td>
-        <td className="px-4 py-3">
-          <div className="flex items-center">
-            <Binoculars className="w-4 h-4 mr-2 text-weathered-wood" />
-            <span className="text-sm text-forest-shadow">
-              {hunt.sightings?.length || 0}
-            </span>
-          </div>
-          {hunt.sightings && hunt.sightings.length > 0 && (
-            <div className="text-xs text-weathered-wood mt-1">
-              {hunt.sightings.slice(0, 2).map(s => s.animal_type).join(', ')}
-              {hunt.sightings.length > 2 && '...'}
-            </div>
-          )}
         </td>
         {showActions && (
           <td className="px-4 py-3">
