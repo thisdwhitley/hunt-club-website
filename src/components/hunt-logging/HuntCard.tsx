@@ -84,11 +84,29 @@ const HuntCard: React.FC<HuntCardProps> = ({
   // Get hunt type badge
   const huntTypeBadge = getHuntTypeBadge(hunt.hunt_type)
 
-  // Compact mode for lists
+  // Compact mode for lists - Option D: Colored MM/DD badge with 2-line layout
   if (mode === 'compact') {
+    // Helper to get date parts
+    const date = new Date(hunt.hunt_date)
+    const monthNumber = String(date.getMonth() + 1).padStart(2, '0')
+    const dayNumberPadded = String(date.getDate()).padStart(2, '0')
+    const fullDate = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+
+    const getBadgeColor = () => {
+      if (huntTypeBadge.className.includes('bright-orange')) return '#FA7921'
+      if (huntTypeBadge.className.includes('clay-earth')) return '#8B7355'
+      return '#566E3D'
+    }
+
+    // Abbreviate stand name if needed
+    const abbreviateStand = (standName: string) => {
+      if (standName.length <= 12) return standName
+      return standName.substring(0, 10) + '...'
+    }
+
     return (
-      <div className={`flex items-center justify-between p-3 bg-white border border-weathered-wood/20 rounded-lg hover:shadow-md transition-shadow ${className}`}>
-        <div className="flex items-center space-x-3">
+      <div className={`bg-white rounded-lg club-shadow hover:shadow-lg transition-shadow p-3 ${className}`}>
+        <div className="flex items-center gap-3">
           {onSelect && (
             <input
               type="checkbox"
@@ -97,77 +115,88 @@ const HuntCard: React.FC<HuntCardProps> = ({
               className="rounded border-weathered-wood text-olive-green focus:ring-olive-green"
             />
           )}
-          <div className="flex items-center space-x-2">
-            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ${huntTypeBadge.className}`}>
-              {huntTypeBadge.label}
-            </span>
-            {(hunt.had_harvest || hunt.harvest_count > 0) && (
-              <Trophy className="w-4 h-4 text-bright-orange" />
-            )}
-            <span className="font-medium text-forest-shadow">
-              {formatHuntDate(hunt.hunt_date)}
-            </span>
+
+          {/* Badge with MM/DD and hunt type color */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '32px',
+              height: '32px',
+              borderRadius: '6px',
+              backgroundColor: getBadgeColor(),
+              color: 'white',
+              flexShrink: 0,
+              fontSize: '11px',
+              fontWeight: 'bold',
+              letterSpacing: '-0.5px'
+            }}
+          >
+            <span>{monthNumber}/{dayNumberPadded}</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <User className="w-4 h-4 text-weathered-wood" />
-            <span className="text-sm text-forest-shadow">
-              {hunt.member?.display_name || hunt.member?.full_name || 'Unknown'}
-            </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <StandIcon className="w-4 h-4 text-weathered-wood" />
-            <span className="text-sm text-forest-shadow">
-              {hunt.stand?.name || 'Unknown Stand'}
-            </span>
-          </div>
-          {/* UPDATED: Show contextual temperature */}
-          {tempContext.temperature !== null && (
-            <div className="flex items-center space-x-2">
-              <Thermometer className="w-4 h-4 text-burnt-orange" />
-              <span className="text-sm text-forest-shadow font-medium">
-                {tempContext.fullDisplay}
+
+          <div className="flex-1 min-w-0">
+            {/* Line 1: Hunter - Stand */}
+            <h3 className="text-base font-bold text-olive-green truncate">
+              {hunt.member?.display_name || hunt.member?.full_name || 'Unknown'} - {abbreviateStand(hunt.stand?.name || 'Unknown')}
+            </h3>
+            {/* Line 2: AM/PM badge, Day, Month Date, Temp, Sightings, Harvest */}
+            <div className="flex items-center gap-2 text-xs text-weathered-wood">
+              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold ${huntTypeBadge.className}`}>
+                {huntTypeBadge.label}
               </span>
+              <span className="text-[11px]">{fullDate}</span>
+              {tempContext.temperature !== null && (
+                <div className="flex items-center gap-1">
+                  <Thermometer className="w-3 h-3 text-burnt-orange" />
+                  <span>{tempContext.temperature}°</span>
+                </div>
+              )}
+              {(hunt.sightings?.length || 0) > 0 && (
+                <div className="flex items-center gap-1">
+                  <Binoculars className="w-3 h-3 text-dark-teal" />
+                  <span>{hunt.sightings?.length}</span>
+                </div>
+              )}
+              {(hunt.had_harvest || hunt.harvest_count > 0) && (
+                <Trophy className="w-3 h-3 text-bright-orange" />
+              )}
+            </div>
+          </div>
+
+          {showActions && (
+            <div className="flex items-center space-x-1">
+              {onView && (
+                <button
+                  onClick={() => onView(hunt)}
+                  className="text-dark-teal hover:text-dark-teal/80 p-1 rounded hover:bg-dark-teal/10 transition-colors"
+                  title="View Details"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+              )}
+              {onEdit && (
+                <button
+                  onClick={() => onEdit(hunt)}
+                  className="text-olive-green hover:text-pine-needle p-1 rounded hover:bg-olive-green/10 transition-colors"
+                  title="Edit Hunt"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={() => onDelete(hunt.id)}
+                  className="text-clay-earth hover:text-clay-earth/80 p-1 rounded hover:bg-clay-earth/10 transition-colors"
+                  title="Delete Hunt"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
             </div>
           )}
-          {(hunt.had_harvest || hunt.harvest_count > 0) && (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-bright-orange/10 text-bright-orange">
-              <Trophy className="w-3 h-3 mr-1" />
-              {hunt.harvest_count}
-            </span>
-          )}
         </div>
-        
-        {showActions && (
-          <div className="flex items-center space-x-1">
-            {onView && (
-              <button
-                onClick={() => onView(hunt)}
-                className="text-dark-teal hover:text-dark-teal/80 p-1 rounded hover:bg-dark-teal/10 transition-colors"
-                title="View Details"
-              >
-                <Eye className="w-4 h-4" />
-              </button>
-            )}
-            {onEdit && (
-              <button
-                onClick={() => onEdit(hunt)}
-                className="text-olive-green hover:text-pine-needle p-1 rounded hover:bg-olive-green/10 transition-colors"
-                title="Edit Hunt"
-              >
-                <Edit className="w-4 h-4" />
-              </button>
-            )}
-            {onDelete && (
-              <button
-                onClick={() => onDelete(hunt.id)}
-                className="text-clay-earth hover:text-clay-earth/80 p-1 rounded hover:bg-clay-earth/10 transition-colors"
-                title="Delete Hunt"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        )}
       </div>
     )
   }

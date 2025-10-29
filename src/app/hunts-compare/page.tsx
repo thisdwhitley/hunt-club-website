@@ -1,18 +1,16 @@
 // src/app/hunts-compare/page.tsx
-// Demo page to compare Recent Hunts layouts: Current vs Compact mode
+// Demo page to compare Recent Hunts layouts: Current vs Compact mode (Option D)
 
 'use client'
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { huntService, type HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
-import HuntCard from '@/components/hunt-logging/HuntCard'
 import { formatHuntDate, getHuntTypeBadge } from '@/lib/utils/date'
 import { getStandIcon } from '@/lib/utils/standUtils'
 import { getIcon } from '@/lib/shared/icons'
 import { getTemperatureContext } from '@/lib/hunt-logging/temperature-utils'
 import {
-  Calendar,
   Clock,
   Trophy,
   Binoculars,
@@ -78,7 +76,7 @@ export default function HuntsComparePage() {
             Layout Comparison: Recent Hunts
           </h1>
           <p className="text-weathered-wood">
-            Side-by-side comparison of current layout vs compact mode
+            Side-by-side comparison of current layout vs new compact mode (Option D)
           </p>
         </div>
 
@@ -87,10 +85,10 @@ export default function HuntsComparePage() {
           <div className="bg-white rounded-lg club-shadow">
             <div className="p-4 border-b border-weathered-wood/10 bg-olive-green/5">
               <h2 className="text-lg font-semibold text-forest-shadow">
-                Current Layout (Custom)
+                Current Recent Hunts Layout
               </h2>
               <p className="text-sm text-weathered-wood mt-1">
-                More visual hierarchy, detailed grid view
+                Multi-line cards with detailed grid view
               </p>
             </div>
             <div className="p-4 space-y-3">
@@ -171,25 +169,94 @@ export default function HuntsComparePage() {
             </div>
           </div>
 
-          {/* Compact Mode */}
+          {/* Option D: Compact Mode */}
           <div className="bg-white rounded-lg club-shadow">
             <div className="p-4 border-b border-weathered-wood/10 bg-bright-orange/5">
               <h2 className="text-lg font-semibold text-forest-shadow">
-                Compact Mode
+                Compact Mode (Option D)
               </h2>
               <p className="text-sm text-weathered-wood mt-1">
-                Single-line view, more hunts visible at once
+                Colored date badge, 2-line compact layout
               </p>
             </div>
             <div className="p-4 space-y-3">
-              {hunts.map((hunt) => (
-                <HuntCard
-                  key={hunt.id}
-                  hunt={hunt}
-                  mode="compact"
-                  showActions={false}
-                />
-              ))}
+              {hunts.map((hunt) => {
+                const tempContext = getTemperatureContext(hunt)
+                const huntTypeBadge = getHuntTypeBadge(hunt.hunt_type)
+
+                // Helper to get date parts
+                const date = new Date(hunt.hunt_date)
+                const monthNumber = String(date.getMonth() + 1).padStart(2, '0')
+                const dayNumberPadded = String(date.getDate()).padStart(2, '0')
+                const fullDate = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+
+                const getBadgeColor = () => {
+                  if (huntTypeBadge.className.includes('bright-orange')) return '#FA7921'
+                  if (huntTypeBadge.className.includes('clay-earth')) return '#8B7355'
+                  return '#566E3D'
+                }
+
+                // Abbreviate stand name if needed
+                const abbreviateStand = (standName: string) => {
+                  if (standName.length <= 12) return standName
+                  return standName.substring(0, 10) + '...'
+                }
+
+                return (
+                  <div key={hunt.id} className="bg-white rounded-lg club-shadow hover:shadow-lg transition-shadow p-3">
+                    <div className="flex items-center gap-3">
+                      {/* Badge with MM/DD and hunt type color */}
+                      <div
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '6px',
+                          backgroundColor: getBadgeColor(),
+                          color: 'white',
+                          flexShrink: 0,
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          letterSpacing: '-0.5px'
+                        }}
+                      >
+                        <span>{monthNumber}/{dayNumberPadded}</span>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        {/* Line 1: Hunter - Stand */}
+                        <h3 className="text-base font-bold text-olive-green truncate">
+                          {hunt.member?.display_name || hunt.member?.full_name || 'Unknown'} - {abbreviateStand(hunt.stand?.name || 'Unknown')}
+                        </h3>
+                        {/* Line 2: AM/PM badge, Day, Month Date, Temp, Sightings, Harvest */}
+                        <div className="flex items-center gap-2 text-xs text-weathered-wood">
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold ${huntTypeBadge.className}`}>
+                            {huntTypeBadge.label}
+                          </span>
+                          <span className="text-[11px]">{fullDate}</span>
+                          {tempContext.temperature !== null && (
+                            <div className="flex items-center gap-1">
+                              <Thermometer className="w-3 h-3 mr-1 text-burnt-orange" />
+                              <span>{tempContext.temperature}°</span>
+                            </div>
+                          )}
+                          {(hunt.sightings?.length || 0) > 0 && (
+                            <div className="flex items-center gap-1">
+                              <Binoculars className="w-3 h-3 mr-1 text-dark-teal" />
+                              <span>{hunt.sightings?.length}</span>
+                            </div>
+                          )}
+                          {(hunt.had_harvest || hunt.harvest_count > 0) && (
+                            <Trophy className="w-3 h-3 text-bright-orange" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>
@@ -204,23 +271,23 @@ export default function HuntsComparePage() {
               <h4 className="font-medium text-forest-shadow mb-2">Current Layout</h4>
               <ul className="space-y-2 text-sm text-weathered-wood">
                 <li>✅ More visual hierarchy and spacing</li>
-                <li>✅ Easier to scan for specific details</li>
                 <li>✅ Weather info prominently displayed</li>
                 <li>✅ Grid format for member/stand/time/sightings</li>
+                <li>✅ Very detailed view</li>
                 <li>⚠️ Takes more vertical space (~10 hunts)</li>
                 <li>⚠️ Custom rendering (not using HuntCard)</li>
               </ul>
             </div>
             <div>
-              <h4 className="font-medium text-forest-shadow mb-2">Compact Mode</h4>
+              <h4 className="font-medium text-forest-shadow mb-2">Compact Mode (Option D)</h4>
               <ul className="space-y-2 text-sm text-weathered-wood">
                 <li>✅ Very space-efficient (15-20 hunts visible)</li>
-                <li>✅ Quick scanning of key info</li>
-                <li>✅ Consistent with Data Management styles</li>
-                <li>✅ Uses HuntCard component (better consistency)</li>
-                <li>✅ All recent improvements (badges, icons)</li>
-                <li>⚠️ Less detailed weather info</li>
-                <li>⚠️ Might feel cramped for dashboard</li>
+                <li>✅ Colored badge for instant AM/PM recognition</li>
+                <li>✅ Matches camera card size (32px badge)</li>
+                <li>✅ All key info on 2 compact lines</li>
+                <li>✅ Stand names abbreviated when needed</li>
+                <li>✅ Consistent with camera/stand cards</li>
+                <li>✅ Quick scanning of essential data</li>
               </ul>
             </div>
           </div>

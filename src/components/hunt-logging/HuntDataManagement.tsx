@@ -841,81 +841,99 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
   return (
     <>
       <div className="bg-white rounded-lg club-shadow">
-        {/* Header */}
-        <div className="border-b border-weathered-wood/20 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-forest-shadow flex items-center">
-                <Table className="w-6 h-6 mr-2 text-olive-green" />
-                Hunt Data Management
-              </h2>
-              <p className="text-weathered-wood mt-1">
-                Comprehensive view and management of all hunt records ({sortedHunts.length} total)
-              </p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={exportData}
-                disabled={loading}
-                className="flex items-center px-4 py-2 bg-olive-green text-white rounded-lg hover:bg-pine-needle transition-colors disabled:opacity-50"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export CSV
-              </button>
-              <button
-                onClick={() => {
-                  onHuntUpdate()
-                  setCurrentPage(1)
-                  clearSelection()
-                }}
-                disabled={loading}
-                className="flex items-center px-4 py-2 bg-burnt-orange text-white rounded-lg hover:bg-clay-earth transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
-              </button>
-            </div>
-          </div>
-        </div>
 
-        {/* Controls */}
-        <div className="p-6 border-b border-weathered-wood/20 space-y-4">
-          {/* Search and Filter Row */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-weathered-wood w-5 h-5" />
+        {/* Search and Controls Bar - matching camera management pattern */}
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            {/* Search and Sort Row */}
+            <div className="flex flex-col sm:flex-row gap-3 flex-1">
+              {/* Search */}
+              <div className="relative flex-1 max-w-md">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-5 w-5 text-weathered-wood" />
+                </div>
                 <input
                   type="text"
                   placeholder="Search by member, stand, notes, or game type..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-weathered-wood/20 rounded-lg text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green bg-morning-mist transition-colors"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-morning-mist placeholder-weathered-wood focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green text-forest-shadow"
                 />
               </div>
+
+              {/* Sort Controls */}
+              <div className="flex items-center gap-2 min-w-0">
+                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Sort by:</label>
+                <select
+                  value={sortField}
+                  onChange={(e) => setSortField(e.target.value as keyof HuntWithDetails)}
+                  className="text-sm border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green text-forest-shadow"
+                >
+                  <option value="hunt_date">Hunt Date</option>
+                  <option value="member">Member</option>
+                  <option value="stand">Stand</option>
+                  <option value="hunt_type">Hunt Type</option>
+                  <option value="temperature">Temperature</option>
+                </select>
+                <button
+                  onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+                  className="p-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  title={`Sort ${sortDirection === 'asc' ? 'Descending' : 'Ascending'}`}
+                >
+                  <div className="flex flex-col items-center justify-center w-4 h-4">
+                    <div className={`w-0 h-0 border-l-2 border-r-2 border-b-2 border-transparent ${
+                      sortDirection === 'asc' ? 'border-b-gray-600' : 'border-b-gray-300'
+                    } mb-0.5`} style={{ borderBottomWidth: '3px', borderLeftWidth: '2px', borderRightWidth: '2px' }} />
+                    <div className={`w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent ${
+                      sortDirection === 'desc' ? 'border-t-gray-600' : 'border-t-gray-300'
+                    }`} style={{ borderTopWidth: '3px', borderLeftWidth: '2px', borderRightWidth: '2px' }} />
+                  </div>
+                </button>
+              </div>
             </div>
-            
-            <div className="flex items-center space-x-3">
+
+            {/* Stats and View Toggle */}
+            <div className="flex items-center gap-4">
+              {/* Stats */}
+              <div className="flex items-center gap-4 text-sm text-weathered-wood">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-olive-green rounded-full"></div>
+                  <span>
+                    {sortedHunts.length} of {hunts.length} hunts
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Trophy className="w-4 h-4" />
+                  <span>
+                    {sortedHunts.filter(h => h.had_harvest || h.harvest_count > 0).length} harvests
+                  </span>
+                </div>
+              </div>
+
+              {/* Filter Dropdown */}
               <select
                 value={filterHarvest}
                 onChange={(e) => setFilterHarvest(e.target.value as 'all' | 'harvest' | 'no-harvest')}
-                className="border border-weathered-wood/20 rounded-lg px-3 py-2 text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green bg-morning-mist transition-colors"
+                className="text-sm border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green text-forest-shadow"
               >
                 <option value="all">All Hunts</option>
                 <option value="harvest">With Harvest</option>
                 <option value="no-harvest">No Harvest</option>
               </select>
-              
-              <div className="flex items-center border border-weathered-wood/20 rounded-lg overflow-hidden">
+
+              {/* View Toggle */}
+              <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
                 <button
                   onClick={() => setViewMode('table')}
-                  className={`px-3 py-2 transition-colors ${viewMode === 'table' ? 'bg-olive-green/10 text-olive-green' : 'text-weathered-wood hover:bg-morning-mist'}`}
+                  className={`px-3 py-2 transition-colors ${viewMode === 'table' ? 'bg-olive-green/10 text-olive-green' : 'text-weathered-wood hover:bg-gray-50'}`}
+                  title="Table View"
                 >
                   <Table className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('cards')}
-                  className={`px-3 py-2 border-l border-weathered-wood/20 transition-colors ${viewMode === 'cards' ? 'bg-olive-green/10 text-olive-green' : 'text-weathered-wood hover:bg-morning-mist'}`}
+                  className={`px-3 py-2 border-l border-gray-300 transition-colors ${viewMode === 'cards' ? 'bg-olive-green/10 text-olive-green' : 'text-weathered-wood hover:bg-gray-50'}`}
+                  title="Card View"
                 >
                   <div className="w-4 h-4 grid grid-cols-2 gap-0.5">
                     <div className="bg-current rounded-sm"></div>
@@ -927,8 +945,10 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Bulk Actions */}
+        {/* Bulk Actions */}
+        <div className="p-4 border-b border-gray-200">
           {showBulkActions && (
             <div className="flex items-center justify-between p-3 bg-olive-green/10 border border-olive-green/20 rounded-lg">
               <span className="text-sm text-olive-green font-medium">

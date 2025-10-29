@@ -19,6 +19,7 @@ const navigationItems = [
 ]
 
 const managementItems = [
+  { name: 'Hunt Data', href: '/management/hunts', icon: 'hunts' as const },
   { name: 'Stands', href: '/management/stands', icon: 'stands' as const },
   { name: 'Trail Cameras', href: '/management/cameras', icon: 'cameras' as const },
   { name: 'Reports', href: '/management/reports', icon: 'analytics' as const },
