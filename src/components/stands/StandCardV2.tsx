@@ -5,7 +5,7 @@
 // Drop-in replacement for StandCard.tsx
 
 import React from 'react'
-import { BaseCard, CardHeader, CardStatsGrid, CardSection } from '@/components/shared/cards'
+import { BaseCard, CardHeader, CardStatsGrid } from '@/components/shared/cards'
 import { formatDate } from '@/lib/utils/date'
 import { getIcon } from '@/lib/shared/icons'
 import type { IconName } from '@/lib/shared/icons'
@@ -77,10 +77,11 @@ export default function StandCardV2({
   }
 
   // Get features for the thin-bordered box (ALL stand details combined)
+  // Order: Seats and Walk first, Camera last
   const getFeatures = () => {
     const features = []
 
-    // Capacity
+    // ROW 1: Capacity (always show if present)
     if (stand.capacity) {
       features.push({
         key: 'capacity',
@@ -91,30 +92,17 @@ export default function StandCardV2({
       })
     }
 
-    // View distance
-    if (stand.view_distance_yards) {
-      features.push({
-        key: 'view',
-        icon: Eye,
-        iconColor: '#0C4767',
-        label: 'View:',
-        value: `${stand.view_distance_yards} yards`
-      })
-    }
+    // ROW 1: Walking time (ALWAYS show, even if unknown - per user request)
+    const WalkingIcon = getIcon('walking')
+    features.push({
+      key: 'walk',
+      icon: WalkingIcon,
+      iconColor: '#566E3D',
+      label: 'Walk:',
+      value: stand.walking_time_minutes ? `${stand.walking_time_minutes} min` : '[unknown]'
+    })
 
-    // Walking time
-    if (stand.walking_time_minutes) {
-      const WalkingIcon = getIcon('walking')
-      features.push({
-        key: 'walk',
-        icon: WalkingIcon,
-        iconColor: '#566E3D',
-        label: 'Walk:',
-        value: `${stand.walking_time_minutes} min`
-      })
-    }
-
-    // Height
+    // ROW 2: Height
     if (stand.height_feet) {
       const HeightIcon = getIcon('height')
       features.push({
@@ -126,19 +114,18 @@ export default function StandCardV2({
       })
     }
 
-    // Trail camera
-    if (stand.trail_camera_name) {
-      const CameraIcon = getIcon('camera')
+    // ROW 2: View distance
+    if (stand.view_distance_yards) {
       features.push({
-        key: 'camera',
-        icon: CameraIcon,
-        iconColor: '#566E3D',
-        label: 'Camera:',
-        value: stand.trail_camera_name
+        key: 'view',
+        icon: Eye,
+        iconColor: '#0C4767',
+        label: 'View:',
+        value: `${stand.view_distance_yards} yards`
       })
     }
 
-    // Time of day
+    // ROW 3: Time of day
     if (stand.time_of_day) {
       const timeLabels = { AM: 'Morning', PM: 'Evening', ALL: 'All Day' }
       const timeIcons = { AM: 'sun', PM: 'moon', ALL: 'clock' }
@@ -154,7 +141,7 @@ export default function StandCardV2({
       })
     }
 
-    // Water source
+    // ROW 3: Water source
     if (stand.nearby_water_source) {
       const WaterIcon = getIcon('water')
       features.push({
@@ -166,7 +153,7 @@ export default function StandCardV2({
       })
     }
 
-    // Food source
+    // ROW 4: Food source
     if (stand.food_source) {
       const foodLabels = { field: 'Field', feeder: 'Feeder' }
       const foodIcons = { field: 'field', feeder: 'feeder' }
@@ -181,7 +168,7 @@ export default function StandCardV2({
       })
     }
 
-    // Archery season
+    // ROW 4: Archery season
     if (stand.archery_season) {
       const ArcheryIcon = getIcon('archery')
       features.push({
@@ -190,6 +177,18 @@ export default function StandCardV2({
         iconColor: '#FA7921',
         label: 'Good for archery season',
         value: null
+      })
+    }
+
+    // LAST ROW: Trail camera (always last)
+    if (stand.trail_camera_name) {
+      const CameraIcon = getIcon('camera')
+      features.push({
+        key: 'camera',
+        icon: CameraIcon,
+        iconColor: '#566E3D',
+        label: 'Camera:',
+        value: stand.trail_camera_name
       })
     }
 
@@ -403,7 +402,7 @@ export default function StandCardV2({
 
       {/* History Section - More compact */}
       {mode === 'full' && showStats && (
-        <div className="bg-morning-mist border border-weathered-wood/20 rounded-md p-2 mb-3">
+        <div className="bg-morning-mist border border-weathered-wood/20 rounded-md p-2 mb-1">
           <div className="flex items-center gap-1 mb-2 text-xs font-medium text-forest-shadow">
             {React.createElement(getIcon('target'), { size: 12 })}
             <span>HISTORY</span>
@@ -441,10 +440,10 @@ export default function StandCardV2({
         </div>
       )}
 
-      {/* Location */}
+      {/* Location - subtle GPS coordinates */}
       {showLocation && stand.latitude && stand.longitude && mode === 'full' && (
-        <div className="flex justify-center gap-1 text-xs text-dark-teal mt-2">
-          <MapPin size={12} />
+        <div className="flex justify-center gap-1 text-[10px] text-weathered-wood/60">
+          <MapPin size={10} />
           <span>
             {stand.latitude.toFixed(4)}, {stand.longitude.toFixed(4)}
           </span>

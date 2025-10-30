@@ -223,6 +223,7 @@ export default function StandsPreviewPage() {
                     key={stand.id}
                     stand={stand}
                     mode={selectedMode}
+                    onClick={(s) => alert(`View: ${s.name}`)}
                     onEdit={(s) => alert(`Edit: ${s.name}`)}
                     onDelete={(s) => alert(`Delete: ${s.name}`)}
                     showLocation={true}
