@@ -427,7 +427,7 @@ export default function StandCardV2({
             <div className="whitespace-nowrap">
               {formatDate(displayLastActivity.date)}
               {displayLastActivity.timeOfDay && (
-                <span className="text-weathered-wood ml-1">({displayLastActivity.timeOfDay})</span>
+                <span> - {displayLastActivity.timeOfDay}</span>
               )}
             </div>
           ) : stand.last_used_date ? (
