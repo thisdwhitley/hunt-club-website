@@ -415,18 +415,78 @@ export default function StandCardV2({
       clickable={!!onClick}
       className={className}
     >
-      {/* Header with icon, title, badges, and actions */}
-      <CardHeader
-        icon={StandIcon}
-        iconColor={standType.iconColor}
-        titleColor={standType.titleColor}
-        iconBgColor={`${standType.iconColor}20`}
-        title={stand.name}
-        subtitle={mode === 'full' ? undefined : standType.label} // No subtitle in full mode
-        badges={getBadges()}
-        actions={showActions ? getActions() : []}
-        showActions={showActions}
-      />
+      {/* Compact Mode - Simple title + feature icons */}
+      {mode === 'compact' && (
+        <div className="flex items-start gap-3">
+          {/* Stand Icon */}
+          <div
+            className="p-2 rounded-lg flex-shrink-0"
+            style={{ backgroundColor: `${standType.iconColor}20` }}
+          >
+            <StandIcon size={24} style={{ color: standType.iconColor }} />
+          </div>
+
+          {/* Title and Feature Icons */}
+          <div className="flex-1 min-w-0">
+            <h3
+              className="font-bold text-base truncate mb-1"
+              style={{ color: standType.titleColor }}
+            >
+              {stand.name}
+            </h3>
+
+            {/* Feature Icons Row */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {stand.time_of_day && (
+                <div title={`Best time: ${stand.time_of_day === 'AM' ? 'Morning' : stand.time_of_day === 'PM' ? 'Evening' : 'All Day'}`}>
+                  {React.createElement(getIcon(
+                    stand.time_of_day === 'AM' ? 'sun' : stand.time_of_day === 'PM' ? 'moon' : 'clock'
+                  ), {
+                    size: 14,
+                    style: { color: stand.time_of_day === 'AM' ? '#FE9920' : stand.time_of_day === 'PM' ? '#B9A44C' : '#566E3D' }
+                  })}
+                </div>
+              )}
+
+              {stand.nearby_water_source && (
+                <div title="Near water source">
+                  {React.createElement(getIcon('water'), { size: 14, style: { color: '#0C4767' } })}
+                </div>
+              )}
+
+              {stand.food_source && (
+                <div title={`Food source: ${stand.food_source === 'field' ? 'Field' : 'Feeder'}`}>
+                  {React.createElement(getIcon(stand.food_source === 'field' ? 'field' : 'feeder'), {
+                    size: 14,
+                    style: { color: '#B9A44C' }
+                  })}
+                </div>
+              )}
+
+              {stand.archery_season && (
+                <div title="Good for archery season">
+                  {React.createElement(getIcon('archery'), { size: 14, style: { color: '#FA7921' } })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full Mode - Complete header with badges and actions */}
+      {mode === 'full' && (
+        <CardHeader
+          icon={StandIcon}
+          iconColor={standType.iconColor}
+          titleColor={standType.titleColor}
+          iconBgColor={`${standType.iconColor}20`}
+          title={stand.name}
+          subtitle={undefined} // No subtitle in full mode
+          badges={getBadges()}
+          actions={showActions ? getActions() : []}
+          showActions={showActions}
+        />
+      )}
 
       {/* Description */}
       {stand.description && mode === 'full' && (
