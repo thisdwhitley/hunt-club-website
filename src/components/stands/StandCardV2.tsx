@@ -49,12 +49,16 @@ export default function StandCardV2({
   const standType = STAND_TYPES[stand.type] || STAND_TYPES.ladder_stand
   const StandIcon = getIcon(standType.iconName)
 
-  // Get badges for harvests (NOT time of day in full mode)
+  // Get badges for compact/list modes (NO badges in full mode)
   const getBadges = () => {
     const badges = []
 
-    // Only show AM/PM badge in compact/list modes, not in full mode
-    if (mode !== 'full' && stand.time_of_day) {
+    // Only show badges in compact/list modes, NOT in full mode
+    if (mode === 'full') {
+      return []
+    }
+
+    if (stand.time_of_day) {
       badges.push({
         label: stand.time_of_day,
         className: 'bg-bright-orange text-white'
@@ -72,9 +76,67 @@ export default function StandCardV2({
     return badges
   }
 
-  // Get features for the thin-bordered box (time of day, water, food, archery)
+  // Get features for the thin-bordered box (ALL stand details combined)
   const getFeatures = () => {
     const features = []
+
+    // Capacity
+    if (stand.capacity) {
+      features.push({
+        key: 'capacity',
+        icon: Users,
+        iconColor: '#566E3D',
+        label: 'Seats:',
+        value: stand.capacity
+      })
+    }
+
+    // View distance
+    if (stand.view_distance_yards) {
+      features.push({
+        key: 'view',
+        icon: Eye,
+        iconColor: '#0C4767',
+        label: 'View:',
+        value: `${stand.view_distance_yards} yards`
+      })
+    }
+
+    // Walking time
+    if (stand.walking_time_minutes) {
+      const WalkingIcon = getIcon('walking')
+      features.push({
+        key: 'walk',
+        icon: WalkingIcon,
+        iconColor: '#566E3D',
+        label: 'Walk:',
+        value: `${stand.walking_time_minutes} min`
+      })
+    }
+
+    // Height
+    if (stand.height_feet) {
+      const HeightIcon = getIcon('height')
+      features.push({
+        key: 'height',
+        icon: HeightIcon,
+        iconColor: '#566E3D',
+        label: 'Height:',
+        value: `${stand.height_feet} ft`
+      })
+    }
+
+    // Trail camera
+    if (stand.trail_camera_name) {
+      const CameraIcon = getIcon('camera')
+      features.push({
+        key: 'camera',
+        icon: CameraIcon,
+        iconColor: '#566E3D',
+        label: 'Camera:',
+        value: stand.trail_camera_name
+      })
+    }
 
     // Time of day
     if (stand.time_of_day) {
@@ -182,9 +244,19 @@ export default function StandCardV2({
     return stats
   }
 
-  // Get actions
+  // Get actions with proper hunt-style colors
   const getActions = () => {
     const actions = []
+
+    // View action (if onClick is provided)
+    if (onClick) {
+      actions.push({
+        icon: Eye,
+        onClick: () => onClick(stand),
+        label: 'View details',
+        variant: 'view' as const
+      })
+    }
 
     if (onEdit) {
       actions.push({
@@ -307,7 +379,7 @@ export default function StandCardV2({
         </p>
       )}
 
-      {/* Features Section (thin teal border box) */}
+      {/* Features Section (thin teal border box) - ALL details in one place */}
       {mode === 'full' && getFeatures().length > 0 && (
         <div
           className="mb-3 p-2 rounded-md border"
@@ -329,51 +401,44 @@ export default function StandCardV2({
         </div>
       )}
 
-      {/* Stats Grid */}
-      {showStats && getStats().length > 0 && (
-        <div className="mb-3">
-          <CardStatsGrid stats={getStats()} columns={2} size="md" />
-        </div>
-      )}
-
-      {/* History Section */}
+      {/* History Section - More compact */}
       {mode === 'full' && showStats && (
-        <CardSection
-          title="History"
-          titleIcon={getIcon('target')}
-          background="mist"
-          bordered
-          padding="md"
-        >
-          <div className="grid grid-cols-3 gap-2 text-center text-xs mb-2">
+        <div className="bg-morning-mist border border-weathered-wood/20 rounded-md p-2 mb-3">
+          <div className="flex items-center gap-1 mb-2 text-xs font-medium text-forest-shadow">
+            {React.createElement(getIcon('target'), { size: 12 })}
+            <span>HISTORY</span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 text-center text-xs">
             <div>
-              <div className="text-lg font-bold text-burnt-orange">
+              <div className="text-base font-bold text-burnt-orange">
                 {stand.total_harvests || 0}
               </div>
-              <div className="text-forest-shadow">Total Harvests</div>
+              <div className="text-weathered-wood text-[10px]">Total Harvests</div>
             </div>
 
             <div>
-              <div className="text-lg font-bold text-muted-gold">
+              <div className="text-base font-bold text-muted-gold">
                 {stand.season_hunts || 0}
               </div>
-              <div className="text-forest-shadow">[2025] Hunts</div>
+              <div className="text-weathered-wood text-[10px]">[2025] Hunts</div>
             </div>
 
             <div>
-              <div className="text-lg font-bold text-olive-green">
+              <div className="text-base font-bold text-olive-green">
                 {stand.total_hunts || 0}
               </div>
-              <div className="text-forest-shadow">All-Time Hunts</div>
+              <div className="text-weathered-wood text-[10px]">All-Time Hunts</div>
             </div>
           </div>
 
           {stand.last_used_date && (
-            <div className="bg-olive-green text-white px-3 py-2 rounded-md text-xs text-center">
-              <strong>Last Hunted:</strong> {formatDate(stand.last_used_date)}
+            <div className="text-xs text-weathered-wood mt-2 pt-2 border-t border-weathered-wood/20 text-center">
+              <strong className="text-forest-shadow">Last Hunted:</strong> {formatDate(stand.last_used_date)}
+              {/* TODO: Add time of day (AM/PM) when available in data */}
             </div>
           )}
-        </CardSection>
+        </div>
       )}
 
       {/* Location */}

@@ -99,9 +99,9 @@ export default function CardHeader({
           {actions.map((action, index) => {
             const ActionIcon = action.icon
             const variantStyles = {
-              edit: 'text-gray-600 hover:text-blue-600 hover:bg-blue-50',
-              delete: 'text-gray-600 hover:text-red-600 hover:bg-red-50',
-              view: 'text-gray-600 hover:text-olive-green hover:bg-olive-green/10',
+              view: 'text-dark-teal hover:text-dark-teal/80 hover:bg-dark-teal/10',
+              edit: 'text-olive-green hover:text-pine-needle hover:bg-olive-green/10',
+              delete: 'text-clay-earth hover:text-clay-earth/80 hover:bg-clay-earth/10',
               navigate: 'text-gray-600 hover:text-dark-teal hover:bg-dark-teal/10'
             }
 
