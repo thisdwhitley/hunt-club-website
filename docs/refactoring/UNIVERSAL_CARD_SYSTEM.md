@@ -204,6 +204,7 @@ ManagementLayout (page wrapper)
 ### Session 1 (2025-10-30) - Planning & Documentation
 **Duration:** ~1 hour
 **Participants:** User + Claude
+**Token Usage:** Started at 42k, currently at ~107k/200k (53% used)
 
 **Completed:**
 - ✅ Analyzed existing Hunt, Stand, and Camera implementations
@@ -229,8 +230,22 @@ ManagementLayout (page wrapper)
 
 **Blockers:** None
 
+**Token Status at End:**
+- Current: ~107k/200k (53% used)
+- Remaining: ~93k tokens
+- Status: ✅ Plenty of room for next session
+
 **Next Session Starts Here:**
 🎯 **Phase 1, Task 1:** Create the `src/components/shared/cards/` directory structure and begin implementing `BaseCard.tsx`
+
+**Token Management for Next Session:**
+- Monitor token count every ~10k tokens
+- When you hit ~180k tokens:
+  1. Stop current work at a logical point
+  2. Update this document with progress
+  3. Commit all work
+  4. Add clear "stopped at" notes
+  5. Tell user to start a new session
 
 **Context for Next Session:**
 - Read this document first to understand current status
@@ -260,6 +275,21 @@ ManagementLayout (page wrapper)
 5. **Document decisions** in the decisions log above
 6. **Commit frequently** with clear messages
 7. **Reference hunting club colors** from DESIGN_SYSTEM.md
+8. **Code Quality:**
+   - All code must pass ESLint with zero errors (`npm run lint`)
+   - Run type-check before committing (`npm run type-check`)
+   - Follow React/TypeScript best practices
+   - Use `npm run build:safe` before major commits
+9. **Token Management:**
+   - Monitor token usage during each session
+   - When approaching 180k/200k tokens, wrap up the session
+   - Update this document with stopping point
+   - Create clear "Next Session" instructions
+10. **Branch Strategy:**
+    - All development work happens in `main` branch
+    - Documentation commits stay in `main` (do NOT push to `production`)
+    - Only user-facing features get merged to `production`
+    - This refactoring documentation is for developers only
 
 ---
 

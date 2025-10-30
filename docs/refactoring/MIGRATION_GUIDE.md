@@ -59,6 +59,13 @@ The migration strategy is designed to be **safe and incremental**:
    - Take screenshots for comparison
    - Document any known issues
 
+5. **Verify development environment:**
+   ```bash
+   npm run lint          # Should pass with 0 errors
+   npm run type-check    # Should pass with 0 errors
+   npm run build         # Should build successfully
+   ```
+
 ---
 
 ## Migrating Card Components
@@ -618,11 +625,21 @@ Use this checklist for each feature migration:
 - [ ] Add pagination
 - [ ] Add table/list view
 - [ ] Test incrementally
+- [ ] **Code Quality Checks (after each component):**
+  - [ ] Run `npm run lint` - must pass with 0 errors
+  - [ ] Run `npm run type-check` - must pass with 0 errors
+  - [ ] Run `npm run build` - must build successfully
+  - [ ] No console warnings or errors
+  - [ ] Follow React/TypeScript best practices
 
 ### Post-Migration
 - [ ] Complete TESTING_CHECKLIST.md
 - [ ] Compare screenshots
 - [ ] Test on mobile device
+- [ ] **Final Code Quality:**
+  - [ ] Run `npm run build:safe` (lint + type-check + build)
+  - [ ] All checks pass
+  - [ ] No regressions in existing features
 - [ ] Get user approval
 - [ ] Switch routes
 - [ ] Monitor for issues
