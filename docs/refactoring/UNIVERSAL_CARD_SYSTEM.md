@@ -516,6 +516,72 @@ for (const hunt of hunts) {
 **Files Modified:**
 - `src/app/management/stands-preview/page.tsx` - Calculate stats from hunt_logs
 
+### Session 1 (Continued) - Round 8: Compact Mode Redesign
+
+**Round 8 Implementation - COMPLETED ✅**
+**Duration:** ~25 minutes
+**Token Usage:** ~110k/200k
+
+**User Feedback:**
+- Prefer OLD compact layout with just title and feature icons below
+- No action buttons in compact mode
+- Clicking compact card should open modal with full details
+
+**Analysis of Old Compact Mode:**
+- Stand icon (orange) + Title (green) in header
+- Feature icons displayed inline below title (just icons, no labels)
+- Icons: time of day, water source, food source, archery season
+- No badges, no action buttons
+- Whole card clickable
+
+**Solution:**
+Created separate rendering for compact vs full mode:
+- **Compact Mode**: Custom simple layout matching old design
+- **Full Mode**: Uses CardHeader with all features
+
+**Completed:**
+- ✅ Analyzed old StandCard compact mode structure
+- ✅ Created dedicated compact mode layout in StandCardV2
+- ✅ Show stand icon + title with feature icons inline
+- ✅ Icons only (no labels) for: time, water, food, archery
+- ✅ Removed action buttons from compact mode
+- ✅ Removed badges from compact mode
+- ✅ Entire card clickable via onClick prop
+- ✅ Full mode unchanged - still has complete details
+- ✅ Code quality verified: 0 lint errors
+- ✅ Committed: `831eb74` - Compact mode redesign
+
+**Compact Mode Layout:**
+```tsx
+{mode === 'compact' && (
+  <div className="flex items-start gap-3">
+    {/* Stand Icon */}
+    <StandIcon in colored box />
+
+    {/* Title + Feature Icons */}
+    <div>
+      <h3>{stand.name}</h3>
+      <div className="flex gap-2">
+        {/* Just icons for: time, water, food, archery */}
+      </div>
+    </div>
+  </div>
+)}
+```
+
+**User Flow:**
+1. Compact cards display in grid (mobile-friendly)
+2. User clicks compact card → onClick fires
+3. Parent component opens modal showing full details
+4. Modal uses Full Mode card or custom detail view
+
+**Files Modified:**
+- `src/components/stands/StandCardV2.tsx` - Separate compact/full rendering
+
+**Next Steps:**
+- User should test compact mode at /management/stands-preview
+- Implement modal for viewing full details when compact card clicked
+
 **Next Session Starts Here:**
 🎯 **User Review Phase:** Test the preview page at http://localhost:3000/management/stands-preview
 
