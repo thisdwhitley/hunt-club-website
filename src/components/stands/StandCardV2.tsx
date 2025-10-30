@@ -21,6 +21,20 @@ const STAND_TYPES = {
   ground_blind: { label: 'Ground Blind', iconName: 'groundBlind' as IconName, iconColor: '#FA7921', titleColor: '#566E3D' }
 }
 
+// Flexible history stat for different card types
+interface HistoryStat {
+  label: string
+  value: number | string
+  color: string // Tailwind color class like 'text-burnt-orange'
+}
+
+// Last activity info (flexible for different contexts)
+interface LastActivityInfo {
+  date: string
+  timeOfDay?: string // e.g., "AM", "PM"
+  label?: string // e.g., "Last Hunted", "Last Upload"
+}
+
 interface StandCardV2Props {
   stand: Stand
   mode?: 'full' | 'compact' | 'list'
@@ -32,6 +46,9 @@ interface StandCardV2Props {
   showStats?: boolean
   showActions?: boolean
   className?: string
+  // Optional: Override default history stats (for flexibility with cameras, etc.)
+  historyStats?: HistoryStat[]
+  lastActivity?: LastActivityInfo
 }
 
 export default function StandCardV2({
@@ -43,11 +60,51 @@ export default function StandCardV2({
   showLocation = true,
   showStats = true,
   showActions = true,
-  className = ''
+  className = '',
+  historyStats,
+  lastActivity
 }: StandCardV2Props) {
 
   const standType = STAND_TYPES[stand.type] || STAND_TYPES.ladder_stand
   const StandIcon = getIcon(standType.iconName)
+
+  // Get current season year dynamically
+  const currentYear = new Date().getFullYear()
+
+  // Default history stats for Stands (can be overridden via props)
+  // TODO: These should be calculated from actual hunt_logs table data, not stand aggregates
+  const defaultHistoryStats: HistoryStat[] = [
+    {
+      label: 'Total Harvests',
+      value: stand.total_harvests || 0,
+      color: 'text-burnt-orange'
+    },
+    {
+      label: `${currentYear} Hunts`,
+      value: stand.season_hunts || 0,
+      color: 'text-muted-gold'
+    },
+    {
+      label: 'All-Time Hunts',
+      value: stand.total_hunts || 0,
+      color: 'text-olive-green'
+    }
+  ]
+
+  // Use provided stats or defaults
+  const displayHistoryStats = historyStats || defaultHistoryStats
+
+  // Default last activity for Stands
+  // TODO: Should fetch most recent hunt_log entry for this stand_id
+  const defaultLastActivity: LastActivityInfo | undefined = stand.last_used_date
+    ? {
+        date: stand.last_used_date,
+        timeOfDay: undefined, // TODO: Get from most recent hunt_log
+        label: 'Last Hunted'
+      }
+    : undefined
+
+  const displayLastActivity = lastActivity || defaultLastActivity
 
   // Get badges for compact/list modes (NO badges in full mode)
   const getBadges = () => {
@@ -400,50 +457,41 @@ export default function StandCardV2({
         </div>
       )}
 
-      {/* History Section - More compact */}
-      {mode === 'full' && showStats && (
+      {/* History Section - Flexible for different card types */}
+      {mode === 'full' && showStats && displayHistoryStats.length > 0 && (
         <div className="bg-morning-mist border border-weathered-wood/20 rounded-md p-2 mb-1">
           <div className="flex items-center gap-1 mb-2 text-xs font-medium text-forest-shadow">
             {React.createElement(getIcon('target'), { size: 12 })}
             <span>HISTORY</span>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 text-center text-xs">
-            <div>
-              <div className="text-base font-bold text-burnt-orange">
-                {stand.total_harvests || 0}
+          <div className="grid gap-2 text-center text-xs" style={{ gridTemplateColumns: `repeat(${displayHistoryStats.length}, minmax(0, 1fr))` }}>
+            {displayHistoryStats.map((stat, index) => (
+              <div key={index}>
+                <div className={`text-base font-bold ${stat.color}`}>
+                  {stat.value}
+                </div>
+                <div className="text-weathered-wood text-[10px]">{stat.label}</div>
               </div>
-              <div className="text-weathered-wood text-[10px]">Total Harvests</div>
-            </div>
-
-            <div>
-              <div className="text-base font-bold text-muted-gold">
-                {stand.season_hunts || 0}
-              </div>
-              <div className="text-weathered-wood text-[10px]">[2025] Hunts</div>
-            </div>
-
-            <div>
-              <div className="text-base font-bold text-olive-green">
-                {stand.total_hunts || 0}
-              </div>
-              <div className="text-weathered-wood text-[10px]">All-Time Hunts</div>
-            </div>
+            ))}
           </div>
 
-          {stand.last_used_date && (
+          {displayLastActivity && (
             <div className="text-xs text-weathered-wood mt-2 pt-2 border-t border-weathered-wood/20 text-center">
-              <strong className="text-forest-shadow">Last Hunted:</strong> {formatDate(stand.last_used_date)}
-              {/* TODO: Add time of day (AM/PM) when available in data */}
+              <strong className="text-forest-shadow">{displayLastActivity.label || 'Last Activity'}:</strong>{' '}
+              {formatDate(displayLastActivity.date)}
+              {displayLastActivity.timeOfDay && (
+                <span className="ml-1">({displayLastActivity.timeOfDay})</span>
+              )}
             </div>
           )}
         </div>
       )}
 
-      {/* Location - subtle GPS coordinates */}
+      {/* Location */}
       {showLocation && stand.latitude && stand.longitude && mode === 'full' && (
-        <div className="flex justify-center gap-1 text-[10px] text-weathered-wood/60">
-          <MapPin size={10} />
+        <div className="flex justify-center gap-1 text-xs text-dark-teal mt-2">
+          <MapPin size={12} />
           <span>
             {stand.latitude.toFixed(4)}, {stand.longitude.toFixed(4)}
           </span>
