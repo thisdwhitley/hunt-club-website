@@ -12,13 +12,13 @@ import type { IconName } from '@/lib/shared/icons'
 import { Edit3, Trash2, Users, Eye, MapPin } from 'lucide-react'
 import type { Stand } from '@/lib/database/stands'
 
-// Stand type mappings
+// Stand type mappings - using green (olive-green) as primary color
 const STAND_TYPES = {
-  ladder_stand: { label: 'Ladder Stand', iconName: 'ladderStand' as IconName, color: '#FA7921' },
-  bale_blind: { label: 'Bale Blind', iconName: 'baleBlind' as IconName, color: '#FA7921' },
-  box_stand: { label: 'Box Stand', iconName: 'boxStand' as IconName, color: '#FA7921' },
-  tripod: { label: 'Tripod', iconName: 'tripodStand' as IconName, color: '#FA7921' },
-  ground_blind: { label: 'Ground Blind', iconName: 'groundBlind' as IconName, color: '#FA7921' }
+  ladder_stand: { label: 'Ladder Stand', iconName: 'ladderStand' as IconName, color: '#566E3D' },
+  bale_blind: { label: 'Bale Blind', iconName: 'baleBlind' as IconName, color: '#566E3D' },
+  box_stand: { label: 'Box Stand', iconName: 'boxStand' as IconName, color: '#566E3D' },
+  tripod: { label: 'Tripod', iconName: 'tripodStand' as IconName, color: '#566E3D' },
+  ground_blind: { label: 'Ground Blind', iconName: 'groundBlind' as IconName, color: '#566E3D' }
 }
 
 interface StandCardV2Props {
@@ -69,6 +69,68 @@ export default function StandCardV2({
     }
 
     return badges
+  }
+
+  // Get features for the thin-bordered box (time of day, water, food, archery)
+  const getFeatures = () => {
+    const features = []
+
+    // Time of day
+    if (stand.time_of_day) {
+      const timeLabels = { AM: 'Morning', PM: 'Evening', ALL: 'All Day' }
+      const timeIcons = { AM: 'sun', PM: 'moon', ALL: 'clock' }
+      const timeColors = { AM: '#FE9920', PM: '#B9A44C', ALL: '#566E3D' }
+
+      const TimeIcon = getIcon(timeIcons[stand.time_of_day] as IconName)
+      features.push({
+        key: 'time',
+        icon: TimeIcon,
+        iconColor: timeColors[stand.time_of_day],
+        label: 'Ideal time:',
+        value: timeLabels[stand.time_of_day]
+      })
+    }
+
+    // Water source
+    if (stand.nearby_water_source) {
+      const WaterIcon = getIcon('water')
+      features.push({
+        key: 'water',
+        icon: WaterIcon,
+        iconColor: '#0C4767',
+        label: 'Near water source',
+        value: null
+      })
+    }
+
+    // Food source
+    if (stand.food_source) {
+      const foodLabels = { field: 'Field', feeder: 'Feeder' }
+      const foodIcons = { field: 'field', feeder: 'feeder' }
+      const FoodIcon = getIcon(foodIcons[stand.food_source] as IconName)
+
+      features.push({
+        key: 'food',
+        icon: FoodIcon,
+        iconColor: '#B9A44C',
+        label: 'Food source:',
+        value: foodLabels[stand.food_source]
+      })
+    }
+
+    // Archery season
+    if (stand.archery_season) {
+      const ArcheryIcon = getIcon('archery')
+      features.push({
+        key: 'archery',
+        icon: ArcheryIcon,
+        iconColor: '#FA7921',
+        label: 'Good for archery season',
+        value: null
+      })
+    }
+
+    return features
   }
 
   // Get stats for the grid
@@ -240,6 +302,28 @@ export default function StandCardV2({
         <p className="text-sm text-gray-700 mb-3 line-clamp-2">
           {stand.description}
         </p>
+      )}
+
+      {/* Features Section (thin teal border box) */}
+      {mode === 'full' && getFeatures().length > 0 && (
+        <div
+          className="mb-3 p-2 rounded-md border"
+          style={{ borderColor: '#0C4767', borderWidth: '1px' }}
+        >
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            {getFeatures().map((feature) => {
+              const FeatureIcon = feature.icon
+              return (
+                <div key={feature.key} className="flex items-center gap-2">
+                  <FeatureIcon size={14} style={{ color: feature.iconColor }} />
+                  <span className="text-forest-shadow">
+                    <strong>{feature.label}</strong> {feature.value}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
       )}
 
       {/* Stats Grid */}
