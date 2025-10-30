@@ -5,7 +5,7 @@
 
 import React from 'react'
 import { X, MapPin, Edit3, Users, Eye, Calendar } from 'lucide-react'
-import { formatDate } from '@/lib/utils/date'
+import { formatDate, parseDBDate } from '@/lib/utils/date'
 import { getIcon } from '@/lib/shared/icons'
 import type { IconName } from '@/lib/shared/icons'
 import type { Stand } from '@/lib/database/stands'
@@ -37,6 +37,13 @@ export function StandDetailModal({
 }: StandDetailModalProps) {
   const standType = STAND_TYPES[stand.type] || STAND_TYPES.ladder_stand
   const StandIcon = getIcon(standType.iconName)
+
+  // Helper to check if date is from prior season/year
+  const isPriorSeason = (dateString: string): boolean => {
+    const huntDate = parseDBDate(dateString)
+    const currentYear = new Date().getFullYear()
+    return huntDate.getFullYear() < currentYear
+  }
 
   // Default history stats if not provided
   const displayStats = historyStats || [
@@ -248,13 +255,27 @@ export function StandDetailModal({
                     <Calendar size={16} />
                     <strong>Last Hunted:</strong>
                     {lastActivity ? (
-                      <span>
-                        {formatDate(lastActivity.date)}
-                        {lastActivity.timeOfDay && ` - ${lastActivity.timeOfDay}`}
-                      </span>
-                    ) : (
-                      <span>{formatDate(stand.last_used_date!)}</span>
-                    )}
+                      isPriorSeason(lastActivity.date) ? (
+                        <span>
+                          <span className="italic text-weathered-wood">Prior season</span>
+                          <span className="text-xs text-weathered-wood/70"> ({formatDate(lastActivity.date)})</span>
+                        </span>
+                      ) : (
+                        <span>
+                          {formatDate(lastActivity.date)}
+                          {lastActivity.timeOfDay && ` - ${lastActivity.timeOfDay}`}
+                        </span>
+                      )
+                    ) : stand.last_used_date ? (
+                      isPriorSeason(stand.last_used_date) ? (
+                        <span>
+                          <span className="italic text-weathered-wood">Prior season</span>
+                          <span className="text-xs text-weathered-wood/70"> ({formatDate(stand.last_used_date)})</span>
+                        </span>
+                      ) : (
+                        <span>{formatDate(stand.last_used_date)}</span>
+                      )
+                    ) : null}
                   </div>
                 </div>
               )}

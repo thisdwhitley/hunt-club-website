@@ -6,7 +6,7 @@
 
 import React from 'react'
 import { BaseCard, CardHeader, CardStatsGrid } from '@/components/shared/cards'
-import { formatDate, getHuntTypeBadge } from '@/lib/utils/date'
+import { formatDate, getHuntTypeBadge, parseDBDate } from '@/lib/utils/date'
 import { getIcon } from '@/lib/shared/icons'
 import type { IconName } from '@/lib/shared/icons'
 import { Edit3, Trash2, Users, Eye, MapPin } from 'lucide-react'
@@ -67,6 +67,13 @@ export default function StandCardV2({
 
   const standType = STAND_TYPES[stand.type] || STAND_TYPES.ladder_stand
   const StandIcon = getIcon(standType.iconName)
+
+  // Helper to check if date is from prior season/year
+  const isPriorSeason = (dateString: string): boolean => {
+    const huntDate = parseDBDate(dateString)
+    const currentYear = new Date().getFullYear()
+    return huntDate.getFullYear() < currentYear
+  }
 
   // Get current season year dynamically
   const currentYear = new Date().getFullYear()
@@ -424,16 +431,30 @@ export default function StandCardV2({
         {/* Last Hunted column */}
         <td className="px-4 py-3 text-sm text-forest-shadow">
           {displayLastActivity ? (
-            <div className="flex items-center gap-1.5">
-              <span className="whitespace-nowrap">{formatDate(displayLastActivity.date)}</span>
-              {displayLastActivity.timeOfDay && (
-                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ${getHuntTypeBadge(displayLastActivity.timeOfDay).className}`}>
-                  {getHuntTypeBadge(displayLastActivity.timeOfDay).label}
-                </span>
-              )}
-            </div>
+            isPriorSeason(displayLastActivity.date) ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-weathered-wood italic">Prior season</span>
+                <span className="text-xs text-weathered-wood/70">({formatDate(displayLastActivity.date)})</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <span className="whitespace-nowrap">{formatDate(displayLastActivity.date)}</span>
+                {displayLastActivity.timeOfDay && (
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ${getHuntTypeBadge(displayLastActivity.timeOfDay).className}`}>
+                    {getHuntTypeBadge(displayLastActivity.timeOfDay).label}
+                  </span>
+                )}
+              </div>
+            )
           ) : stand.last_used_date ? (
-            <div className="whitespace-nowrap">{formatDate(stand.last_used_date)}</div>
+            isPriorSeason(stand.last_used_date) ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-weathered-wood italic">Prior season</span>
+                <span className="text-xs text-weathered-wood/70">({formatDate(stand.last_used_date)})</span>
+              </div>
+            ) : (
+              <div className="whitespace-nowrap">{formatDate(stand.last_used_date)}</div>
+            )
           ) : (
             <span className="text-gray-400">Never</span>
           )}
@@ -621,9 +642,18 @@ export default function StandCardV2({
           {displayLastActivity && (
             <div className="text-xs text-weathered-wood mt-2 pt-2 border-t border-weathered-wood/20 text-center">
               <strong className="text-forest-shadow">{displayLastActivity.label || 'Last Activity'}:</strong>{' '}
-              {formatDate(displayLastActivity.date)}
-              {displayLastActivity.timeOfDay && (
-                <span> - {displayLastActivity.timeOfDay}</span>
+              {isPriorSeason(displayLastActivity.date) ? (
+                <>
+                  <span className="italic">Prior season</span>
+                  <span className="text-weathered-wood/70"> ({formatDate(displayLastActivity.date)})</span>
+                </>
+              ) : (
+                <>
+                  {formatDate(displayLastActivity.date)}
+                  {displayLastActivity.timeOfDay && (
+                    <span> - {displayLastActivity.timeOfDay}</span>
+                  )}
+                </>
               )}
             </div>
           )}
