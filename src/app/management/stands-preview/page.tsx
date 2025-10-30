@@ -18,9 +18,17 @@ interface StandLastHunt {
   hunt_type: 'AM' | 'PM' | 'All Day'
 }
 
+// Store history stats calculated from hunt_logs
+interface StandHistoryStats {
+  totalHarvests: number
+  seasonHunts: number
+  allTimeHunts: number
+}
+
 export default function StandsPreviewPage() {
   const [stands, setStands] = useState<Stand[]>([])
   const [lastHunts, setLastHunts] = useState<Record<string, StandLastHunt>>({})
+  const [historyStats, setHistoryStats] = useState<Record<string, StandHistoryStats>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedMode, setSelectedMode] = useState<'full' | 'compact' | 'list'>('full')
@@ -36,14 +44,22 @@ export default function StandsPreviewPage() {
         const data = await standService.getStands()
         setStands(data || [])
 
-        // Query for most recent hunt per stand
+        // Query for most recent hunt per stand and calculate history stats
         if (data && data.length > 0) {
           const standIds = data.map(s => s.id)
+          const currentYear = new Date().getFullYear()
 
-          // Get most recent hunt for each stand
+          // Get all hunts for these stands
           const { data: hunts, error: huntsError } = await supabase
             .from('hunt_logs')
-            .select('stand_id, hunt_date, hunt_type')
+            .select(`
+              id,
+              stand_id,
+              hunt_date,
+              hunt_type,
+              harvest_count,
+              created_at
+            `)
             .in('stand_id', standIds)
             .order('hunt_date', { ascending: false })
             .order('created_at', { ascending: false })
@@ -52,17 +68,49 @@ export default function StandsPreviewPage() {
 
           // Create map of stand_id -> most recent hunt
           const huntMap: Record<string, StandLastHunt> = {}
+          // Calculate history stats per stand
+          const statsMap: Record<string, StandHistoryStats> = {}
+
+          // Initialize stats for each stand
+          standIds.forEach(id => {
+            statsMap[id] = {
+              totalHarvests: 0,
+              seasonHunts: 0,
+              allTimeHunts: 0
+            }
+          })
+
           if (hunts) {
             for (const hunt of hunts) {
+              // Track most recent hunt (first one due to ordering)
               if (!huntMap[hunt.stand_id]) {
                 huntMap[hunt.stand_id] = {
                   hunt_date: hunt.hunt_date,
                   hunt_type: hunt.hunt_type as 'AM' | 'PM' | 'All Day'
                 }
               }
+
+              // Calculate stats
+              const stats = statsMap[hunt.stand_id]
+
+              // Count all-time hunts
+              stats.allTimeHunts++
+
+              // Count harvests
+              if (hunt.harvest_count && hunt.harvest_count > 0) {
+                stats.totalHarvests += hunt.harvest_count
+              }
+
+              // Count current season hunts
+              const huntYear = new Date(hunt.hunt_date).getFullYear()
+              if (huntYear === currentYear) {
+                stats.seasonHunts++
+              }
             }
           }
+
           setLastHunts(huntMap)
+          setHistoryStats(statsMap)
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load stands')
@@ -259,6 +307,8 @@ export default function StandsPreviewPage() {
                 {previewStands.map((stand) => {
                   // Get last hunt data for this stand
                   const lastHunt = lastHunts[stand.id]
+                  // Get calculated history stats for this stand
+                  const stats = historyStats[stand.id]
 
                   return (
                     <StandCardV2
@@ -271,6 +321,24 @@ export default function StandsPreviewPage() {
                       showLocation={true}
                       showStats={true}
                       showActions={true}
+                      // Pass dynamic history stats calculated from hunt_logs
+                      historyStats={stats ? [
+                        {
+                          label: 'Total Harvests',
+                          value: stats.totalHarvests,
+                          color: 'text-burnt-orange'
+                        },
+                        {
+                          label: `${new Date().getFullYear()} Hunts`,
+                          value: stats.seasonHunts,
+                          color: 'text-muted-gold'
+                        },
+                        {
+                          label: 'All-Time Hunts',
+                          value: stats.allTimeHunts,
+                          color: 'text-olive-green'
+                        }
+                      ] : undefined}
                       // Pass last hunt data for dynamic "Last Hunted" display
                       lastActivity={lastHunt ? {
                         date: lastHunt.hunt_date,
