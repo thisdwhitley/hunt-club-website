@@ -582,6 +582,94 @@ Created separate rendering for compact vs full mode:
 - User should test compact mode at /management/stands-preview
 - Implement modal for viewing full details when compact card clicked
 
+### Session 1 (Continued) - Round 9: Detail Modal Integration
+
+**Round 9 Implementation - COMPLETED ✅**
+**Duration:** ~30 minutes
+**Token Usage:** ~127k/200k
+
+**User Feedback:**
+- Want clicking stand card (compact or full) to open modal with details
+- Modal should match Camera card behavior (Edit, Navigate buttons)
+- Modal should show all stand information
+
+**Analysis:**
+Examined CameraDetailModal structure:
+- **Backdrop overlay** (fixed inset-0 with opacity)
+- **Header** (olive-green) with camera name, Edit/Navigate/Close buttons
+- **Scrollable content** with gray section blocks
+- **Grid layouts** for key-value pairs
+
+**Solution:**
+Created StandDetailModal following same pattern for consistency.
+
+**Completed:**
+- ✅ Created StandDetailModal component matching Camera modal
+- ✅ Modal header with stand name, type, Edit/Navigate/Close buttons
+- ✅ Sections: Description, Stand Details, Hunt History, Status
+- ✅ Accepts dynamic historyStats and lastActivity props
+- ✅ Updated preview page to open modal on card click
+- ✅ Modal shows all stand information with accurate hunt data
+- ✅ Edit button triggers callback (placeholder for edit form)
+- ✅ Navigate button for GPS navigation (placeholder)
+- ✅ Backdrop click to close
+- ✅ Code quality verified: 0 lint errors
+- ✅ Committed: `dd28c16` - Modal implementation
+
+**StandDetailModal Structure:**
+```tsx
+<StandDetailModal
+  stand={stand}
+  onClose={() => setShowModal(false)}
+  onEdit={(s) => openEditForm(s)}
+  onNavigate={(s) => navigateToGPS(s)}
+  historyStats={[...dynamic stats...]}
+  lastActivity={{ date, timeOfDay, label }}
+/>
+```
+
+**Modal Sections:**
+1. **Header** (olive-green):
+   - Stand icon + name + type
+   - Edit button (opens edit form)
+   - Navigate button (GPS navigation)
+   - X close button
+
+2. **Description** (if present):
+   - Morning-mist background
+   - Full stand description
+
+3. **Stand Details** (gray-50 background):
+   - Grid layout (2 columns on desktop)
+   - Capacity, Walking Time, Height, View Distance
+   - Time of Day, Water Source, Food Source, Archery
+   - Trail Camera, GPS Coordinates, Access Notes
+
+4. **Hunt History** (gray-50 background):
+   - 3 large stats (Total Harvests, Season Hunts, All-Time Hunts)
+   - Last Hunted date with time (e.g., "Oct 19 - AM")
+
+5. **Status Badge** (centered):
+   - Active/Inactive indicator
+
+**User Flow:**
+1. User clicks stand card (any mode: full, compact, list)
+2. Modal opens with all details
+3. User can Edit (opens form) or Navigate (GPS)
+4. User closes modal via X button or backdrop click
+
+**Files Modified:**
+- `src/components/stands/StandDetailModal.tsx` (NEW) - Stand detail modal
+- `src/app/management/stands-preview/page.tsx` - Added modal integration
+
+**Universal Card System Pattern:**
+This establishes the pattern for all card types:
+- **Stand cards** → StandDetailModal
+- **Camera cards** → CameraDetailModal (already exists)
+- **Hunt cards** → HuntDetailModal (future)
+
+Each modal follows same structure but shows domain-specific information.
+
 **Next Session Starts Here:**
 🎯 **User Review Phase:** Test the preview page at http://localhost:3000/management/stands-preview
 
