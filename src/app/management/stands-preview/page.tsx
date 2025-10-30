@@ -144,12 +144,6 @@ export default function StandsPreviewPage() {
     // In production, this would open the edit form
   }
 
-  const handleNavigateToStand = (stand: Stand) => {
-    if (stand.latitude && stand.longitude) {
-      alert(`Navigate to: ${stand.name}\nCoordinates: ${stand.latitude}, ${stand.longitude}`)
-      // In production, this would open maps or navigate
-    }
-  }
 
   return (
     <div className="min-h-screen bg-morning-mist">
@@ -267,10 +261,13 @@ export default function StandsPreviewPage() {
                   <thead className="bg-morning-mist">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-forest-shadow uppercase tracking-wider">
-                        Stand
+                        Name
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-forest-shadow uppercase tracking-wider">
                         Details
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-forest-shadow uppercase tracking-wider">
+                        Last Hunted
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-forest-shadow uppercase tracking-wider">
                         Location
@@ -281,18 +278,32 @@ export default function StandsPreviewPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {previewStands.map((stand) => (
-                      <StandCardV2
-                        key={stand.id}
-                        stand={stand}
-                        mode="list"
-                        onEdit={(s) => alert(`Edit: ${s.name}`)}
-                        onDelete={(s) => alert(`Delete: ${s.name}`)}
-                        showLocation={true}
-                        showStats={true}
-                        showActions={true}
-                      />
-                    ))}
+                    {previewStands.map((stand) => {
+                      // Get last hunt data for this stand
+                      const lastHunt = lastHunts[stand.id]
+                      // Get calculated history stats for this stand
+                      const stats = historyStats[stand.id]
+
+                      return (
+                        <StandCardV2
+                          key={stand.id}
+                          stand={stand}
+                          mode="list"
+                          onClick={handleViewStand}
+                          onEdit={handleEditStand}
+                          onDelete={(s) => alert(`Delete: ${s.name}`)}
+                          showLocation={true}
+                          showStats={true}
+                          showActions={true}
+                          // Pass last hunt data for dynamic "Last Hunted" display
+                          lastActivity={lastHunt ? {
+                            date: lastHunt.hunt_date,
+                            timeOfDay: lastHunt.hunt_type,
+                            label: 'Last Hunted'
+                          } : undefined}
+                        />
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -415,7 +426,6 @@ export default function StandsPreviewPage() {
           stand={viewingStand}
           onClose={handleCloseModal}
           onEdit={handleEditStand}
-          onNavigate={handleNavigateToStand}
           historyStats={historyStats[viewingStand.id] ? [
             {
               label: 'Total Harvests',

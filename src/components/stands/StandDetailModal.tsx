@@ -4,7 +4,7 @@
 'use client'
 
 import React from 'react'
-import { X, MapPin, Navigation, Edit3, Users, Eye, Calendar } from 'lucide-react'
+import { X, MapPin, Edit3, Users, Eye, Calendar } from 'lucide-react'
 import { formatDate } from '@/lib/utils/date'
 import { getIcon } from '@/lib/shared/icons'
 import type { IconName } from '@/lib/shared/icons'
@@ -23,7 +23,6 @@ interface StandDetailModalProps {
   stand: Stand
   onClose: () => void
   onEdit?: (stand: Stand) => void
-  onNavigate?: (stand: Stand) => void
   // Optional: pass dynamic history stats and last hunt data
   historyStats?: Array<{ label: string; value: number | string; color: string }>
   lastActivity?: { date: string; timeOfDay?: string; label?: string }
@@ -33,7 +32,6 @@ export function StandDetailModal({
   stand,
   onClose,
   onEdit,
-  onNavigate,
   historyStats,
   lastActivity
 }: StandDetailModalProps) {
@@ -74,18 +72,6 @@ export function StandDetailModal({
               >
                 <Edit3 size={18} />
                 <span className="hidden sm:inline">Edit</span>
-              </button>
-            )}
-
-            {/* Navigate Button */}
-            {onNavigate && stand.latitude && stand.longitude && (
-              <button
-                onClick={() => onNavigate(stand)}
-                className="p-2 hover:bg-pine-needle rounded-lg transition-colors flex items-center gap-2"
-                title="Navigate to Stand"
-              >
-                <Navigation size={18} />
-                <span className="hidden sm:inline">Navigate</span>
               </button>
             )}
 

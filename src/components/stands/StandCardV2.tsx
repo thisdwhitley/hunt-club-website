@@ -335,58 +335,138 @@ export default function StandCardV2({
     return actions
   }
 
-  // For list mode (table row)
+  // For list mode (table row) - matches Hunt log table structure
   if (mode === 'list') {
     return (
-      <BaseCard
-        mode="list"
-        onClick={onClick ? () => onClick(stand) : undefined}
-        clickable={!!onClick}
-        className={className}
-      >
-        {/* Stand name and type */}
+      <tr className={`hover:bg-morning-mist transition-colors ${className}`}>
+        {/* Name column - Icon + Stand name */}
         <td className="px-4 py-3">
-          <CardHeader
-            icon={StandIcon}
-            iconColor={standType.iconColor}
-            titleColor={standType.titleColor}
-            iconSize={20}
-            title={stand.name}
-            subtitle={standType.label} // Show subtitle in list mode
-            badges={getBadges()}
-            compact
-            showActions={false}
-          />
-        </td>
-
-        {/* Stats inline */}
-        <td className="px-4 py-3">
-          <CardStatsGrid stats={getStats()} inline size="sm" />
-        </td>
-
-        {/* Location */}
-        {showLocation && (
-          <td className="px-4 py-3 text-sm text-weathered-wood">
-            {stand.latitude && stand.longitude ? (
-              <div className="flex items-center gap-1">
-                <MapPin size={12} />
-                <span>{stand.latitude.toFixed(4)}, {stand.longitude.toFixed(4)}</span>
+          <div className="flex items-center">
+            <div
+              className="p-1 rounded flex-shrink-0 mr-2"
+              style={{ backgroundColor: `${standType.iconColor}20` }}
+            >
+              <StandIcon size={16} style={{ color: standType.iconColor }} />
+            </div>
+            <div>
+              <div className="text-sm text-forest-shadow font-medium">
+                {stand.name}
               </div>
-            ) : (
-              <span className="text-gray-400">No coordinates</span>
-            )}
-          </td>
-        )}
+            </div>
+          </div>
+        </td>
 
-        {/* Actions */}
+        {/* Details column - Compact horizontal feature icons */}
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-2 flex-wrap text-xs">
+            {/* Capacity */}
+            {stand.capacity && (
+              <span className="flex items-center gap-1 whitespace-nowrap text-forest-shadow">
+                <Users size={12} className="text-olive-green" />
+                {stand.capacity}
+              </span>
+            )}
+
+            {/* Walking Time */}
+            {stand.walking_time_minutes && (
+              <span className="flex items-center gap-1 whitespace-nowrap text-forest-shadow">
+                {React.createElement(getIcon('walking'), { size: 12, className: 'text-olive-green' })}
+                {stand.walking_time_minutes}m
+              </span>
+            )}
+
+            {/* View Distance */}
+            {stand.view_distance_yards && (
+              <span className="flex items-center gap-1 whitespace-nowrap text-forest-shadow">
+                <Eye size={12} className="text-dark-teal" />
+                {stand.view_distance_yards}y
+              </span>
+            )}
+
+            {/* Time of Day */}
+            {stand.time_of_day && (
+              <span className="flex items-center gap-1" title={`Best time: ${stand.time_of_day === 'AM' ? 'Morning' : stand.time_of_day === 'PM' ? 'Evening' : 'All Day'}`}>
+                {React.createElement(getIcon(
+                  stand.time_of_day === 'AM' ? 'sun' : stand.time_of_day === 'PM' ? 'moon' : 'clock'
+                ), {
+                  size: 12,
+                  className: stand.time_of_day === 'AM' ? 'text-bright-orange' : stand.time_of_day === 'PM' ? 'text-muted-gold' : 'text-olive-green'
+                })}
+              </span>
+            )}
+
+            {/* Water Source */}
+            {stand.nearby_water_source && (
+              <span title="Near water">
+                {React.createElement(getIcon('water'), { size: 12, className: 'text-dark-teal' })}
+              </span>
+            )}
+
+            {/* Food Source */}
+            {stand.food_source && (
+              <span title={`Food: ${stand.food_source === 'field' ? 'Field' : 'Feeder'}`}>
+                {React.createElement(getIcon(stand.food_source === 'field' ? 'field' : 'feeder'), {
+                  size: 12,
+                  className: 'text-muted-gold'
+                })}
+              </span>
+            )}
+
+            {/* Archery Season */}
+            {stand.archery_season && (
+              <span title="Good for archery">
+                {React.createElement(getIcon('archery'), { size: 12, className: 'text-burnt-orange' })}
+              </span>
+            )}
+          </div>
+        </td>
+
+        {/* Last Hunted column */}
+        <td className="px-4 py-3 text-sm text-forest-shadow">
+          {displayLastActivity ? (
+            <div className="whitespace-nowrap">
+              {formatDate(displayLastActivity.date)}
+              {displayLastActivity.timeOfDay && (
+                <span className="text-weathered-wood ml-1">({displayLastActivity.timeOfDay})</span>
+              )}
+            </div>
+          ) : stand.last_used_date ? (
+            <div className="whitespace-nowrap">{formatDate(stand.last_used_date)}</div>
+          ) : (
+            <span className="text-gray-400">Never</span>
+          )}
+        </td>
+
+        {/* Location column */}
+        <td className="px-4 py-3 text-sm text-weathered-wood">
+          {stand.latitude && stand.longitude ? (
+            <div className="flex items-center gap-1 whitespace-nowrap">
+              <MapPin size={12} />
+              <span>{stand.latitude.toFixed(4)}, {stand.longitude.toFixed(4)}</span>
+            </div>
+          ) : (
+            <span className="text-gray-400">No coordinates</span>
+          )}
+        </td>
+
+        {/* Actions column - matching Hunt table */}
         {showActions && (
-          <td className="px-4 py-3 text-right">
-            <div className="flex items-center justify-end gap-1">
+          <td className="px-4 py-3">
+            <div className="flex items-center justify-end space-x-1">
+              {onClick && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onClick(stand) }}
+                  className="text-dark-teal hover:text-dark-teal/80 p-1 rounded hover:bg-dark-teal/10 transition-colors"
+                  title="View Details"
+                >
+                  <Eye size={16} />
+                </button>
+              )}
               {onEdit && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onEdit(stand) }}
-                  className="p-2 rounded-md text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                  title="Edit stand"
+                  className="text-olive-green hover:text-pine-needle p-1 rounded hover:bg-olive-green/10 transition-colors"
+                  title="Edit Stand"
                 >
                   <Edit3 size={16} />
                 </button>
@@ -394,8 +474,8 @@ export default function StandCardV2({
               {onDelete && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete(stand) }}
-                  className="p-2 rounded-md text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors"
-                  title="Delete stand"
+                  className="text-clay-earth hover:text-clay-earth/80 p-1 rounded hover:bg-clay-earth/10 transition-colors"
+                  title="Delete Stand"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -403,7 +483,7 @@ export default function StandCardV2({
             </div>
           </td>
         )}
-      </BaseCard>
+      </tr>
     )
   }
 
