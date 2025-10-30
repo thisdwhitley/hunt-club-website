@@ -6,7 +6,7 @@
 
 import React from 'react'
 import { BaseCard, CardHeader, CardStatsGrid } from '@/components/shared/cards'
-import { formatDate } from '@/lib/utils/date'
+import { formatDate, getHuntTypeBadge } from '@/lib/utils/date'
 import { getIcon } from '@/lib/shared/icons'
 import type { IconName } from '@/lib/shared/icons'
 import { Edit3, Trash2, Users, Eye, MapPin } from 'lucide-react'
@@ -424,10 +424,12 @@ export default function StandCardV2({
         {/* Last Hunted column */}
         <td className="px-4 py-3 text-sm text-forest-shadow">
           {displayLastActivity ? (
-            <div className="whitespace-nowrap">
-              {formatDate(displayLastActivity.date)}
+            <div className="flex items-center gap-1.5">
+              <span className="whitespace-nowrap">{formatDate(displayLastActivity.date)}</span>
               {displayLastActivity.timeOfDay && (
-                <span> - {displayLastActivity.timeOfDay}</span>
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ${getHuntTypeBadge(displayLastActivity.timeOfDay).className}`}>
+                  {getHuntTypeBadge(displayLastActivity.timeOfDay).label}
+                </span>
               )}
             </div>
           ) : stand.last_used_date ? (
