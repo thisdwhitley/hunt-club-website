@@ -10,6 +10,7 @@ import { StandService } from '@/lib/database/stands'
 import { createClient } from '@/lib/supabase/client'
 import StandCard from '@/components/stands/StandCard'
 import StandCardV2 from '@/components/stands/StandCardV2'
+import { StandDetailModal } from '@/components/stands/StandDetailModal'
 import type { Stand } from '@/lib/database/stands'
 
 // Store last hunt info for each stand
@@ -32,6 +33,8 @@ export default function StandsPreviewPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedMode, setSelectedMode] = useState<'full' | 'compact' | 'list'>('full')
+  const [viewingStand, setViewingStand] = useState<Stand | null>(null)
+  const [showModal, setShowModal] = useState(false)
 
   const standService = new StandService()
   const supabase = createClient()
@@ -124,6 +127,29 @@ export default function StandsPreviewPage() {
 
   // Get first few stands for preview
   const previewStands = stands.slice(0, 3)
+
+  // Handle viewing stand details
+  const handleViewStand = (stand: Stand) => {
+    setViewingStand(stand)
+    setShowModal(true)
+  }
+
+  const handleCloseModal = () => {
+    setShowModal(false)
+    setViewingStand(null)
+  }
+
+  const handleEditStand = (stand: Stand) => {
+    alert(`Edit: ${stand.name}`)
+    // In production, this would open the edit form
+  }
+
+  const handleNavigateToStand = (stand: Stand) => {
+    if (stand.latitude && stand.longitude) {
+      alert(`Navigate to: ${stand.name}\nCoordinates: ${stand.latitude}, ${stand.longitude}`)
+      // In production, this would open maps or navigate
+    }
+  }
 
   return (
     <div className="min-h-screen bg-morning-mist">
@@ -315,8 +341,8 @@ export default function StandsPreviewPage() {
                       key={stand.id}
                       stand={stand}
                       mode={selectedMode}
-                      onClick={(s) => alert(`View: ${s.name}`)}
-                      onEdit={(s) => alert(`Edit: ${s.name}`)}
+                      onClick={handleViewStand}
+                      onEdit={handleEditStand}
                       onDelete={(s) => alert(`Delete: ${s.name}`)}
                       showLocation={true}
                       showStats={true}
@@ -373,7 +399,8 @@ export default function StandsPreviewPage() {
             <ul className="space-y-2 text-sm text-gray-700">
               <li>✅ <strong>New V2 cards use composable base components</strong> for consistency</li>
               <li>✅ <strong>List mode (table view) is now supported</strong> in V2</li>
-              <li>✅ <strong>Props interface is identical</strong> - drop-in replacement</li>
+              <li>✅ <strong>Clicking a card opens detail modal</strong> with all information</li>
+              <li>✅ <strong>Modal has Edit and Navigate buttons</strong> matching Camera card pattern</li>
               <li>✅ <strong>Your existing Stand data</strong> is displayed correctly</li>
               <li>⚠️ <strong>No existing code modified</strong> - this is a safe preview</li>
               <li>🎯 <strong>Next step:</strong> Review and approve before switching routes</li>
@@ -381,6 +408,38 @@ export default function StandsPreviewPage() {
           </div>
         )}
       </div>
+
+      {/* Stand Detail Modal */}
+      {showModal && viewingStand && (
+        <StandDetailModal
+          stand={viewingStand}
+          onClose={handleCloseModal}
+          onEdit={handleEditStand}
+          onNavigate={handleNavigateToStand}
+          historyStats={historyStats[viewingStand.id] ? [
+            {
+              label: 'Total Harvests',
+              value: historyStats[viewingStand.id].totalHarvests,
+              color: 'text-burnt-orange'
+            },
+            {
+              label: `${new Date().getFullYear()} Hunts`,
+              value: historyStats[viewingStand.id].seasonHunts,
+              color: 'text-muted-gold'
+            },
+            {
+              label: 'All-Time Hunts',
+              value: historyStats[viewingStand.id].allTimeHunts,
+              color: 'text-olive-green'
+            }
+          ] : undefined}
+          lastActivity={lastHunts[viewingStand.id] ? {
+            date: lastHunts[viewingStand.id].hunt_date,
+            timeOfDay: lastHunts[viewingStand.id].hunt_type,
+            label: 'Last Hunted'
+          } : undefined}
+        />
+      )}
     </div>
   )
 }
