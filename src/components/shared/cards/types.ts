@@ -51,6 +51,7 @@ export interface CardHeaderProps {
   iconBgColor?: string
   iconSize?: number
   title: string
+  titleColor?: string // Optional separate title color (defaults to iconColor)
   subtitle?: string
   badges?: Badge[]
   actions?: Action[]

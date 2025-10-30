@@ -12,13 +12,13 @@ import type { IconName } from '@/lib/shared/icons'
 import { Edit3, Trash2, Users, Eye, MapPin } from 'lucide-react'
 import type { Stand } from '@/lib/database/stands'
 
-// Stand type mappings - using green (olive-green) as primary color
+// Stand type mappings - orange icons, green titles
 const STAND_TYPES = {
-  ladder_stand: { label: 'Ladder Stand', iconName: 'ladderStand' as IconName, color: '#566E3D' },
-  bale_blind: { label: 'Bale Blind', iconName: 'baleBlind' as IconName, color: '#566E3D' },
-  box_stand: { label: 'Box Stand', iconName: 'boxStand' as IconName, color: '#566E3D' },
-  tripod: { label: 'Tripod', iconName: 'tripodStand' as IconName, color: '#566E3D' },
-  ground_blind: { label: 'Ground Blind', iconName: 'groundBlind' as IconName, color: '#566E3D' }
+  ladder_stand: { label: 'Ladder Stand', iconName: 'ladderStand' as IconName, iconColor: '#FA7921', titleColor: '#566E3D' },
+  bale_blind: { label: 'Bale Blind', iconName: 'baleBlind' as IconName, iconColor: '#FA7921', titleColor: '#566E3D' },
+  box_stand: { label: 'Box Stand', iconName: 'boxStand' as IconName, iconColor: '#FA7921', titleColor: '#566E3D' },
+  tripod: { label: 'Tripod', iconName: 'tripodStand' as IconName, iconColor: '#FA7921', titleColor: '#566E3D' },
+  ground_blind: { label: 'Ground Blind', iconName: 'groundBlind' as IconName, iconColor: '#FA7921', titleColor: '#566E3D' }
 }
 
 interface StandCardV2Props {
@@ -49,11 +49,12 @@ export default function StandCardV2({
   const standType = STAND_TYPES[stand.type] || STAND_TYPES.ladder_stand
   const StandIcon = getIcon(standType.iconName)
 
-  // Get badges for time of day, harvests, etc.
+  // Get badges for harvests (NOT time of day in full mode)
   const getBadges = () => {
     const badges = []
 
-    if (stand.time_of_day) {
+    // Only show AM/PM badge in compact/list modes, not in full mode
+    if (mode !== 'full' && stand.time_of_day) {
       badges.push({
         label: stand.time_of_day,
         className: 'bg-bright-orange text-white'
@@ -219,10 +220,11 @@ export default function StandCardV2({
         <td className="px-4 py-3">
           <CardHeader
             icon={StandIcon}
-            iconColor={standType.color}
+            iconColor={standType.iconColor}
+            titleColor={standType.titleColor}
             iconSize={20}
             title={stand.name}
-            subtitle={standType.label}
+            subtitle={standType.label} // Show subtitle in list mode
             badges={getBadges()}
             compact
             showActions={false}
@@ -288,10 +290,11 @@ export default function StandCardV2({
       {/* Header with icon, title, badges, and actions */}
       <CardHeader
         icon={StandIcon}
-        iconColor={standType.color}
-        iconBgColor={`${standType.color}20`}
+        iconColor={standType.iconColor}
+        titleColor={standType.titleColor}
+        iconBgColor={`${standType.iconColor}20`}
         title={stand.name}
-        subtitle={standType.label}
+        subtitle={mode === 'full' ? undefined : standType.label} // No subtitle in full mode
         badges={getBadges()}
         actions={showActions ? getActions() : []}
         showActions={showActions}

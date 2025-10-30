@@ -12,6 +12,7 @@ export default function CardHeader({
   iconBgColor,
   iconSize = 24,
   title,
+  titleColor, // Optional separate title color
   subtitle,
   badges = [],
   actions = [],
@@ -23,6 +24,7 @@ export default function CardHeader({
 }: CardHeaderProps) {
 
   const bgColor = iconBgColor || `${iconColor}20`
+  const displayTitleColor = titleColor || iconColor // Use titleColor if provided, otherwise default to iconColor
 
   return (
     <div className="flex items-start justify-between mb-3">
@@ -55,7 +57,7 @@ export default function CardHeader({
               className={`font-bold text-forest-shadow truncate ${
                 compact ? 'text-base' : 'text-lg'
               }`}
-              style={{ color: iconColor || '#566E3D' }}
+              style={{ color: displayTitleColor || '#566E3D' }}
             >
               {title}
             </h3>
