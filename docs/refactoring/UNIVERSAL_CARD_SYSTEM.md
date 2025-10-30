@@ -451,6 +451,71 @@ const { data: lastHunt } = await supabase
 />
 ```
 
+### Session 1 (Continued) - Round 7: Accurate History Data
+
+**Round 7 Implementation - COMPLETED ✅**
+**Duration:** ~20 minutes
+**Token Usage:** ~97k/200k
+
+**User Feedback:**
+- History data still doesn't look accurate
+
+**Issue:**
+The History section was still using aggregate fields stored on the `stands` table:
+- `total_harvests` - might be stale
+- `season_hunts` - might be stale
+- `total_hunts` - might be stale
+
+These are denormalized counts that may not reflect actual hunt_logs data.
+
+**Solution:**
+Query the `hunt_logs` table directly and calculate stats in real-time:
+1. **Total Harvests**: Sum all `harvest_count` from hunt_logs for this stand
+2. **Season Hunts**: Count hunt_logs where year = current year (2025)
+3. **All-Time Hunts**: Count all hunt_logs for this stand
+
+**Completed:**
+- ✅ Updated preview page to query all hunt_logs for displayed stands
+- ✅ Calculate Total Harvests by summing harvest_count field
+- ✅ Calculate Season Hunts by filtering on current year
+- ✅ Calculate All-Time Hunts by counting all entries
+- ✅ Pass calculated stats to StandCardV2 via historyStats prop
+- ✅ History section now shows accurate real-time data
+- ✅ Code quality verified: 0 lint errors
+- ✅ Committed: `9bdc314` - Dynamic history stats calculation
+
+**Data Flow:**
+```typescript
+// 1. Query all hunts for stands
+const hunts = await supabase
+  .from('hunt_logs')
+  .select('stand_id, hunt_date, harvest_count')
+  .in('stand_id', standIds)
+
+// 2. Calculate stats per stand
+for (const hunt of hunts) {
+  stats.allTimeHunts++
+  stats.totalHarvests += hunt.harvest_count || 0
+
+  const huntYear = new Date(hunt.hunt_date).getFullYear()
+  if (huntYear === currentYear) {
+    stats.seasonHunts++
+  }
+}
+
+// 3. Pass to card
+<StandCardV2
+  historyStats={[
+    { label: 'Total Harvests', value: stats.totalHarvests, color: 'text-burnt-orange' },
+    { label: '2025 Hunts', value: stats.seasonHunts, color: 'text-muted-gold' },
+    { label: 'All-Time Hunts', value: stats.allTimeHunts, color: 'text-olive-green' }
+  ]}
+/>
+```
+
+**Files Modified:**
+- `src/app/management/stands-preview/page.tsx` - Calculate stats from hunt_logs
+
 **Next Session Starts Here:**
 🎯 **User Review Phase:** Test the preview page at http://localhost:3000/management/stands-preview
 
