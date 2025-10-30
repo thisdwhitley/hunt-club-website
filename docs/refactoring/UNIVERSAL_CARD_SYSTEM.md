@@ -292,6 +292,39 @@ ManagementLayout (page wrapper)
 - `src/components/stands/StandCardV2.tsx` - All Round 3 improvements
 - `src/components/shared/cards/CardHeader.tsx` - Hunt-style action button colors
 
+### Session 1 (Continued) - Round 4 Refinements
+
+**Round 4 Feedback Implementation - COMPLETED ✅**
+**Duration:** ~20 minutes
+**Token Usage:** ~61k/200k
+
+**User Feedback (Round 4 - Full Mode specific):**
+1. View action not showing in title bar
+2. Reorder features: Seats and Walk first (even if Walk unknown, show "[unknown]"), Camera last
+3. GPS coordinates should be more subtle
+4. Too much padding at bottom of card
+
+**Completed:**
+- ✅ Added onClick handler to preview page (View action now shows)
+- ✅ Reordered features with specific priority:
+  - Row 1: Seats (col 1), Walk (col 2) - Walk ALWAYS shows, displays "[unknown]" if no value
+  - Row 2: Height, View distance
+  - Row 3: Time of day, Water source
+  - Row 4: Food source, Archery season
+  - Last row: Camera (always last per user preference)
+- ✅ Made GPS coordinates subtle:
+  - Reduced to text-[10px] (from text-xs)
+  - Changed to weathered-wood/60 opacity (was dark-teal)
+  - Smaller MapPin icon (10px from 12px)
+- ✅ Reduced bottom padding (mb-3 → mb-1 on History section)
+- ✅ Removed unused CardSection import
+- ✅ Code quality verified: 0 lint errors in modified files
+- ✅ Committed: `5211365` - Layout and styling refinements
+
+**Files Modified:**
+- `src/components/stands/StandCardV2.tsx` - Feature ordering, GPS styling, padding
+- `src/app/management/stands-preview/page.tsx` - Added onClick handler
+
 **Next Session Starts Here:**
 🎯 **User Review Phase:** Test the preview page at http://localhost:3000/management/stands-preview
 
