@@ -481,7 +481,7 @@ export default function StandCardV2({
               <strong className="text-forest-shadow">{displayLastActivity.label || 'Last Activity'}:</strong>{' '}
               {formatDate(displayLastActivity.date)}
               {displayLastActivity.timeOfDay && (
-                <span className="ml-1">({displayLastActivity.timeOfDay})</span>
+                <span> - {displayLastActivity.timeOfDay}</span>
               )}
             </div>
           )}
