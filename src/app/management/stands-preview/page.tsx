@@ -7,25 +7,63 @@ import React, { useState, useEffect } from 'react'
 import { ArrowLeft, Eye } from 'lucide-react'
 import Link from 'next/link'
 import { StandService } from '@/lib/database/stands'
+import { createClient } from '@/lib/supabase/client'
 import StandCard from '@/components/stands/StandCard'
 import StandCardV2 from '@/components/stands/StandCardV2'
 import type { Stand } from '@/lib/database/stands'
 
+// Store last hunt info for each stand
+interface StandLastHunt {
+  hunt_date: string
+  hunt_type: 'AM' | 'PM' | 'All Day'
+}
+
 export default function StandsPreviewPage() {
   const [stands, setStands] = useState<Stand[]>([])
+  const [lastHunts, setLastHunts] = useState<Record<string, StandLastHunt>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedMode, setSelectedMode] = useState<'full' | 'compact' | 'list'>('full')
 
   const standService = new StandService()
+  const supabase = createClient()
 
-  // Load stands
+  // Load stands and their most recent hunts
   useEffect(() => {
-    const loadStands = async () => {
+    const loadStandsAndHunts = async () => {
       try {
         setLoading(true)
         const data = await standService.getStands()
         setStands(data || [])
+
+        // Query for most recent hunt per stand
+        if (data && data.length > 0) {
+          const standIds = data.map(s => s.id)
+
+          // Get most recent hunt for each stand
+          const { data: hunts, error: huntsError } = await supabase
+            .from('hunt_logs')
+            .select('stand_id, hunt_date, hunt_type')
+            .in('stand_id', standIds)
+            .order('hunt_date', { ascending: false })
+            .order('created_at', { ascending: false })
+
+          if (huntsError) throw huntsError
+
+          // Create map of stand_id -> most recent hunt
+          const huntMap: Record<string, StandLastHunt> = {}
+          if (hunts) {
+            for (const hunt of hunts) {
+              if (!huntMap[hunt.stand_id]) {
+                huntMap[hunt.stand_id] = {
+                  hunt_date: hunt.hunt_date,
+                  hunt_type: hunt.hunt_type as 'AM' | 'PM' | 'All Day'
+                }
+              }
+            }
+          }
+          setLastHunts(huntMap)
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load stands')
       } finally {
@@ -33,7 +71,7 @@ export default function StandsPreviewPage() {
       }
     }
 
-    loadStands()
+    loadStandsAndHunts()
   }, [])
 
   // Get first few stands for preview
@@ -218,19 +256,30 @@ export default function StandsPreviewPage() {
                 ✨ NEW - StandCardV2.tsx (Using Base Components)
               </h2>
               <div className="space-y-4">
-                {previewStands.map((stand) => (
-                  <StandCardV2
-                    key={stand.id}
-                    stand={stand}
-                    mode={selectedMode}
-                    onClick={(s) => alert(`View: ${s.name}`)}
-                    onEdit={(s) => alert(`Edit: ${s.name}`)}
-                    onDelete={(s) => alert(`Delete: ${s.name}`)}
-                    showLocation={true}
-                    showStats={true}
-                    showActions={true}
-                  />
-                ))}
+                {previewStands.map((stand) => {
+                  // Get last hunt data for this stand
+                  const lastHunt = lastHunts[stand.id]
+
+                  return (
+                    <StandCardV2
+                      key={stand.id}
+                      stand={stand}
+                      mode={selectedMode}
+                      onClick={(s) => alert(`View: ${s.name}`)}
+                      onEdit={(s) => alert(`Edit: ${s.name}`)}
+                      onDelete={(s) => alert(`Delete: ${s.name}`)}
+                      showLocation={true}
+                      showStats={true}
+                      showActions={true}
+                      // Pass last hunt data for dynamic "Last Hunted" display
+                      lastActivity={lastHunt ? {
+                        date: lastHunt.hunt_date,
+                        timeOfDay: lastHunt.hunt_type,
+                        label: 'Last Hunted'
+                      } : undefined}
+                    />
+                  )
+                })}
               </div>
             </div>
           </div>
