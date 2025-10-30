@@ -670,8 +670,91 @@ This establishes the pattern for all card types:
 
 Each modal follows same structure but shows domain-specific information.
 
+### Session 1 (Continued) - Round 9b: Remove Navigate Button
+
+**Round 9b Update - COMPLETED ✅**
+**Duration:** ~5 minutes
+**Token Usage:** ~130k/200k
+
+**User Feedback:**
+- Don't want Navigate button in modal - will never use it
+
+**Completed:**
+- ✅ Removed onNavigate prop from StandDetailModal interface
+- ✅ Removed Navigate button from modal header
+- ✅ Removed Navigation import from lucide-react
+- ✅ Removed handleNavigateToStand from preview page
+- ✅ Committed: Updates to modal and preview
+
+**Files Modified:**
+- `src/components/stands/StandDetailModal.tsx` - Removed Navigate button
+- `src/app/management/stands-preview/page.tsx` - Removed Navigate handler
+
+### Session 1 (Continued) - Round 10: List Mode Implementation
+
+**Round 10 Implementation - COMPLETED ✅**
+**Duration:** ~40 minutes
+**Token Usage:** ~143k/200k → ~60k/200k (new session started)
+
+**User Feedback:**
+- Need List Mode (table view) for Stand Cards
+- Keep each row to single line like Hunt log data
+- Columns: Name (icon + name), Details (compact features), Last Hunted (date + AM/PM badge), Location (GPS), Actions (View/Edit/Delete)
+
+**Analysis:**
+Examined HuntCard list mode (lines 204-323) for pattern:
+- Returns `<tr>` element directly (not wrapped in BaseCard)
+- Single-line rows with hover effect
+- Icon + text in columns
+- Compact horizontal display of details
+- Action buttons: dark-teal (view), olive-green (edit), clay-earth (delete)
+
+**Completed:**
+- ✅ Implemented Hunt-table-style List Mode in StandCardV2
+- ✅ List mode returns `<tr>` directly with 5 columns:
+  - **Name**: Small icon (16px) in colored circle + stand name
+  - **Details**: Horizontal compact feature icons (capacity, walk, view, time, water, food, archery)
+  - **Last Hunted**: Date + AM/PM badge (using getHuntTypeBadge utility)
+  - **Location**: GPS coordinates with MapPin icon
+  - **Actions**: View/Edit/Delete buttons matching Hunt table colors
+- ✅ Updated preview page table headers to match new columns
+- ✅ Pass dynamic lastActivity data to list mode
+- ✅ AM/PM displayed as styled badges matching hunt list view
+- ✅ Feature icons have tooltips for better UX
+- ✅ GPS coordinates formatted to 4 decimal places
+- ✅ Code quality verified: 0 lint errors in modified files
+- ✅ Committed: `b610f1b` - List Mode implementation
+- ✅ Committed: `644769a` - AM/PM format fix
+- ✅ Committed: `0bf93b4` - AM/PM badge styling
+
+**List Mode Structure:**
+```tsx
+if (mode === 'list') {
+  return (
+    <tr className="hover:bg-morning-mist transition-colors">
+      <td>{/* Name: Icon + Stand name */}</td>
+      <td>{/* Details: Compact horizontal icons */}</td>
+      <td>{/* Last Hunted: Date + AM/PM badge */}</td>
+      <td>{/* Location: GPS coords */}</td>
+      <td>{/* Actions: View/Edit/Delete */}</td>
+    </tr>
+  )
+}
+```
+
+**Badge Styling:**
+- Imported `getHuntTypeBadge` from `@/lib/utils/date`
+- AM/PM badges match hunt list view styling:
+  - AM: bright-orange badge with border
+  - PM: appropriate color from utility
+  - Format: Date followed by colored badge
+
+**Files Modified:**
+- `src/components/stands/StandCardV2.tsx` - List mode implementation + badge styling
+- `src/app/management/stands-preview/page.tsx` - Updated table headers and props
+
 **Next Session Starts Here:**
-🎯 **User Review Phase:** Test the preview page at http://localhost:3000/management/stands-preview
+🎯 **User Review Phase:** Test the List Mode at http://localhost:3000/management/stands-preview
 
 **Instructions for User:**
 1. Start dev server: `podman run -it --rm --name hunt-club-dev -p 3000:3000 -v $(pwd):/app:Z -v /app/node_modules --env-file .env.local hunt-club-dev`
