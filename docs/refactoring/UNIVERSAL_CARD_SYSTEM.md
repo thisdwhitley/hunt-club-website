@@ -381,6 +381,76 @@ This flexible design means:
 - User should test preview to ensure current year shows correctly
 - Future: Query hunt_logs table for true dynamic data (not just stand aggregates)
 
+### Session 1 (Continued) - Round 6: Dynamic Hunt Data
+
+**Round 6 Implementation - COMPLETED ✅**
+**Duration:** ~30 minutes
+**Token Usage:** ~88k/200k
+
+**User Feedback:**
+- Hunt Data Management shows "Sun, Oct 19 - AM" but Stand card doesn't
+- Need to review Camera card's "History" section layout for compatibility
+
+**Investigation:**
+1. **Camera Card Layout**: Reviewed Camera cards - they have a "CAMERA REPORT DATA" section (not "History"). Layout:
+   - Header: "CAMERA REPORT DATA" with freshness indicator
+   - Grid (2-col): Season, Battery, Photos, Storage, Signal, Links, Queue
+   - Bottom banner: Green bar with "Report Data From: X days ago"
+
+2. **Stand vs Camera Sections**:
+   - **Stands**: Features box (teal border) + History (3 stats + last hunted)
+   - **Cameras**: Hardware info + Report Data (gray box with grid + timestamp banner)
+   - These are DIFFERENT patterns - cameras won't use History section at all
+
+3. **Hunt Data Issue**: Stand's `last_used_date` field doesn't include time of day. Need to query `hunt_logs` table for `hunt_type` ('AM'|'PM'|'All Day').
+
+**Solution:**
+- Updated preview page to demonstrate proper data fetching:
+  - Query `hunt_logs` for most recent hunt per stand
+  - Pass hunt data via `lastActivity` prop
+  - Display: "Last Hunted: Sun, Oct 19 (AM)"
+
+**Completed:**
+- ✅ Analyzed Camera card Report Data section
+- ✅ Confirmed flexible system accommodates both patterns
+- ✅ Added hunt_logs query to preview page
+- ✅ Pass dynamic hunt data (date + time of day) to StandCardV2
+- ✅ Last Hunted now shows: "{Day}, {Date} ({AM/PM})"
+- ✅ Code quality verified: 0 lint errors
+- ✅ Committed: `ed6f7d7` - Dynamic hunt data demonstration
+
+**Architecture Clarity:**
+- **History section** is flexible but optional
+- **Stands** use it for Harvests/Hunts stats
+- **Cameras** will build their own Report Data section using same base patterns
+- Both card types share: BaseCard, CardHeader, styling system
+- Each composes sections differently based on domain needs
+
+**Files Modified:**
+- `src/app/management/stands-preview/page.tsx` - Query hunt_logs and pass to card
+
+**How to Use in Other Components:**
+```typescript
+// 1. Query for last hunt
+const { data: lastHunt } = await supabase
+  .from('hunt_logs')
+  .select('hunt_date, hunt_type')
+  .eq('stand_id', standId)
+  .order('hunt_date', { ascending: false })
+  .limit(1)
+  .single()
+
+// 2. Pass to card
+<StandCardV2
+  stand={stand}
+  lastActivity={lastHunt ? {
+    date: lastHunt.hunt_date,
+    timeOfDay: lastHunt.hunt_type,
+    label: 'Last Hunted'
+  } : undefined}
+/>
+```
+
 **Next Session Starts Here:**
 🎯 **User Review Phase:** Test the preview page at http://localhost:3000/management/stands-preview
 
