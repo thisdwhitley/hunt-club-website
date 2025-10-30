@@ -325,6 +325,62 @@ ManagementLayout (page wrapper)
 - `src/components/stands/StandCardV2.tsx` - Feature ordering, GPS styling, padding
 - `src/app/management/stands-preview/page.tsx` - Added onClick handler
 
+### Session 1 (Continued) - Round 5: Flexible History Section
+
+**Round 5 Implementation - COMPLETED ✅**
+**Duration:** ~25 minutes
+**Token Usage:** ~72k/200k
+
+**User Feedback:**
+- Revert GPS coordinates to previous styling (not subtle)
+- Make History section flexible for different card types (Camera, Stand, etc.)
+- History data should be dynamic and come from database
+- Show current year dynamically (not hardcoded "[2025]")
+- Include AM/PM time of day with last activity date
+
+**Completed:**
+- ✅ Reverted GPS coordinates to original styling (text-xs, dark-teal, 12px icon)
+- ✅ Created flexible `HistoryStat` interface for any card type
+- ✅ Created flexible `LastActivityInfo` interface with optional timeOfDay
+- ✅ Added optional `historyStats` and `lastActivity` props to StandCardV2
+- ✅ Default stand history now shows current year dynamically (e.g., "2025 Hunts")
+- ✅ Grid columns adjust automatically based on number of stats
+- ✅ Last activity shows date + optional AM/PM time
+- ✅ Added TODO comments noting data should come from hunt_logs queries
+- ✅ Structure allows Camera cards to pass different stats (Photos, Battery, etc.)
+- ✅ Code quality verified: 0 lint errors
+- ✅ Committed: `cbce850` - Flexible History section
+
+**Architecture Benefits:**
+This flexible design means:
+- **Stand cards** can pass: Total Harvests, Season Hunts, All-Time Hunts
+- **Camera cards** can pass: Photos Taken, Last Upload, Battery Status
+- **Any card** can customize the history section without duplicating code
+
+**Example Usage (for future Camera cards):**
+```typescript
+<CameraCardV2
+  camera={camera}
+  historyStats={[
+    { label: 'Photos', value: 342, color: 'text-burnt-orange' },
+    { label: 'Last Week', value: 28, color: 'text-muted-gold' },
+    { label: 'Battery', value: '92%', color: 'text-olive-green' }
+  ]}
+  lastActivity={{
+    date: '2025-10-29',
+    timeOfDay: undefined,
+    label: 'Last Upload'
+  }}
+/>
+```
+
+**Files Modified:**
+- `src/components/stands/StandCardV2.tsx` - Flexible History interfaces and rendering
+
+**Next Steps:**
+- User should test preview to ensure current year shows correctly
+- Future: Query hunt_logs table for true dynamic data (not just stand aggregates)
+
 **Next Session Starts Here:**
 🎯 **User Review Phase:** Test the preview page at http://localhost:3000/management/stands-preview
 
