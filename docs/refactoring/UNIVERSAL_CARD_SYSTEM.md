@@ -1,19 +1,120 @@
-# Universal Card System Refactoring
+# Composable Card System Refactoring
 
 **Status:** 🚧 In Progress - Phase 1: COMPLETE ✅
 **Started:** 2025-10-30
-**Last Updated:** 2025-10-30
-**Current Phase:** Phase 2 - Stand Management V2 (Ready to Start)
+**Last Updated:** 2025-10-31
+**Current Phase:** Refinement - Preview implementations complete
+
+**Original Name:** "Universal Card System"
+**Current Name:** "Composable Card System" (evolved understanding - see Architecture Reality Check below)
 
 ---
 
 ## 🎯 Quick Context for New Sessions
 
-This project creates a **universal card system** for the hunting club website to standardize the display of Hunts, Stands, and Cameras. Currently, each feature has its own card implementation with duplicated code. We're building **composable base components** that can be reused across all three domains while preserving domain-specific logic.
+This project creates a **composable card system** for the hunting club website to standardize common patterns across Hunt, Stand, and Camera cards. We're building **reusable base components** (header, wrapper, styling) that provide consistency while allowing domain-specific content customization.
 
 **Critical Constraint:** The Hunt Data Management system (`HuntDataManagement.tsx`, `HuntCard.tsx`) is working perfectly and must **NOT be modified**. We'll create new components in parallel and apply them to Stands first, then Cameras.
 
 **Strategy:** Create new V2 components alongside existing code, test thoroughly, then migrate. Keep backups of all original files.
+
+---
+
+## 🧠 Architecture Reality Check (2025-10-31)
+
+### Original Goal vs. Reality
+
+**Original Vision:** Create a single "universal card" component that could render Hunts, Stands, and Cameras with minimal customization.
+
+**What We Learned Through Implementation:**
+- Hunt, Stand, and Camera cards have **fundamentally different content structures**
+- Stands show: Features grid, History stats, GPS location
+- Hunts show: Time ranges, Weather data, Notes, Stand reference
+- Cameras show: Hardware info, Report data, Signal metrics
+- List/table modes are completely different per domain
+
+**Evolved Understanding:** We've built a **Composable Card System**, not a "Universal Card".
+
+### What IS Shared (The Real Benefits) ✅
+
+1. **BaseCard Wrapper**
+   - Consistent card shell (border, shadow, padding, hover states)
+   - Mode support (full, compact, list)
+   - Clickability handling
+   - Responsive behavior
+
+2. **CardHeader Component** ⭐ **This is the biggest win**
+   - Icon + Title + Badges + Actions layout
+   - Consistent action button colors:
+     - View: dark-teal
+     - Edit: olive-green
+     - Delete: clay-earth
+   - Badge styling and positioning
+   - **Fully reusable across all domains**
+
+3. **Design Standards**
+   - Centralized icon registry (no more direct lucide-react imports)
+   - Consistent color tokens (olive-green, burnt-orange, etc.)
+   - Unified spacing and typography
+   - Standardized section styling (bordered boxes, morning-mist backgrounds)
+
+4. **Patterns & Conventions**
+   - How to structure badges
+   - How to display stats
+   - How to format dates/times
+   - How to show "Prior season" indicators
+
+### What Is NOT Shared (Reality) ❌
+
+1. **Card Body Content** - Each domain needs custom layout:
+   - Feature grids, stat displays, info boxes are all domain-specific
+   - No way to "configure" these without making code more complex
+
+2. **List/Table Mode** - Completely different structures:
+   - Different columns per domain
+   - Different data transformations
+   - Each returns its own `<tr>` implementation
+
+3. **Data Fetching & Processing** - Domain-specific logic:
+   - Stands query hunt_logs for history stats
+   - Hunts query hunt_logs_with_temperature view
+   - Cameras query hardware and reports
+   - Each has unique data needs
+
+### The Honest Assessment
+
+**We have NOT reduced the customization burden significantly.** You still need to:
+- Build custom V2 cards for each domain (StandCardV2, HuntCardV2, CameraCardV2)
+- Design domain-specific layouts and sections
+- Handle domain-specific data structures
+- Implement separate list mode logic
+
+**BUT** you HAVE gained:
+- ✅ Consistent headers that work everywhere
+- ✅ Standardized action buttons and colors
+- ✅ Shared design patterns to follow
+- ✅ Less duplication of header/wrapper/styling code
+- ✅ Icon registry for consistency
+- ✅ Clear patterns for future cards
+
+### Terminology Going Forward
+
+- **"Composable Card System"** = accurate description
+- **"Shared Card Primitives"** = also accurate
+- **"Card Component Library"** = also acceptable
+- **"Universal Card"** = misleading, avoid going forward
+
+### Why This Is Still Valuable
+
+Even though each domain needs a custom V2 card, having shared primitives means:
+1. Headers look and behave consistently
+2. Action buttons have standard colors and behavior
+3. New developers see clear patterns to follow
+4. Icon usage is centralized and type-safe
+5. Design tokens are consistently applied
+6. Less code duplication in headers and wrappers
+
+**This is a practical, maintainable solution** even if it's not the "magic universal component" we initially envisioned.
 
 ---
 
@@ -753,16 +854,149 @@ if (mode === 'list') {
 - `src/components/stands/StandCardV2.tsx` - List mode implementation + badge styling
 - `src/app/management/stands-preview/page.tsx` - Updated table headers and props
 
+### Session 2 (Continued) - Additional Refinements & Architecture Discussion
+
+**Session Continuation - 2025-10-31**
+**Token Usage:** Starting ~83k/200k
+
+This session continued with several refinements and an important architectural discussion.
+
+#### Part 1: Prior Season Indicator (COMPLETED ✅)
+
+**User Request:** Show "Prior season" label for stands last hunted in previous years
+
+**Implementation:**
+- Added `isPriorSeason()` helper function to check if hunt date year < current year
+- Updated 3 display locations to show "Prior season (date)":
+  - StandCardV2 List Mode - Last Hunted column
+  - StandCardV2 Full Mode - History section
+  - StandDetailModal - Hunt History section
+- Visual styling: italic weathered-wood text for "Prior season", muted color for actual date
+- Logic: Current season shows normal date + AM/PM badge, prior season shows indicator only
+
+**Committed:** `83f1d37` - Prior season indicator feature
+
+#### Part 2: Hunt Management Preview Page (COMPLETED ✅)
+
+**User Request:** Create preview page showing Hunt cards built with composable card system
+
+**Created Files:**
+- `src/components/hunt-logging/HuntCardV2.tsx` - Hunt card using BaseCard + CardHeader
+- `src/app/management/hunts-preview/page.tsx` - Side-by-side comparison page
+
+**HuntCardV2 Features:**
+- Uses BaseCard wrapper and CardHeader component
+- Hunter name with User icon
+- Badges: AM/PM, Harvests, Sightings (integrated in header)
+- Stand information section
+- Time section (start/end/duration) in teal bordered box
+- Weather section (temp, wind, moon) in morning-mist box
+- Hunt notes display
+- Harvest indicator: orange left border
+
+**Initial Issue:** Data loading failed - was querying `hunt_logs` table directly
+
+**Fix:** Use `HuntService.getHunts()` which queries `hunt_logs_with_temperature` view with proper joins
+
+**Committed:**
+- `abad6ef` - Hunt preview page creation
+- `81eba83` - Fix data loading with HuntService
+
+**Preview URL:** http://localhost:3000/management/hunts-preview
+
+#### Part 3: Icon Registry Compliance (COMPLETED ✅)
+
+**Issue Discovered:** Both StandCardV2 and HuntCardV2 were importing icons directly from lucide-react instead of using centralized icon registry
+
+**User Requirement:** All icons must use `getIcon()` from centralized registry
+
+**Fixes:**
+1. **Added missing icons to registry:**
+   - `trophy` and `users` added to `src/lib/shared/icons/index.ts`
+   - Added to `types.ts` IconName type
+   - Added to HUNTING category
+
+2. **StandCardV2 fixes:**
+   - Removed direct imports of Eye, Edit3, Trash2, Users, MapPin
+   - Replaced all usages with `getIcon()` calls
+   - Used `React.createElement()` for JSX icon rendering in list mode
+   - Fixed in: getActions(), getFeatures(), getStats(), list mode details, list mode actions
+
+3. **HuntCardV2 fixes:**
+   - Removed direct imports of Trophy, Binoculars, Eye, Edit3, Trash2, User, Clock, Thermometer, Wind, Moon
+   - Replaced all usages with `getIcon()` calls throughout component
+
+**Committed:**
+- `1320928` - StandCardV2 icon registry compliance
+- `4c369e6` - HuntCardV2 icon registry compliance
+
+**All preview pages now work correctly with centralized icon registry**
+
+#### Part 4: Architecture Reality Check & Discussion (CRITICAL)
+
+**User Questions:**
+1. Are icons using the registry? ✅ Fixed
+2. Can we add list mode to Hunt preview? ⏸️ Deferred
+3. **Does this much customization per component make this truly "universal"?** ⚠️
+
+**Key Realization:**
+Through implementation of StandCardV2 and HuntCardV2, we discovered:
+- Each domain (Hunt/Stand/Camera) has **fundamentally different content structures**
+- Card body content cannot be "configured" without extreme complexity
+- List/table modes are completely different per domain
+- Data fetching and processing is domain-specific
+
+**Architectural Decision:**
+- ✅ Renamed from "Universal Card System" to **"Composable Card System"**
+- ✅ Honest assessment: This is **shared card primitives**, not a universal component
+- ✅ Still valuable for: consistent headers, action buttons, design standards, icon registry
+
+**What IS Shared:**
+- BaseCard wrapper (modes, clickability, styling)
+- **CardHeader** (biggest win - fully reusable)
+- Design standards (colors, icons, spacing)
+- Patterns and conventions
+
+**What is NOT Shared:**
+- Card body content (domain-specific layouts)
+- List/table mode structures
+- Data fetching and processing logic
+
+**User Decision:** Accepted this reality and agreed to update documentation to reflect evolved understanding while preserving the journey of how we got here.
+
+**Documentation Updated:** Added "Architecture Reality Check" section to main tracking document explaining original vision vs. reality, benefits, and honest assessment.
+
+**Token Status:** ~126k/200k (63% used)
+
+**Next Steps:**
+- List mode for Hunt preview deferred (not critical given architectural understanding)
+- Focus on applying composable system to Stands in production when ready
+- Pattern is established for future domains
+
 **Next Session Starts Here:**
-🎯 **User Review Phase:** Test the List Mode at http://localhost:3000/management/stands-preview
+🎯 **Status:** Composable card system architecture understood and documented. Preview pages complete for both Stands and Hunts.
+
+**What's Ready:**
+- ✅ StandCardV2 with 3 modes (full, compact, list)
+- ✅ StandDetailModal
+- ✅ HuntCardV2 with 2 modes (full, compact) - list mode not yet implemented
+- ✅ Both preview pages functional
+- ✅ All components use centralized icon registry
+- ✅ Documentation reflects reality
+
+**Preview URLs:**
+- Stands: http://localhost:3000/management/stands-preview
+- Hunts: http://localhost:3000/management/hunts-preview
 
 **Instructions for User:**
 1. Start dev server: `podman run -it --rm --name hunt-club-dev -p 3000:3000 -v $(pwd):/app:Z -v /app/node_modules --env-file .env.local hunt-club-dev`
-2. Visit: http://localhost:3000/management/stands-preview
-3. Try all three modes: Full, Compact, List (table)
-4. Compare old (left) vs new (right)
-5. Test with your actual Stand data
-6. Provide feedback before we proceed to Phase 2
+2. Visit preview pages to see composable card system in action:
+   - Stands: http://localhost:3000/management/stands-preview
+   - Hunts: http://localhost:3000/management/hunts-preview
+3. Try different modes (Full, Compact, List for stands)
+4. Compare old vs new implementations
+5. When ready, can begin migrating production Stand management to use StandCardV2
+6. Camera cards can follow same pattern when needed
 
 **Token Management for Next Session:**
 - Monitor token count every ~10k tokens
