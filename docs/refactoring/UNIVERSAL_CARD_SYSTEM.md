@@ -14,9 +14,29 @@
 
 This project creates a **composable card system** for the hunting club website to standardize common patterns across Hunt, Stand, and Camera cards. We're building **reusable base components** (header, wrapper, styling) that provide consistency while allowing domain-specific content customization.
 
+### 🚨 Important: This is a Parallel Preview System
+
+**Current Status:**
+- ✅ **NO production code has been modified** - Everything is working as before
+- ✅ **V2 components are completely separate** - Built in parallel, not touching existing code
+- ✅ **Preview pages for safe comparison** - View old vs new side-by-side at:
+  - `/management/stands-preview` - Compare StandCard vs StandCardV2
+  - `/management/hunts-preview` - Compare HuntCard vs HuntCardV2
+- ⏳ **Migration happens later** - Once we're satisfied with V2 components, THEN we'll replace production code
+
+**What Exists Now:**
+- **Production (unchanged)**: `StandCard.tsx`, `HuntCard.tsx`, `CameraCard.tsx` - still in use
+- **Preview (new V2)**: `StandCardV2.tsx`, `HuntCardV2.tsx` - built for testing
+- **Shared primitives**: `BaseCard`, `CardHeader` - ready for any domain to use
+
+**Eventually (Phase 4 - not started):**
+- Replace production Stand management with StandCardV2 ✅ When approved
+- Apply same pattern to Cameras ✅ When ready
+- Hunt management stays untouched (already perfect) ✅ Reference only
+
 **Critical Constraint:** The Hunt Data Management system (`HuntDataManagement.tsx`, `HuntCard.tsx`) is working perfectly and must **NOT be modified**. We'll create new components in parallel and apply them to Stands first, then Cameras.
 
-**Strategy:** Create new V2 components alongside existing code, test thoroughly, then migrate. Keep backups of all original files.
+**Strategy:** Create new V2 components alongside existing code, test thoroughly in preview pages, get approval, THEN migrate production code. Keep backups of all original files.
 
 ---
 
