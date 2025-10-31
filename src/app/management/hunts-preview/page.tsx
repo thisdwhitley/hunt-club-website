@@ -6,10 +6,9 @@
 import React, { useState, useEffect } from 'react'
 import { ArrowLeft, Eye } from 'lucide-react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import HuntCard from '@/components/hunt-logging/HuntCard'
 import HuntCardV2 from '@/components/hunt-logging/HuntCardV2'
-import { HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
+import { HuntService, HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
 
 export default function HuntsPreviewPage() {
   const [hunts, setHunts] = useState<HuntWithDetails[]>([])
@@ -17,7 +16,7 @@ export default function HuntsPreviewPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedMode, setSelectedMode] = useState<'full' | 'compact'>('full')
 
-  const supabase = createClient()
+  const huntService = new HuntService()
 
   // Load recent hunts
   useEffect(() => {
@@ -25,39 +24,13 @@ export default function HuntsPreviewPage() {
       try {
         setLoading(true)
 
-        // Query recent hunts with related data
-        const { data, error: huntsError } = await supabase
-          .from('hunt_logs')
-          .select(`
-            *,
-            member:members!hunt_logs_member_id_fkey (
-              id,
-              email,
-              full_name,
-              display_name
-            ),
-            stand:stands!hunt_logs_stand_id_fkey (
-              id,
-              name,
-              type,
-              latitude,
-              longitude
-            ),
-            sightings:sightings (
-              id,
-              animal_type,
-              count,
-              notes
-            )
-          `)
-          .order('hunt_date', { ascending: false })
-          .order('created_at', { ascending: false })
-          .limit(5)
+        // Use HuntService to get recent hunts (no filters = all hunts)
+        const data = await huntService.getHunts()
 
-        if (huntsError) throw huntsError
-
-        setHunts((data as HuntWithDetails[]) || [])
+        // Take only the 5 most recent
+        setHunts(data.slice(0, 5))
       } catch (err) {
+        console.error('Error loading hunts:', err)
         setError(err instanceof Error ? err.message : 'Failed to load hunts')
       } finally {
         setLoading(false)
@@ -65,7 +38,8 @@ export default function HuntsPreviewPage() {
     }
 
     loadHunts()
-  }, [supabase])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Get first few hunts for preview
   const previewHunts = hunts.slice(0, 3)
