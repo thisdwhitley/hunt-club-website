@@ -69,6 +69,8 @@ import {
   Trees,
   Mountain,
   MapPin as Trail,
+  Trophy,
+  Users,
 
   // Stand Types
   TrainTrack as LadderStand,
@@ -224,6 +226,8 @@ export const ICONS: IconRegistry = {
   tree: Trees,
   mountains: Mountain,
   trail: Trail,
+  trophy: Trophy,
+  users: Users,
 
   // Stand Types
   ladderStand: LadderStand,

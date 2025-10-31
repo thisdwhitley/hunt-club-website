@@ -9,7 +9,6 @@ import { BaseCard, CardHeader, CardStatsGrid } from '@/components/shared/cards'
 import { formatDate, getHuntTypeBadge, parseDBDate } from '@/lib/utils/date'
 import { getIcon } from '@/lib/shared/icons'
 import type { IconName } from '@/lib/shared/icons'
-import { Edit3, Trash2, Users, Eye, MapPin } from 'lucide-react'
 import type { Stand } from '@/lib/database/stands'
 
 // Stand type mappings - orange icons, green titles
@@ -149,7 +148,7 @@ export default function StandCardV2({
     if (stand.capacity) {
       features.push({
         key: 'capacity',
-        icon: Users,
+        icon: getIcon('users'),
         iconColor: '#566E3D',
         label: 'Seats:',
         value: stand.capacity
@@ -182,7 +181,7 @@ export default function StandCardV2({
     if (stand.view_distance_yards) {
       features.push({
         key: 'view',
-        icon: Eye,
+        icon: getIcon('eye'),
         iconColor: '#0C4767',
         label: 'View:',
         value: `${stand.view_distance_yards} yards`
@@ -265,7 +264,7 @@ export default function StandCardV2({
 
     if (stand.capacity) {
       stats.push({
-        icon: Users,
+        icon: getIcon('users'),
         iconColor: '#566E3D',
         label: 'Capacity',
         value: stand.capacity
@@ -274,7 +273,7 @@ export default function StandCardV2({
 
     if (stand.view_distance_yards) {
       stats.push({
-        icon: Eye,
+        icon: getIcon('eye'),
         iconColor: '#0C4767',
         label: 'View',
         value: stand.view_distance_yards,
@@ -314,7 +313,7 @@ export default function StandCardV2({
     // View action (if onClick is provided)
     if (onClick) {
       actions.push({
-        icon: Eye,
+        icon: getIcon('eye'),
         onClick: () => onClick(stand),
         label: 'View details',
         variant: 'view' as const
@@ -323,7 +322,7 @@ export default function StandCardV2({
 
     if (onEdit) {
       actions.push({
-        icon: Edit3,
+        icon: getIcon('edit'),
         onClick: () => onEdit(stand),
         label: 'Edit stand',
         variant: 'edit' as const
@@ -332,7 +331,7 @@ export default function StandCardV2({
 
     if (onDelete) {
       actions.push({
-        icon: Trash2,
+        icon: getIcon('delete'),
         onClick: () => onDelete(stand),
         label: 'Delete stand',
         variant: 'delete' as const
@@ -369,7 +368,7 @@ export default function StandCardV2({
             {/* Capacity */}
             {stand.capacity && (
               <span className="flex items-center gap-1 whitespace-nowrap text-forest-shadow">
-                <Users size={12} className="text-olive-green" />
+                {React.createElement(getIcon('users'), { size: 12, className: 'text-olive-green' })}
                 {stand.capacity}
               </span>
             )}
@@ -385,7 +384,7 @@ export default function StandCardV2({
             {/* View Distance */}
             {stand.view_distance_yards && (
               <span className="flex items-center gap-1 whitespace-nowrap text-forest-shadow">
-                <Eye size={12} className="text-dark-teal" />
+                {React.createElement(getIcon('eye'), { size: 12, className: 'text-dark-teal' })}
                 {stand.view_distance_yards}y
               </span>
             )}
@@ -464,7 +463,7 @@ export default function StandCardV2({
         <td className="px-4 py-3 text-sm text-weathered-wood">
           {stand.latitude && stand.longitude ? (
             <div className="flex items-center gap-1 whitespace-nowrap">
-              <MapPin size={12} />
+              {React.createElement(getIcon('mapPin'), { size: 12 })}
               <span>{stand.latitude.toFixed(4)}, {stand.longitude.toFixed(4)}</span>
             </div>
           ) : (
@@ -482,7 +481,7 @@ export default function StandCardV2({
                   className="text-dark-teal hover:text-dark-teal/80 p-1 rounded hover:bg-dark-teal/10 transition-colors"
                   title="View Details"
                 >
-                  <Eye size={16} />
+                  {React.createElement(getIcon('eye'), { size: 16 })}
                 </button>
               )}
               {onEdit && (
@@ -491,7 +490,7 @@ export default function StandCardV2({
                   className="text-olive-green hover:text-pine-needle p-1 rounded hover:bg-olive-green/10 transition-colors"
                   title="Edit Stand"
                 >
-                  <Edit3 size={16} />
+                  {React.createElement(getIcon('edit'), { size: 16 })}
                 </button>
               )}
               {onDelete && (
@@ -500,7 +499,7 @@ export default function StandCardV2({
                   className="text-clay-earth hover:text-clay-earth/80 p-1 rounded hover:bg-clay-earth/10 transition-colors"
                   title="Delete Stand"
                 >
-                  <Trash2 size={16} />
+                  {React.createElement(getIcon('delete'), { size: 16 })}
                 </button>
               )}
             </div>
@@ -663,7 +662,7 @@ export default function StandCardV2({
       {/* Location */}
       {showLocation && stand.latitude && stand.longitude && mode === 'full' && (
         <div className="flex justify-center gap-1 text-xs text-dark-teal mt-2">
-          <MapPin size={12} />
+          {React.createElement(getIcon('mapPin'), { size: 12 })}
           <span>
             {stand.latitude.toFixed(4)}, {stand.longitude.toFixed(4)}
           </span>

@@ -75,6 +75,8 @@ export type IconName =
   | 'tree'
   | 'mountains'
   | 'trail'
+  | 'trophy'
+  | 'users'
 
   // Stand Types
   | 'ladderStand'
@@ -199,7 +201,7 @@ export const ICON_CATEGORIES = {
   
   HUNTING: [
     'target', 'eye', 'binoculars', 'compass', 'thermometer', 'wind', 'sun',
-    'moon', 'cloud', 'rain', 'snow', 'tree', 'mountains', 'trail'
+    'moon', 'cloud', 'rain', 'snow', 'tree', 'mountains', 'trail', 'trophy', 'users'
   ] as const,
   
   DATA: [
