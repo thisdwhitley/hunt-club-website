@@ -1,9 +1,9 @@
 # Composable Card System Refactoring
 
-**Status:** 🚧 In Progress - Phase 1: COMPLETE ✅
+**Status:** 🚧 In Progress - Phases 1-2: COMPLETE ✅
 **Started:** 2025-10-30
-**Last Updated:** 2025-10-31
-**Current Phase:** Refinement - Preview implementations complete
+**Last Updated:** 2025-11-03
+**Current Phase:** Ready for Phase 3 - Camera Card Implementation
 
 **Original Name:** "Universal Card System"
 **Current Name:** "Composable Card System" (evolved understanding - see Architecture Reality Check below)
@@ -26,8 +26,9 @@ This project creates a **composable card system** for the hunting club website t
 
 **What Exists Now:**
 - **Production (unchanged)**: `StandCard.tsx`, `HuntCard.tsx`, `CameraCard.tsx` - still in use
-- **Preview (new V2)**: `StandCardV2.tsx`, `HuntCardV2.tsx` - built for testing
+- **Preview (new V2)**: `StandCardV2.tsx` ✅, `HuntCardV2.tsx` ✅ - fully implemented with all 3 modes
 - **Shared primitives**: `BaseCard`, `CardHeader` - ready for any domain to use
+- **Detail Modals**: `StandDetailModal.tsx` ✅, Hunt modal integrated in preview ✅
 
 **Eventually (Phase 4 - not started):**
 - Replace production Stand management with StandCardV2 ✅ When approved
@@ -166,21 +167,31 @@ Even though each domain needs a custom V2 card, having shared primitives means:
 **Completed:** Session 1 (2025-10-30)
 **Commit:** c98d498
 
-### Phase 2: Stand Management V2 (0% - Not Started)
-**Goal:** Rebuild Stand Management using new base components
+### Phase 2: StandCardV2 & HuntCardV2 Implementation (100% - COMPLETE ✅)
+**Goal:** Build Stand and Hunt cards using composable card system with preview pages
 
-- [ ] Create `StandManagementV2.tsx` (new file)
-- [ ] Create `StandCardV2.tsx` (new file)
-- [ ] Add mobile detection (< 768px)
-- [ ] Add table/list view mode
-- [ ] Add pagination (default 25 items)
-- [ ] Add list mode to StandCard
-- [ ] Update `StandFormModal.tsx` (backdrop click to close)
-- [ ] Test on desktop (table + card views)
-- [ ] Test on mobile (forced card view)
-- [ ] Compare with old implementation
+**StandCardV2 (COMPLETE ✅):**
+- [x] Create `StandCardV2.tsx` with all 3 modes (full, compact, list)
+- [x] Create `StandDetailModal.tsx` for viewing full details
+- [x] Create `/management/stands-preview` page for comparison
+- [x] Implement dynamic hunt data integration (query hunt_logs)
+- [x] Add "Prior season" indicator for old hunts
+- [x] All modes working: Full (features + history), Compact (title + icons), List (table row)
+- [x] Icon registry compliance - all icons use centralized registry
 
-**Estimated:** 2-3 sessions
+**HuntCardV2 (COMPLETE ✅):**
+- [x] Create `HuntCardV2.tsx` with all 3 modes (full, compact, list)
+- [x] Create `/management/hunts-preview` page for comparison
+- [x] Full Mode: Custom date icon, weather section, hunt details box, comprehensive modal
+- [x] Compact Mode: Date with badge, hunter/stand/temp/harvest/sightings inline
+- [x] List Mode: Date + badge + results icons inline, weather column, matching action buttons
+- [x] Hunt detail modal with all data sections (hunt info, weather, harvests, sightings)
+- [x] Icon improvements: Target for legal times, ChartBar for history stats
+- [x] Section headers bold and olive-green with matching icons
+- [x] Sightings badge hover tooltips showing animals seen
+- [x] Temperature context highlighting throughout
+
+**Completed:** Sessions 1-3 (2025-10-30 to 2025-11-03)
 
 ### Phase 3: Camera Compatibility Review (0% - Not Started)
 **Goal:** Verify camera management can use the same system
@@ -993,30 +1004,123 @@ Through implementation of StandCardV2 and HuntCardV2, we discovered:
 - Focus on applying composable system to Stands in production when ready
 - Pattern is established for future domains
 
+### Session 3 (2025-11-03) - HuntCardV2 Complete Implementation & Refinement
+
+**Duration:** ~3 hours
+**Token Usage:** Started at 0k, currently ~133k/200k (67% used)
+
+**Goal:** Complete HuntCardV2 implementation with all three modes and comprehensive refinements
+
+**Completed:**
+
+#### Full Mode Refinements ✅
+- ✅ Custom DateIcon component (dd/mmm format, AM/PM color coding, 40x40px size)
+- ✅ Hunt Details box with all fields (hunter, stand, times, sunrise/sunset, legal times)
+- ✅ Weather Conditions section with ALL CAPS bold header
+- ✅ Temperature context integration (dawn/dusk/average highlighting)
+- ✅ Added cloudSun and droplets icons to registry
+- ✅ Moon phase display (phase names instead of percentages)
+- ✅ Humidity and precipitation display
+- ✅ Legal shooting times (30 min before sunrise for AM, 30 min after sunset for PM)
+- ✅ Icon improvements: Target icon for legal times, ChartBar for Stand history
+- ✅ Section headers (WEATHER CONDITIONS, NOTES) bold olive-green with matching icons
+- ✅ Sightings badge hover tooltip showing animals seen
+- ✅ Notes section with proper styling
+
+#### Hunt Detail Modal ✅
+- ✅ Matches StandDetailModal appearance (olive-green header)
+- ✅ Edit button in header (placeholder for future implementation)
+- ✅ Hunt notes displayed at top
+- ✅ Hunt Details section (hunter, stand, times, duration, season)
+- ✅ Weather Conditions section with primary temperature highlighting
+- ✅ All temperature data (dawn, dusk, daily range) with context indicators
+- ✅ Wind, precipitation, moon phase, sun times
+- ✅ Harvest Details section with ALL fields (age, weight, distance, weapon, antler points, processor)
+- ✅ Sightings section with ALL fields (gender, behavior, distance, direction, time, notes)
+- ✅ Record Information section (created/updated timestamps)
+
+#### Compact Mode Refinements ✅
+- ✅ Title bold olive-green (matching Full Mode)
+- ✅ AM/PM badge moved to title row (inline with date)
+- ✅ Reduced spacing (gap-2.5, mb-0.5 on title)
+- ✅ Temperature display added to secondary line (fits well)
+- ✅ Sightings badge hover tooltip
+
+#### List Mode Implementation ✅
+- ✅ AM/PM badge on same line as date
+- ✅ Results column removed - harvest/sighting icons inline with date
+- ✅ Harvest icon (trophy) shows count inline
+- ✅ Sightings icon (binoculars) shows count with hover tooltip
+- ✅ Weather column simplified (temp, wind, moon only)
+- ✅ Actions column matches Stand card style exactly (justify-end, space-x-1)
+- ✅ Column header changed from "Member" to "Hunter" for consistency
+- ✅ Table headers: Date, Hunter, Stand, Weather, Actions
+
+**Files Created:**
+- No new files (all modifications to existing)
+
+**Files Modified:**
+- `src/components/hunt-logging/HuntCardV2.tsx` - All mode implementations and refinements
+- `src/lib/shared/icons/index.ts` - Added cloudSun, droplets icons
+- `src/lib/shared/icons/types.ts` - Added icon type definitions
+- `src/components/stands/StandCardV2.tsx` - ChartBar icon for HISTORY, icon color fix
+- `src/app/management/hunts-preview/page.tsx` - Modal implementation, table headers
+
+**Key Design Decisions:**
+- Custom DateIcon size matches Stand card (40x40px total)
+- PM color matches PM badge (clay-earth #A0653A)
+- Section headers use bold olive-green for consistency
+- Icons in section headers match text color
+- Temperature display works in compact mode without crowding
+- List mode is cleaner with results inline vs separate column
+
+**Documentation Created:**
+- `/docs/refactoring/HUNT_CARD_V2_IMPROVEMENTS.md` - Initial implementation
+- `/docs/refactoring/HUNT_CARD_V2_USER_FEEDBACK.md` - First feedback round
+- `/docs/refactoring/HUNT_CARD_V2_FINAL_CHANGES.md` - Second feedback round
+- `/docs/refactoring/HUNT_CARD_V2_FINAL_POLISH.md` - Third feedback round
+- `/docs/refactoring/ICON_IMPROVEMENTS.md` - Icon semantic changes
+
+**Token Status at End:**
+- Current: ~133k/200k (67% used)
+- Remaining: ~67k tokens
+- Status: ✅ Good progress, plenty of room for Camera cards
+
 **Next Session Starts Here:**
-🎯 **Status:** Composable card system architecture understood and documented. Preview pages complete for both Stands and Hunts.
+🎯 **Status:** StandCardV2 and HuntCardV2 fully complete with all 3 modes. Ready for CameraCardV2.
 
 **What's Ready:**
-- ✅ StandCardV2 with 3 modes (full, compact, list)
-- ✅ StandDetailModal
-- ✅ HuntCardV2 with 2 modes (full, compact) - list mode not yet implemented
-- ✅ Both preview pages functional
+- ✅ StandCardV2 with 3 modes (full, compact, list) + StandDetailModal
+- ✅ HuntCardV2 with 3 modes (full, compact, list) + inline modal
+- ✅ Both preview pages fully functional with all modes
 - ✅ All components use centralized icon registry
-- ✅ Documentation reflects reality
+- ✅ Documentation updated and accurate
+- ✅ Design patterns established for Camera cards
 
 **Preview URLs:**
 - Stands: http://localhost:3000/management/stands-preview
 - Hunts: http://localhost:3000/management/hunts-preview
 
-**Instructions for User:**
-1. Start dev server: `podman run -it --rm --name hunt-club-dev -p 3000:3000 -v $(pwd):/app:Z -v /app/node_modules --env-file .env.local hunt-club-dev`
-2. Visit preview pages to see composable card system in action:
-   - Stands: http://localhost:3000/management/stands-preview
-   - Hunts: http://localhost:3000/management/hunts-preview
-3. Try different modes (Full, Compact, List for stands)
-4. Compare old vs new implementations
-5. When ready, can begin migrating production Stand management to use StandCardV2
-6. Camera cards can follow same pattern when needed
+**Instructions for Next Session:**
+1. **Review Current Work:**
+   - Visit `/management/stands-preview` - All 3 modes complete
+   - Visit `/management/hunts-preview` - All 3 modes complete
+   - Test modals, hover tooltips, different modes
+
+2. **Ready for Camera Cards:**
+   - Review existing `CameraCard.tsx` structure
+   - Build `CameraCardV2.tsx` following established patterns
+   - Create `/management/cameras-preview` page
+   - Implement 3 modes: Full, Compact, List
+   - Use existing `CameraDetailModal` or create new one
+
+3. **Pattern to Follow:**
+   - Use BaseCard wrapper
+   - Custom domain-specific layout (not trying to be "universal")
+   - Full mode: Hardware info + Report Data sections
+   - Compact mode: Title + key status icons
+   - List mode: Table row with key columns
+   - Icon registry compliance (no direct lucide-react imports)
 
 **Token Management for Next Session:**
 - Monitor token count every ~10k tokens
@@ -1093,4 +1197,4 @@ Through implementation of StandCardV2 and HuntCardV2, we discovered:
 
 ---
 
-**End of Document** - Last updated: 2025-10-30
+**End of Document** - Last updated: 2025-11-03

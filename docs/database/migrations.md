@@ -35,6 +35,39 @@
 
 ---
 
+### 2025-11-05: Update Camera Alert Logic for Post-Firmware Behavior
+
+**Type**: Function Modification
+**Affected Tables**: camera_status_reports (trigger function)
+**Breaking Changes**: No
+**Rollback Available**: Yes
+
+**Purpose**: After camera firmware update, solar-powered cameras now show 'OK' battery status instead of 'Ext OK'. This is normal behavior and should not trigger alerts. Updated alert logic to only flag 'Low' or 'Critical' battery status.
+
+**Changes Made**:
+- Modified function `update_camera_alert_status()`
+- Removed solar panel battery check: `(has_solar = true AND NEW.battery_status = 'OK')`
+- Now only alerts on: `battery_status = 'Low' OR battery_status = 'Critical'`
+- Added comment documenting post-firmware behavior
+
+**Migration SQL**:
+See `supabase/migrations/update_camera_alert_function.sql`
+
+**Verification Steps**:
+- [x] Apply SQL via Supabase dashboard SQL Editor
+- [ ] Verify Camera 2 (Dam Road) no longer shows false "Low battery" alert
+- [ ] Run camera sync to refresh status reports with new logic
+- [ ] Check camera cards on preview page to confirm alerts cleared
+
+**Files Modified**:
+- supabase/schema.sql (function definition updated)
+- supabase/migrations/update_camera_alert_function.sql (migration script)
+- docs/database/migrations.md (this file)
+
+**Claude Context**: Camera alerts now only trigger on Low/Critical battery, not OK status with solar panels.
+
+---
+
 ### 2025-08-11: Enable Cross-User Hunt Logging
 - Modified 'Users can insert their own hunt logs' policy  
 - Added: auth.uid() IS NOT NULL condition

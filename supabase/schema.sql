@@ -590,9 +590,10 @@ BEGIN
     FROM camera_deployments cd 
     WHERE cd.id = NEW.deployment_id;
     
-    -- Battery alerts (solar panels should show "Ext OK" not "OK")
-    IF NEW.battery_status = 'Low' OR 
-       (has_solar = true AND NEW.battery_status = 'OK') THEN
+    -- Battery alerts (only Low or Critical - post-firmware update behavior)
+    -- Note: After firmware update, solar panels may show 'OK' instead of 'Ext OK'
+    --       This is now considered normal behavior and not an alert condition
+    IF NEW.battery_status = 'Low' OR NEW.battery_status = 'Critical' THEN
       issues = array_append(issues, 'Low battery');
     END IF;
     
