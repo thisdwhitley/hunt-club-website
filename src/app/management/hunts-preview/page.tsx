@@ -337,8 +337,12 @@ export default function HuntsPreviewPage() {
         const huntTypeBadge = viewingHunt.hunt_type === 'AM' ? 'Morning Hunt' : viewingHunt.hunt_type === 'PM' ? 'Evening Hunt' : 'All Day Hunt'
 
         return (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-white/20 backdrop-blur-md"
+              onClick={handleCloseModal}
+            />
+            <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
               {/* Header - Matches StandDetailModal */}
               <div className="bg-olive-green text-white px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -574,7 +578,7 @@ export default function HuntsPreviewPage() {
                   </div>
 
                   {/* Harvest Information */}
-                  {(viewingHunt.had_harvest || viewingHunt.harvest_count > 0) && viewingHunt.harvests && viewingHunt.harvests.length > 0 && (
+                  {viewingHunt.harvests && viewingHunt.harvests.length > 0 && (
                     <div className="bg-gray-50 rounded-lg p-6">
                       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-olive-green">
                         <Trophy size={20} />
@@ -715,6 +719,7 @@ export default function HuntsPreviewPage() {
                   </div>
                 </div>
               </div>
+            </div>
             </div>
           </div>
         )

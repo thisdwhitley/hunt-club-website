@@ -1,0 +1,13 @@
+Sync Timestamp: 2025-11-05T14:50:13.764Z
+Success: true
+Cuddeback Report Time: 11/05/2025 6:17 AM cst
+Cameras Processed: 17
+Status Reports Updated: 17
+Hardware Records Updated: 0
+Snapshots Created: 17
+Warnings: 0
+Errors: 0
+
+Warnings:
+
+Errors:

@@ -20,6 +20,7 @@ import {
   Binoculars
 } from 'lucide-react'
 import { huntService, type HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
+import { parseDBDate, formatDate } from '@/lib/utils/date'
 
 interface HuntDetailsModalProps {
   huntId: string | null
@@ -52,8 +53,10 @@ export function HuntDetailsModal({ huntId, isOpen, onClose }: HuntDetailsModalPr
     }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDateLong = (dateString: string) => {
+    const date = parseDBDate(dateString)
+    if (!date) return dateString
+    return date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -123,7 +126,7 @@ export function HuntDetailsModal({ huntId, isOpen, onClose }: HuntDetailsModalPr
                     <div>
                       <p className="text-sm text-weathered-wood">Hunt Date</p>
                       <p className="font-medium text-forest-shadow">
-                        {formatDate(hunt.hunt_date)}
+                        {formatDateLong(hunt.hunt_date)}
                       </p>
                     </div>
                   </div>
