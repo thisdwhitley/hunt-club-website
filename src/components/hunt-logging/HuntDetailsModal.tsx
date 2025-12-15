@@ -117,7 +117,14 @@ export function HuntDetailsModal({ huntId, isOpen, onClose }: HuntDetailsModalPr
 
           {hunt && (
             <div className="space-y-6">
-              
+
+              {/* Hunt Notes at top if exists */}
+              {hunt.notes && (
+                <div className="bg-morning-mist rounded-lg p-4">
+                  <p className="text-forest-shadow italic">"{hunt.notes}"</p>
+                </div>
+              )}
+
               {/* Basic Hunt Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
@@ -238,46 +245,67 @@ export function HuntDetailsModal({ huntId, isOpen, onClose }: HuntDetailsModalPr
 
               {/* Harvest Details */}
               {hunt.harvests && hunt.harvests.length > 0 && (
-                <div className="bg-morning-mist rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-forest-shadow mb-4 flex items-center">
-                    <Trophy className="w-5 h-5 mr-2 text-burnt-orange" />
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-olive-green">
+                    <Trophy size={20} />
                     Harvest Details
                   </h3>
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {hunt.harvests.map((harvest, index) => (
-                      <div key={harvest.id} className="bg-white rounded-lg p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-sm text-weathered-wood">Species</p>
-                            <p className="font-medium text-forest-shadow">
-                              {harvest.species || 'Not specified'}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-weathered-wood">Gender</p>
-                            <p className="font-medium text-forest-shadow">
-                              {harvest.gender || 'Not specified'}
-                            </p>
-                          </div>
-                          {harvest.weight && (
-                            <div>
-                              <p className="text-sm text-weathered-wood">Weight</p>
-                              <p className="font-medium text-forest-shadow">{harvest.weight} lbs</p>
+                      <div key={harvest.id} className="bg-bright-orange/5 border border-bright-orange/20 rounded-lg p-4">
+                        <h4 className="font-medium text-forest-shadow mb-3">
+                          Harvest #{index + 1}: {harvest.animal_type || 'Unknown'}
+                        </h4>
+                        <div className="space-y-2 text-sm">
+                          {harvest.gender && (
+                            <div className="flex justify-between">
+                              <span className="text-weathered-wood">Gender:</span>
+                              <span className="font-medium text-forest-shadow">{harvest.gender}</span>
                             </div>
                           )}
-                          {harvest.shot_distance && (
-                            <div>
-                              <p className="text-sm text-weathered-wood">Shot Distance</p>
-                              <p className="font-medium text-forest-shadow">{harvest.shot_distance} yards</p>
+                          {harvest.estimated_age && (
+                            <div className="flex justify-between">
+                              <span className="text-weathered-wood">Estimated Age:</span>
+                              <span className="font-medium text-forest-shadow">{harvest.estimated_age}</span>
+                            </div>
+                          )}
+                          {harvest.estimated_weight && (
+                            <div className="flex justify-between">
+                              <span className="text-weathered-wood">Weight:</span>
+                              <span className="font-medium text-forest-shadow">{harvest.estimated_weight} lbs</span>
+                            </div>
+                          )}
+                          {harvest.shot_distance_yards && (
+                            <div className="flex justify-between">
+                              <span className="text-weathered-wood">Shot Distance:</span>
+                              <span className="font-medium text-forest-shadow">{harvest.shot_distance_yards} yards</span>
+                            </div>
+                          )}
+                          {harvest.weapon_used && (
+                            <div className="flex justify-between">
+                              <span className="text-weathered-wood">Weapon:</span>
+                              <span className="font-medium text-forest-shadow">{harvest.weapon_used}</span>
+                            </div>
+                          )}
+                          {harvest.antler_points && (
+                            <div className="flex justify-between">
+                              <span className="text-weathered-wood">Antler Points:</span>
+                              <span className="font-medium text-forest-shadow">{harvest.antler_points}</span>
+                            </div>
+                          )}
+                          {harvest.processor_name && (
+                            <div className="flex justify-between">
+                              <span className="text-weathered-wood">Processor:</span>
+                              <span className="font-medium text-forest-shadow">{harvest.processor_name}</span>
+                            </div>
+                          )}
+                          {harvest.recovery_notes && (
+                            <div className="mt-2 pt-2 border-t border-weathered-wood/20">
+                              <span className="text-weathered-wood block mb-1">Recovery Notes:</span>
+                              <span className="text-forest-shadow italic">"{harvest.recovery_notes}"</span>
                             </div>
                           )}
                         </div>
-                        {harvest.notes && (
-                          <div className="mt-3">
-                            <p className="text-sm text-weathered-wood">Notes</p>
-                            <p className="text-sm text-forest-shadow">{harvest.notes}</p>
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -286,59 +314,34 @@ export function HuntDetailsModal({ huntId, isOpen, onClose }: HuntDetailsModalPr
 
               {/* Sightings */}
               {hunt.sightings && hunt.sightings.length > 0 && (
-                <div className="bg-morning-mist rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-forest-shadow mb-4 flex items-center">
-                    <Binoculars className="w-5 h-5 mr-2 text-pine-needle" />
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-olive-green">
+                    <Binoculars size={20} />
                     Wildlife Sightings
                   </h3>
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 gap-4">
                     {hunt.sightings.map((sighting, index) => (
-                      <div key={sighting.id} className="bg-white rounded-lg p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <p className="text-sm text-weathered-wood">Species</p>
-                            <p className="font-medium text-forest-shadow">
-                              {sighting.species || 'Unknown'}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-weathered-wood">Count</p>
-                            <p className="font-medium text-forest-shadow">
-                              {sighting.animal_count || 1}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-weathered-wood">Time</p>
-                            <p className="font-medium text-forest-shadow">
-                              {sighting.sighting_time ? formatTime(sighting.sighting_time) : 'Not specified'}
-                            </p>
-                          </div>
+                      <div key={sighting.id} className="bg-dark-teal/5 border border-dark-teal/20 rounded-lg p-4">
+                        <h4 className="font-medium text-forest-shadow mb-3">
+                          {sighting.count || 1} {sighting.animal_type || 'Animal'}
+                        </h4>
+                        <div className="grid grid-cols-2 gap-4 text-sm mb-2">
+                          {sighting.time_observed && (
+                            <div className="flex justify-between">
+                              <span className="text-weathered-wood">Time:</span>
+                              <span className="font-medium text-forest-shadow">{sighting.time_observed}</span>
+                            </div>
+                          )}
                         </div>
-                        {sighting.behavior && (
-                          <div className="mt-3">
-                            <p className="text-sm text-weathered-wood">Behavior</p>
-                            <p className="text-sm text-forest-shadow">{sighting.behavior}</p>
-                          </div>
-                        )}
                         {sighting.notes && (
-                          <div className="mt-3">
-                            <p className="text-sm text-weathered-wood">Notes</p>
-                            <p className="text-sm text-forest-shadow">{sighting.notes}</p>
+                          <div className="mt-2">
+                            <span className="text-weathered-wood">Notes:</span>
+                            <p className="text-forest-shadow italic mt-1">"{sighting.notes}"</p>
                           </div>
                         )}
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* Hunt Notes */}
-              {hunt.notes && (
-                <div className="bg-morning-mist rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-forest-shadow mb-3">
-                    Hunt Notes
-                  </h3>
-                  <p className="text-forest-shadow whitespace-pre-wrap">{hunt.notes}</p>
                 </div>
               )}
 
