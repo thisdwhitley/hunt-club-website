@@ -49,7 +49,54 @@ Phase 1 (complete) built all the reusable components in parallel preview pages. 
 
 ---
 
+## ⚠️ PREREQUISITE: Fix Detail Modals FIRST
+
+**CRITICAL: Before starting Phase 2 integration, all detail modals must be audited and fixed.**
+
+**Issue Identified (2025-12-15):**
+The detail modals across the application are inconsistent and missing data that users expect to see. The hunts-preview modal shows comprehensive details, but the production modals (HuntDetailsModal, StandDetailModal, CameraDetailModal) are sparse and incomplete.
+
+**Required Actions Before Phase 2:**
+
+### Fix Hunt Detail Modal
+- [ ] Audit HuntDetailsModal vs hunts-preview modal
+- [ ] Compare what fields are shown in each
+- [ ] Identify missing fields (weather details, timing, etc.)
+- [ ] Ensure ALL harvest data displays (weapon, processor, antler points, recovery notes)
+- [ ] Ensure sightings show complete information
+- [ ] Match layout and visual design to hunts-preview
+- [ ] Test with real hunt data to verify completeness
+
+### Fix Stand Detail Modal
+- [ ] Audit StandDetailModal for completeness
+- [ ] Compare to stands-preview modal if it exists
+- [ ] Ensure all stand data displays (coordinates, maintenance history, etc.)
+- [ ] Verify layout and styling consistency
+
+### Fix Camera Detail Modal
+- [ ] Audit CameraDetailModal for completeness
+- [ ] Compare to cameras-preview modal
+- [ ] Ensure all camera data displays (battery status, reports, deployment history)
+- [ ] Verify layout and styling consistency
+
+**User Feedback:**
+"The modals don't show the details I'm after" - User is tired of inconsistent/incomplete modals. This MUST be fixed before moving forward with integration work.
+
+**Success Criteria:**
+- All detail modals show comprehensive information
+- Preview modals and production modals are identical in content
+- No missing fields or sparse displays
+- User confirms modals are satisfactory
+
+**Estimated Time:** 3-4 hours to audit and fix all three modal types
+
+---
+
 ## 🔧 Detailed Implementation Steps
+
+### **Step 0: Fix Detail Modals (PREREQUISITE - SEE ABOVE)**
+**Status:** Not started
+**Must complete before Step 1**
 
 ### **Step 1: Analysis & Preparation (1-2 hours)**
 
@@ -331,10 +378,17 @@ After Hunt Management is complete and tested, repeat the process for:
 
 ---
 
-### Phase 2: Hunt Management Integration 🔄 IN PROGRESS
-**Status:** Ready to begin
+### Phase 2: Hunt Management Integration ⏸️ BLOCKED
+**Status:** BLOCKED - Must fix detail modals first (see Prerequisite section above)
 **Started:** Not yet
+**Blocker:** Detail modals are incomplete and inconsistent
 **Target Completion:** TBD
+
+#### Step 0: Fix Detail Modals (PREREQUISITE)
+- [ ] Audit and fix HuntDetailsModal
+- [ ] Audit and fix StandDetailModal
+- [ ] Audit and fix CameraDetailModal
+- [ ] User approval of modal completeness
 
 #### Step 1: Analysis & Preparation
 - [ ] Audit current hunt management page
@@ -439,8 +493,9 @@ After Hunt Management is complete and tested, repeat the process for:
 **If you're resuming work and need to remember where you are:**
 
 1. **Check this file first** - You're in Phase 2: Hunt Management Integration
-2. **Current status:** Phase 1 complete, Phase 2 ready to start
-3. **Next action:** Begin Step 1 (Analysis & Preparation)
+2. **Current status:** Phase 1 complete, Phase 2 BLOCKED
+3. **BLOCKER:** Detail modals need to be fixed first (see Prerequisite section)
+4. **Next action:** Fix detail modals (Step 0) before starting Phase 2
 4. **Preview available at:** `http://localhost:3000/management/hunts-preview`
 5. **Target file:** `src/app/management/hunts/page.tsx`
 
