@@ -720,7 +720,6 @@ export default function HuntsPreviewPage() {
                 </div>
               </div>
             </div>
-            </div>
           </div>
         )
       })()}
