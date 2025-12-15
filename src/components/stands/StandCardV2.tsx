@@ -70,6 +70,7 @@ export default function StandCardV2({
   // Helper to check if date is from prior season/year
   const isPriorSeason = (dateString: string): boolean => {
     const huntDate = parseDBDate(dateString)
+    if (!huntDate) return false
     const currentYear = new Date().getFullYear()
     return huntDate.getFullYear() < currentYear
   }
@@ -622,9 +623,9 @@ export default function StandCardV2({
       {/* History Section - Flexible for different card types */}
       {mode === 'full' && showStats && displayHistoryStats.length > 0 && (
         <div className="bg-morning-mist border border-weathered-wood/20 rounded-md p-2 mb-1">
-          <div className="flex items-center gap-1 mb-2 text-xs font-medium text-forest-shadow">
-            {React.createElement(getIcon('target'), { size: 12 })}
-            <span>HISTORY</span>
+          <div className="flex items-center gap-1 mb-2 text-xs font-medium">
+            {React.createElement(getIcon('chartBar'), { size: 12, style: { color: '#566E3D' } })}
+            <span style={{ color: '#566E3D', fontWeight: 'bold' }}>HISTORY</span>
           </div>
 
           <div className="grid gap-2 text-center text-xs" style={{ gridTemplateColumns: `repeat(${displayHistoryStats.length}, minmax(0, 1fr))` }}>

@@ -70,8 +70,10 @@ export type IconName =
   | 'sun'
   | 'moon'
   | 'cloud'
+  | 'cloudSun'
   | 'rain'
   | 'snow'
+  | 'droplets'
   | 'tree'
   | 'mountains'
   | 'trail'
@@ -121,11 +123,18 @@ export type IconName =
   | 'video'
   | 'battery'
   | 'batteryLow'
+  | 'batteryCharging'
   | 'wifi'
   | 'wifiOff'
   | 'signal'
   | 'power'
   | 'powerOff'
+  | 'solar'
+  | 'hardDrive'
+  | 'images'
+  | 'queue'
+  | 'links'
+  | 'season'
   
   // Time & Date
   | 'clock'
@@ -209,8 +218,8 @@ export const ICON_CATEGORIES = {
   ] as const,
   
   HARDWARE: [
-    'camera', 'video', 'battery', 'batteryLow', 'wifi', 'wifiOff', 'signal',
-    'power', 'powerOff'
+    'camera', 'video', 'battery', 'batteryLow', 'batteryCharging', 'wifi', 'wifiOff',
+    'signal', 'power', 'powerOff', 'solar', 'hardDrive', 'images', 'queue', 'links', 'season'
   ] as const,
   
   TIME: [

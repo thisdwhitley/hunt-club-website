@@ -423,6 +423,29 @@ Hunt dates, camera deployment dates, and maintenance dates will all display inco
 6. Create custom hook if needed in `src/hooks/`
 7. Commit schema changes before implementing UI
 
+### Working with Cards (V2 System)
+**IMPORTANT:** Use the V2 card components for all new development:
+- `StandCardV2` - Stand management cards
+- `HuntCardV2` - Hunt logging cards
+- `CameraCardV2` - Camera management cards
+
+**Three Display Modes:** All cards support `mode` prop:
+- `'full'` - Complete card with all details
+- `'compact'` - Mini card for grids
+- `'list'` - Table row for list views
+
+**Composable Base Components** (`src/components/shared/cards/`):
+- `BaseCard` - Container with hover/click effects
+- `CardHeader` - Title area with icon, badges, actions
+- `CardStatsGrid` - Flexible grid for metrics
+- `CardSection` - Collapsible sections
+
+**Icon Sizing Consistency:**
+- Full/Compact: `p-2 rounded-lg` with size `24`
+- List: `p-1 rounded` with size `16`
+
+See `docs/refactoring/CARD_SYSTEM_V2_FINAL.md` for complete implementation details.
+
 ### Working with Forms
 - Use `react-hook-form` for form state management
 - Use `zod` for validation schemas
@@ -469,6 +492,8 @@ const dbDate = formatForDB(new Date())
 - `PROJECT_CONTEXT.md` - Project requirements and context
 - `DESIGN_SYSTEM.md` - Complete design system documentation
 - `docs/database/migrations.md` - Database change history
+- `docs/KNOWN_ISSUES.md` - Known limitations and technical debt
+- `docs/refactoring/CARD_SYSTEM_V2_FINAL.md` - Card System V2 implementation guide
 
 ## Related Documentation
 
@@ -476,3 +501,5 @@ const dbDate = formatForDB(new Date())
 - See `PROJECT_CONTEXT.md` for project requirements and goals
 - See `DESIGN_SYSTEM.md` for complete design specifications
 - See `FEATURES.md` for planned features and roadmap
+- See `docs/KNOWN_ISSUES.md` for known limitations and areas needing improvement
+- See `docs/refactoring/CARD_SYSTEM_V2_FINAL.md` for Card V2 system details and integration guide
