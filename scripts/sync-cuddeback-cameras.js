@@ -350,46 +350,96 @@ async function syncCuddebackCameras() {
  */
 async function extractCuddebackData(browser) {
   const page = await browser.newPage();
-  
+
   try {
+    // Hide automation detection
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => false });
+    });
+
     // Set realistic user agent
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-    
+
     logger.info('🔐 Logging into Cuddeback...');
-    
+
     // Navigate to login page
     await page.goto(CONFIG.CUDDEBACK_LOGIN_URL, { waitUntil: 'networkidle2' });
 
-    // Wait for page to fully render (SPA may need extra time)
+    // Wait for page to fully render - try waiting for form elements
     logger.debug('⏳ Waiting for login form to render...');
-    await page.waitForTimeout(3000);
+    try {
+      await page.waitForSelector('fluent-text-field, input[type="email"], input[type="text"], form', {
+        visible: true,
+        timeout: 15000
+      });
+      logger.debug('✅ Form element appeared');
+    } catch (e) {
+      logger.warn(`Form element wait timed out: ${e.message}`);
+    }
 
-    // Find and fill login fields using multiple selectors
+    // Extra wait for any late-loading JavaScript
+    await page.waitForTimeout(2000);
+
+    // Find login fields - try Fluent UI components first (new Cuddeback site)
     logger.debug('🔍 Looking for login form...');
-    
+
     let emailField = null;
     let passwordField = null;
-    
-    // Try multiple selectors for email field
-    const emailSelectors = ['input[type="email"]', 'input[name*="mail"]', 'input[name*="Email"]', 'input[name*="username"]', 'input[name*="Username"]'];
-    for (const selector of emailSelectors) {
+
+    // Try Fluent UI selectors first (new site uses these)
+    const fluentEmailSelectors = [
+      'fluent-text-field#username',
+      'fluent-text-field[name="username"]',
+      'fluent-text-field[type="email"]'
+    ];
+    const fluentPasswordSelectors = [
+      'fluent-text-field#password',
+      'fluent-text-field[name="password"]',
+      'fluent-text-field[type="password"]'
+    ];
+
+    // Try Fluent UI components
+    for (const selector of fluentEmailSelectors) {
       emailField = await page.$(selector);
       if (emailField) {
-        logger.debug(`✅ Found email field with selector: ${selector}`);
+        logger.debug(`✅ Found Fluent email field with selector: ${selector}`);
         break;
       }
     }
-    
-    // Try multiple selectors for password field
-    const passwordSelectors = ['input[type="password"]', 'input[name*="password"]', 'input[name*="Password"]'];
-    for (const selector of passwordSelectors) {
+
+    for (const selector of fluentPasswordSelectors) {
       passwordField = await page.$(selector);
       if (passwordField) {
-        logger.debug(`✅ Found password field with selector: ${selector}`);
+        logger.debug(`✅ Found Fluent password field with selector: ${selector}`);
         break;
       }
     }
-    
+
+    // Fallback to standard input selectors if Fluent UI not found
+    if (!emailField || !passwordField) {
+      logger.debug('Fluent UI not found, trying standard inputs...');
+
+      const emailSelectors = ['input[type="email"]', 'input[name*="mail"]', 'input[name*="Email"]', 'input[name*="username"]', 'input[name*="Username"]'];
+      for (const selector of emailSelectors) {
+        const field = await page.$(selector);
+        if (field) {
+          emailField = field;
+          logger.debug(`✅ Found email field with selector: ${selector}`);
+          break;
+        }
+      }
+
+      const passwordSelectors = ['input[type="password"]', 'input[name*="password"]', 'input[name*="Password"]'];
+      for (const selector of passwordSelectors) {
+        const field = await page.$(selector);
+        if (field) {
+          passwordField = field;
+          logger.debug(`✅ Found password field with selector: ${selector}`);
+          break;
+        }
+      }
+    }
+
     if (!emailField || !passwordField) {
       // Debug: capture screenshot and HTML for troubleshooting
       const debugTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -401,12 +451,13 @@ async function extractCuddebackData(browser) {
 
       // Log what inputs were found on the page
       const foundInputs = await page.evaluate(() => {
-        const inputs = Array.from(document.querySelectorAll('input'));
+        const inputs = Array.from(document.querySelectorAll('input, fluent-text-field'));
         return inputs.map(i => ({
-          type: i.type,
-          name: i.name,
+          tagName: i.tagName,
+          type: i.type || i.getAttribute('type'),
+          name: i.name || i.getAttribute('name'),
           id: i.id,
-          placeholder: i.placeholder,
+          placeholder: i.placeholder || i.getAttribute('placeholder'),
           className: i.className
         }));
       });
@@ -414,29 +465,35 @@ async function extractCuddebackData(browser) {
 
       throw new Error('Login form not found - could not locate email/password fields');
     }
-    
-    // Clear fields and enter credentials
+
+    // Fill in credentials - for Fluent UI, click to focus then type
     logger.debug('📝 Filling in credentials...');
     await emailField.click();
-    await page.keyboard.down('Control');
-    await page.keyboard.press('KeyA');
-    await page.keyboard.up('Control');
-    await emailField.type(process.env.CUDDEBACK_EMAIL, { delay: 50 });
-    
+    await page.waitForTimeout(300);
+    await page.keyboard.type(process.env.CUDDEBACK_EMAIL, { delay: 50 });
+
     await passwordField.click();
-    await page.keyboard.down('Control');
-    await page.keyboard.press('KeyA');
-    await page.keyboard.up('Control');
-    await passwordField.type(process.env.CUDDEBACK_PASSWORD, { delay: 50 });
-    
-    // Find and click submit button
+    await page.waitForTimeout(300);
+    await page.keyboard.type(process.env.CUDDEBACK_PASSWORD, { delay: 50 });
+
+    // Find submit button - try multiple selectors including Fluent UI
     logger.debug('🔍 Looking for submit button...');
-    const submitButton = await page.$('button[type="submit"], input[type="submit"], .btn-primary');
-    
+    let submitButton = await page.$('fluent-button[type="submit"]');
+    if (!submitButton) {
+      submitButton = await page.$('button[type="submit"]');
+    }
+    if (!submitButton) {
+      submitButton = await page.$('input[type="submit"]');
+    }
+    if (!submitButton) {
+      submitButton = await page.$('.btn-primary');
+    }
+
     if (!submitButton) {
       throw new Error('Submit button not found');
     }
-    
+    logger.debug('✅ Found submit button');
+
     // Submit the form
     logger.debug('🚀 Submitting login form...');
     await Promise.all([

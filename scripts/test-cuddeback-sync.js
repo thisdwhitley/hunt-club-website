@@ -156,51 +156,141 @@ async function testCuddebackAccess() {
     });
     
     const page = await browser.newPage();
+
+    // Hide automation detection
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => false });
+    });
+
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-    
+
     log.debug('Navigating to Cuddeback login...');
     await page.goto(CONFIG.CUDDEBACK_LOGIN_URL, { waitUntil: 'networkidle2' });
 
-    // Wait for page to fully render (SPA may need extra time)
+    // Wait for page to fully render - try waiting for a form or input to appear
     log.debug('Waiting for login form to render...');
-    await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Find login fields using multiple selectors
-    const emailSelectors = ['input[type="email"]', 'input[name*="mail"]', 'input[name*="Email"]', 'input[name*="username"]', 'input[name*="Username"]'];
-    const passwordSelectors = ['input[type="password"]', 'input[name*="password"]', 'input[name*="Password"]'];
+    // Try waiting for any visible input or form element
+    try {
+      await page.waitForSelector('input[type="email"], input[type="text"], input[type="password"], form', {
+        visible: true,
+        timeout: 15000
+      });
+      log.success('Found a form element!');
+    } catch (e) {
+      log.warn(`No form element appeared after 15 seconds: ${e.message}`);
+    }
 
+    // Extra wait for any late-loading JavaScript
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Debug: log page HTML structure
+    const bodyHtml = await page.evaluate(() => document.body.innerHTML.substring(0, 2000));
+    log.debug('Page body HTML (first 2000 chars):');
+    console.log(bodyHtml);
+
+    // Check for iframes first
+    const frames = page.frames();
+    log.info(`Found ${frames.length} frames on page`);
+    for (let i = 0; i < frames.length; i++) {
+      const frame = frames[i];
+      log.debug(`  Frame ${i}: ${frame.url()}`);
+    }
+
+    // Try to find inputs in each frame
     let emailField = null;
     let passwordField = null;
+    let targetFrame = page; // Default to main page
 
-    for (const selector of emailSelectors) {
-      emailField = await page.$(selector);
-      if (emailField) {
-        log.debug(`Found email field with selector: ${selector}`);
+    // Check for Fluent UI web components (used by new Cuddeback site)
+    log.info('Looking for Fluent UI web components...');
+
+    // Try Fluent UI selectors first (new site uses these)
+    const fluentEmailSelectors = [
+      'fluent-text-field#username',
+      'fluent-text-field[name="username"]',
+      'fluent-text-field[type="email"]'
+    ];
+    const fluentPasswordSelectors = [
+      'fluent-text-field#password',
+      'fluent-text-field[name="password"]',
+      'fluent-text-field[type="password"]'
+    ];
+
+    // Try Fluent UI components
+    for (const selector of fluentEmailSelectors) {
+      const field = await page.$(selector);
+      if (field) {
+        log.success(`Found Fluent email field with selector: ${selector}`);
+        emailField = field;
         break;
       }
     }
 
-    for (const selector of passwordSelectors) {
-      passwordField = await page.$(selector);
-      if (passwordField) {
-        log.debug(`Found password field with selector: ${selector}`);
+    for (const selector of fluentPasswordSelectors) {
+      const field = await page.$(selector);
+      if (field) {
+        log.success(`Found Fluent password field with selector: ${selector}`);
+        passwordField = field;
         break;
+      }
+    }
+
+    // Fallback to standard input selectors if Fluent UI not found
+    if (!emailField || !passwordField) {
+      log.debug('Fluent UI not found, trying standard inputs...');
+
+      const emailSelectors = ['input[type="email"]', 'input[name*="mail"]', 'input[name*="Email"]', 'input[name*="username"]', 'input[type="text"]'];
+      const passwordSelectors = ['input[type="password"]', 'input[name*="password"]', 'input[name*="Password"]'];
+
+      for (const selector of emailSelectors) {
+        const field = await page.$(selector);
+        if (field) {
+          const isVisible = await field.isVisible();
+          if (isVisible && !emailField) {
+            emailField = field;
+            log.success(`Found email field with selector: ${selector}`);
+            break;
+          }
+        }
+      }
+
+      for (const selector of passwordSelectors) {
+        const field = await page.$(selector);
+        if (field) {
+          const isVisible = await field.isVisible();
+          if (isVisible && !passwordField) {
+            passwordField = field;
+            log.success(`Found password field with selector: ${selector}`);
+            break;
+          }
+        }
       }
     }
 
     if (!emailField || !passwordField) {
-      // Debug: show what inputs exist on the page
-      const foundInputs = await page.evaluate(() => {
-        const inputs = Array.from(document.querySelectorAll('input'));
-        return inputs.map(i => ({
-          type: i.type,
-          name: i.name,
-          id: i.id,
-          placeholder: i.placeholder,
-          className: i.className
-        }));
-      });
-      log.error(`Inputs found on page: ${JSON.stringify(foundInputs, null, 2)}`);
+      // Debug: show what inputs exist on the page (including all frames)
+      log.error('Could not find login fields. Dumping page structure...');
+
+      for (const frame of frames) {
+        try {
+          const foundInputs = await frame.evaluate(() => {
+            const inputs = Array.from(document.querySelectorAll('input'));
+            return inputs.map(i => ({
+              type: i.type,
+              name: i.name,
+              id: i.id,
+              placeholder: i.placeholder,
+              className: i.className,
+              visible: i.offsetParent !== null
+            }));
+          });
+          log.error(`Inputs in frame "${frame.url().substring(0, 50)}...": ${JSON.stringify(foundInputs, null, 2)}`);
+        } catch (e) {
+          log.debug(`Could not get inputs from frame: ${e.message}`);
+        }
+      }
+
       log.error(`Current URL: ${page.url()}`);
 
       // Take screenshot for debugging
@@ -211,14 +301,32 @@ async function testCuddebackAccess() {
     }
     
     log.debug('Filling login credentials...');
-    await emailField.type(process.env.CUDDEBACK_EMAIL, { delay: 50 });
-    await passwordField.type(process.env.CUDDEBACK_PASSWORD, { delay: 50 });
+
+    // For Fluent UI components, we need to click to focus, then type
+    await emailField.click();
+    await new Promise(resolve => setTimeout(resolve, 300));
+    await page.keyboard.type(process.env.CUDDEBACK_EMAIL, { delay: 50 });
+
+    await passwordField.click();
+    await new Promise(resolve => setTimeout(resolve, 300));
+    await page.keyboard.type(process.env.CUDDEBACK_PASSWORD, { delay: 50 });
     
-    // Submit login
-    const submitButton = await page.$('button[type="submit"], input[type="submit"]');
+    // Submit login - try multiple selectors including Fluent UI
+    let submitButton = await page.$('fluent-button[type="submit"]');
+    if (!submitButton) {
+      submitButton = await page.$('button[type="submit"]');
+    }
+    if (!submitButton) {
+      submitButton = await page.$('input[type="submit"]');
+    }
+    if (!submitButton) {
+      // Try finding any button with "Sign" or "Log" text
+      submitButton = await page.$('button:has-text("Sign"), button:has-text("Log")');
+    }
     if (!submitButton) {
       throw new Error('Could not find submit button');
     }
+    log.success('Found submit button');
     
     log.debug('Submitting login...');
     await Promise.all([

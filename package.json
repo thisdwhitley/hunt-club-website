@@ -14,7 +14,7 @@
     "db:test": "./scripts/db-test.sh",
     "cuddeback:sync": "node scripts/sync-cuddeback-cameras.js",
     "cuddeback:test": "DEBUG_MODE=true node scripts/sync-cuddeback-cameras.js",
-    "cuddeback:local": "node test-cuddeback-sync.js",
+    "cuddeback:local": "node scripts/test-cuddeback-sync.js",
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
     "build:safe": "npm run lint && npm run type-check && npm run build"
