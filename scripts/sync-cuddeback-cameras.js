@@ -359,7 +359,11 @@ async function extractCuddebackData(browser) {
     
     // Navigate to login page
     await page.goto(CONFIG.CUDDEBACK_LOGIN_URL, { waitUntil: 'networkidle2' });
-    
+
+    // Wait for page to fully render (SPA may need extra time)
+    logger.debug('⏳ Waiting for login form to render...');
+    await page.waitForTimeout(3000);
+
     // Find and fill login fields using multiple selectors
     logger.debug('🔍 Looking for login form...');
     
@@ -387,6 +391,27 @@ async function extractCuddebackData(browser) {
     }
     
     if (!emailField || !passwordField) {
+      // Debug: capture screenshot and HTML for troubleshooting
+      const debugTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      await page.screenshot({ path: `debug-login-page-${debugTimestamp}.png`, fullPage: true });
+      const pageHtml = await page.content();
+      await fs.writeFile(`debug-login-page-${debugTimestamp}.html`, pageHtml);
+      logger.error(`📸 Debug files saved: debug-login-page-${debugTimestamp}.png and .html`);
+      logger.error(`📍 Current URL: ${page.url()}`);
+
+      // Log what inputs were found on the page
+      const foundInputs = await page.evaluate(() => {
+        const inputs = Array.from(document.querySelectorAll('input'));
+        return inputs.map(i => ({
+          type: i.type,
+          name: i.name,
+          id: i.id,
+          placeholder: i.placeholder,
+          className: i.className
+        }));
+      });
+      logger.error(`🔍 Inputs found on page: ${JSON.stringify(foundInputs, null, 2)}`);
+
       throw new Error('Login form not found - could not locate email/password fields');
     }
     
