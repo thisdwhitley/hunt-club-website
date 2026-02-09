@@ -33,7 +33,8 @@ const fs = require('fs').promises;
 
 // Configuration
 const CONFIG = {
-  CUDDEBACK_LOGIN_URL: 'https://camp.cuddeback.com/Identity/Account/Login',
+  // CUDDEBACK_LOGIN_URL: 'https://camp.cuddeback.com/Identity/Account/Login',
+  CUDDEBACK_LOGIN_URL: 'https://camp.cuddeback.com/account/login',
   SYNC_TIMEOUT: 300000, // 5 minutes
   RETRY_ATTEMPTS: 3,
   DEBUG: process.env.DEBUG_MODE === 'true'
