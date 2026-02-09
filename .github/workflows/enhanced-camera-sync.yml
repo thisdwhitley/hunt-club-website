@@ -225,6 +225,8 @@ jobs:
           path: |
             sync-results*.json
             sync-log*.txt
+            debug-login-page-*.png
+            debug-login-page-*.html
           retention-days: 7
 
       - name: 🎉 Success Notification

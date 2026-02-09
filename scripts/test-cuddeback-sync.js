@@ -18,7 +18,8 @@ const { createClient } = require('@supabase/supabase-js');
 
 // Configuration
 const CONFIG = {
-  CUDDEBACK_LOGIN_URL: 'https://camp.cuddeback.com/Identity/Account/Login',
+  // CUDDEBACK_LOGIN_URL: 'https://camp.cuddeback.com/Identity/Account/Login',
+  CUDDEBACK_LOGIN_URL: 'https://camp.cuddeback.com/account/login',
   DEBUG: true,
   HEADLESS: false, // Set to true for production-like testing
   SLOW_MO: 500     // Slow down for debugging
@@ -159,12 +160,53 @@ async function testCuddebackAccess() {
     
     log.debug('Navigating to Cuddeback login...');
     await page.goto(CONFIG.CUDDEBACK_LOGIN_URL, { waitUntil: 'networkidle2' });
-    
-    // Find login fields
-    const emailField = await page.$('input[type="email"], input[name*="mail"], input[name*="Email"]');
-    const passwordField = await page.$('input[type="password"]');
-    
+
+    // Wait for page to fully render (SPA may need extra time)
+    log.debug('Waiting for login form to render...');
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Find login fields using multiple selectors
+    const emailSelectors = ['input[type="email"]', 'input[name*="mail"]', 'input[name*="Email"]', 'input[name*="username"]', 'input[name*="Username"]'];
+    const passwordSelectors = ['input[type="password"]', 'input[name*="password"]', 'input[name*="Password"]'];
+
+    let emailField = null;
+    let passwordField = null;
+
+    for (const selector of emailSelectors) {
+      emailField = await page.$(selector);
+      if (emailField) {
+        log.debug(`Found email field with selector: ${selector}`);
+        break;
+      }
+    }
+
+    for (const selector of passwordSelectors) {
+      passwordField = await page.$(selector);
+      if (passwordField) {
+        log.debug(`Found password field with selector: ${selector}`);
+        break;
+      }
+    }
+
     if (!emailField || !passwordField) {
+      // Debug: show what inputs exist on the page
+      const foundInputs = await page.evaluate(() => {
+        const inputs = Array.from(document.querySelectorAll('input'));
+        return inputs.map(i => ({
+          type: i.type,
+          name: i.name,
+          id: i.id,
+          placeholder: i.placeholder,
+          className: i.className
+        }));
+      });
+      log.error(`Inputs found on page: ${JSON.stringify(foundInputs, null, 2)}`);
+      log.error(`Current URL: ${page.url()}`);
+
+      // Take screenshot for debugging
+      await page.screenshot({ path: 'debug-login-local.png', fullPage: true });
+      log.info('Screenshot saved to debug-login-local.png');
+
       throw new Error('Could not find login form fields');
     }
     
