@@ -254,7 +254,7 @@ async function syncCuddebackCameras() {
     // 1. Launch browser and extract camera data
     logger.info('🌐 Launching headless browser...');
     browser = await puppeteer.launch({
-      headless: true,
+      headless: 'new',  // New headless mode (less detectable)
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -262,8 +262,9 @@ async function syncCuddebackCameras() {
         '--disable-accelerated-2d-canvas',
         '--no-first-run',
         '--no-zygote',
-        '--single-process',
-        '--disable-gpu'
+        '--disable-gpu',
+        '--disable-blink-features=AutomationControlled',
+        '--window-size=1920,1080'
       ]
     });
 
@@ -346,10 +347,13 @@ async function syncCuddebackCameras() {
 }
 
 /**
- * Extract camera data from Cuddeback web interface using YOUR WORKING NAVIGATION
+ * Extract camera data from Cuddeback web interface (Updated for new Fluent UI site - Feb 2026)
  */
 async function extractCuddebackData(browser) {
   const page = await browser.newPage();
+
+  // Helper for delays (page.waitForTimeout was removed in newer Puppeteer)
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   try {
     // Hide automation detection
@@ -365,10 +369,10 @@ async function extractCuddebackData(browser) {
     // Navigate to login page
     await page.goto(CONFIG.CUDDEBACK_LOGIN_URL, { waitUntil: 'networkidle2' });
 
-    // Wait for page to fully render - try waiting for form elements
+    // Wait for page to fully render
     logger.debug('⏳ Waiting for login form to render...');
     try {
-      await page.waitForSelector('fluent-text-field, input[type="email"], input[type="text"], form', {
+      await page.waitForSelector('fluent-text-field, input[type="email"], form', {
         visible: true,
         timeout: 15000
       });
@@ -377,310 +381,271 @@ async function extractCuddebackData(browser) {
       logger.warn(`Form element wait timed out: ${e.message}`);
     }
 
-    // Extra wait for any late-loading JavaScript
-    await page.waitForTimeout(2000);
+    await delay(2000);
 
-    // Find login fields - try Fluent UI components first (new Cuddeback site)
-    logger.debug('🔍 Looking for login form...');
-
-    let emailField = null;
-    let passwordField = null;
-
-    // Try Fluent UI selectors first (new site uses these)
-    const fluentEmailSelectors = [
-      'fluent-text-field#username',
-      'fluent-text-field[name="username"]',
-      'fluent-text-field[type="email"]'
-    ];
-    const fluentPasswordSelectors = [
-      'fluent-text-field#password',
-      'fluent-text-field[name="password"]',
-      'fluent-text-field[type="password"]'
-    ];
-
-    // Try Fluent UI components
-    for (const selector of fluentEmailSelectors) {
-      emailField = await page.$(selector);
-      if (emailField) {
-        logger.debug(`✅ Found Fluent email field with selector: ${selector}`);
-        break;
-      }
-    }
-
-    for (const selector of fluentPasswordSelectors) {
-      passwordField = await page.$(selector);
-      if (passwordField) {
-        logger.debug(`✅ Found Fluent password field with selector: ${selector}`);
-        break;
-      }
-    }
-
-    // Fallback to standard input selectors if Fluent UI not found
-    if (!emailField || !passwordField) {
-      logger.debug('Fluent UI not found, trying standard inputs...');
-
-      const emailSelectors = ['input[type="email"]', 'input[name*="mail"]', 'input[name*="Email"]', 'input[name*="username"]', 'input[name*="Username"]'];
-      for (const selector of emailSelectors) {
-        const field = await page.$(selector);
-        if (field) {
-          emailField = field;
-          logger.debug(`✅ Found email field with selector: ${selector}`);
-          break;
-        }
-      }
-
-      const passwordSelectors = ['input[type="password"]', 'input[name*="password"]', 'input[name*="Password"]'];
-      for (const selector of passwordSelectors) {
-        const field = await page.$(selector);
-        if (field) {
-          passwordField = field;
-          logger.debug(`✅ Found password field with selector: ${selector}`);
-          break;
-        }
-      }
-    }
+    // Find Fluent UI login fields
+    let emailField = await page.$('fluent-text-field#username');
+    let passwordField = await page.$('fluent-text-field#password');
 
     if (!emailField || !passwordField) {
-      // Debug: capture screenshot and HTML for troubleshooting
+      // Debug and throw error
       const debugTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
       await page.screenshot({ path: `debug-login-page-${debugTimestamp}.png`, fullPage: true });
       const pageHtml = await page.content();
       await fs.writeFile(`debug-login-page-${debugTimestamp}.html`, pageHtml);
-      logger.error(`📸 Debug files saved: debug-login-page-${debugTimestamp}.png and .html`);
-      logger.error(`📍 Current URL: ${page.url()}`);
-
-      // Log what inputs were found on the page
-      const foundInputs = await page.evaluate(() => {
-        const inputs = Array.from(document.querySelectorAll('input, fluent-text-field'));
-        return inputs.map(i => ({
-          tagName: i.tagName,
-          type: i.type || i.getAttribute('type'),
-          name: i.name || i.getAttribute('name'),
-          id: i.id,
-          placeholder: i.placeholder || i.getAttribute('placeholder'),
-          className: i.className
-        }));
-      });
-      logger.error(`🔍 Inputs found on page: ${JSON.stringify(foundInputs, null, 2)}`);
-
-      throw new Error('Login form not found - could not locate email/password fields');
+      logger.error(`📸 Debug files saved: debug-login-page-${debugTimestamp}.png`);
+      throw new Error('Login form not found - could not locate Fluent UI email/password fields');
     }
 
-    // Fill in credentials - for Fluent UI, click to focus then type
+    // Fill credentials using Tab navigation (triggers Blazor validation properly)
     logger.debug('📝 Filling in credentials...');
+
     await emailField.click();
-    await page.waitForTimeout(300);
-    await page.keyboard.type(process.env.CUDDEBACK_EMAIL, { delay: 50 });
+    await delay(500);
+    await page.keyboard.down('Control');
+    await page.keyboard.press('a');
+    await page.keyboard.up('Control');
+    await page.keyboard.press('Backspace');
+    await delay(200);
+    await page.keyboard.type(process.env.CUDDEBACK_EMAIL, { delay: 80 });
+    await delay(500);
 
-    await passwordField.click();
-    await page.waitForTimeout(300);
-    await page.keyboard.type(process.env.CUDDEBACK_PASSWORD, { delay: 50 });
+    // Tab to password field
+    await page.keyboard.press('Tab');
+    await delay(500);
+    await page.keyboard.type(process.env.CUDDEBACK_PASSWORD, { delay: 80 });
+    await delay(500);
 
-    // Find submit button - try multiple selectors including Fluent UI
-    logger.debug('🔍 Looking for submit button...');
-    let submitButton = await page.$('fluent-button[type="submit"]');
-    if (!submitButton) {
-      submitButton = await page.$('button[type="submit"]');
-    }
-    if (!submitButton) {
-      submitButton = await page.$('input[type="submit"]');
-    }
-    if (!submitButton) {
-      submitButton = await page.$('.btn-primary');
+    // Tab away to trigger validation
+    await page.keyboard.press('Tab');
+    await delay(500);
+
+    // Wait for submit button to be enabled (poll with timeout)
+    logger.debug('⏳ Waiting for submit button to be enabled...');
+    let buttonEnabled = false;
+    for (let i = 0; i < 20; i++) {
+      const buttonState = await page.evaluate(() => {
+        const btn = document.querySelector('fluent-button[type="submit"]');
+        return { disabled: btn?.hasAttribute('disabled') };
+      });
+
+      if (!buttonState.disabled) {
+        buttonEnabled = true;
+        logger.debug('✅ Submit button is enabled');
+        break;
+      }
+      await delay(500);
     }
 
-    if (!submitButton) {
-      throw new Error('Submit button not found');
+    if (!buttonEnabled) {
+      logger.warn('Button still disabled - attempting to enable it manually');
+      await page.evaluate(() => {
+        const btn = document.querySelector('fluent-button[type="submit"]');
+        if (btn) {
+          btn.removeAttribute('disabled');
+          btn.classList.remove('disabled');
+        }
+      });
+      await delay(500);
     }
-    logger.debug('✅ Found submit button');
 
-    // Submit the form
-    logger.debug('🚀 Submitting login form...');
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 }),
-      submitButton.click()
-    ]);
-    
-    // Check if login was successful
-    const currentUrl = page.url();
-    if (currentUrl.includes('login') || currentUrl.includes('Login')) {
-      throw new Error('Login failed - still on login page');
+    // Try login strategies
+    const loginStrategies = [
+      { name: 'Button click', action: async () => {
+        const btn = await page.$('fluent-button[type="submit"]');
+        if (btn) await btn.click();
+      }},
+      { name: 'Enter key', action: async () => {
+        await passwordField.click();
+        await page.keyboard.press('Enter');
+      }},
+      { name: 'JavaScript click', action: async () => {
+        await page.evaluate(() => {
+          const btn = document.querySelector('fluent-button[type="submit"]');
+          if (btn) btn.click();
+        });
+      }}
+    ];
+
+    let loginSuccess = false;
+    let currentUrl = page.url();
+
+    for (const strategy of loginStrategies) {
+      if (loginSuccess) break;
+
+      logger.debug(`🔑 Trying login strategy: ${strategy.name}...`);
+      await strategy.action();
+
+      // Wait for navigation or page content changes
+      try {
+        await Promise.race([
+          page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 8000 }),
+          delay(8000)
+        ]);
+      } catch (e) {
+        // Navigation timeout expected for SPA
+      }
+
+      // Give Blazor SPA time to update
+      await delay(2000);
+
+      currentUrl = page.url();
+
+      // Check URL-based success
+      if (!currentUrl.includes('login') && !currentUrl.includes('Login') && !currentUrl.includes('chrome-error')) {
+        loginSuccess = true;
+        logger.info(`✅ Login succeeded with strategy: ${strategy.name}`);
+        break;
+      }
+
+      // Also check for logged-in indicators (SPA might not change URL immediately)
+      const isLoggedIn = await page.evaluate(() => {
+        // Check for logout link or navbar elements that only appear when logged in
+        const logoutLink = document.querySelector('a[href*="logout"], a[href*="Logout"]');
+        const navLinks = document.querySelectorAll('.nav-link');
+        const hasReportsLink = Array.from(navLinks).some(link => link.textContent?.includes('Reports'));
+        return !!(logoutLink || hasReportsLink);
+      });
+
+      if (isLoggedIn) {
+        loginSuccess = true;
+        logger.info(`✅ Login succeeded with strategy: ${strategy.name} (detected logged-in state)`);
+        break;
+      }
     }
-    
-    logger.info('✅ Login successful, navigating to device report...');
-    
-    // USE YOUR WORKING NAVIGATION LOGIC EXACTLY AS-IS
-    logger.debug('🔍 Looking for Report navigation link...');
-    
-    let deviceReportUrl = null;
-    
-    // Try clicking on "Report" link specifically
+
+    if (!loginSuccess) {
+      const debugTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      await page.screenshot({ path: `debug-login-failed-${debugTimestamp}.png`, fullPage: true });
+      throw new Error('Login failed after trying all strategies');
+    }
+
+    // Navigate to device report page
+    logger.info('📋 Navigating to device report page...');
+    await page.goto('https://camp.cuddeback.com/devices/report', { waitUntil: 'networkidle2' });
+    logger.debug(`📍 Navigated to: ${page.url()}`);
+
+    // Wait for report page content to load
+    logger.debug('⏳ Waiting for report page to render...');
     try {
-      const clicked = await page.evaluate(() => {
-        const links = Array.from(document.querySelectorAll('a'));
-        const reportLink = links.find(l => l.textContent && l.textContent.includes('Report'));
-        if (reportLink) {
-          reportLink.click();
-          return true;
-        }
-        return false;
-      });
-      
-      if (clicked) {
-        await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 });
-        logger.debug(`📍 Navigated via "Report" to: ${page.url()}`);
-        
-        const hasTable = await page.$('table') !== null;
-        if (hasTable) {
-          deviceReportUrl = page.url();
-          logger.info('✅ Found device report via "Report" link!');
-        }
-      }
+      await Promise.race([
+        page.waitForSelector('fluent-button:not([class*="Manage"])', { timeout: 15000 }),
+        page.waitForSelector('fluent-data-grid-row', { timeout: 15000 }),
+        page.waitForSelector('.device-row', { timeout: 15000 })
+      ]);
+      logger.debug('✅ Report page content loaded');
     } catch (e) {
-      logger.debug('❌ Report link click failed, trying alternative navigation...');
+      logger.warn('Timeout waiting for report content, proceeding anyway...');
     }
-    
-    // Fallback: try other navigation approaches
-    if (!deviceReportUrl) {
-      logger.debug('🔍 Trying alternative navigation methods...');
-      
-      const navigationLinks = await page.evaluate(() => {
-        const links = [];
-        const allLinks = document.querySelectorAll('a');
-        
-        for (let i = 0; i < allLinks.length; i++) {
-          const link = allLinks[i];
-          const text = link.textContent ? link.textContent.trim() : '';
-          const href = link.href || '';
-          
-          if (text && (
-            text.toLowerCase().includes('device') ||
-            text.toLowerCase().includes('camera') ||
-            text.toLowerCase().includes('report') ||
-            text.toLowerCase().includes('status')
-          )) {
-            links.push({ text, href });
-          }
-        }
-        
-        return links;
+    await delay(3000);
+
+    // Click "Table" button to switch to table view
+    logger.debug('🔍 Looking for Table button...');
+    const tableClicked = await page.evaluate(() => {
+      const buttons = Array.from(document.querySelectorAll('button, a, fluent-button'));
+      const tableButton = buttons.find(b => {
+        const text = b.textContent?.trim().toLowerCase();
+        return text === 'table' && !b.classList.contains('col-sort-button');
       });
-      
-      logger.debug(`Found ${navigationLinks.length} potential navigation links`);
-      
-      // Try promising links
-      const priorityTerms = ['report', 'device report', 'camera report', 'device', 'camera'];
-      
-      for (const term of priorityTerms) {
-        const matchingLink = navigationLinks.find(link => 
-          link.text.toLowerCase().includes(term)
-        );
-        
-        if (matchingLink) {
-          try {
-            logger.debug(`🔗 Trying to click on: "${matchingLink.text}"`);
-            
-            await page.evaluate((linkText) => {
-              const links = Array.from(document.querySelectorAll('a'));
-              const link = links.find(l => l.textContent.includes(linkText));
-              if (link) {
-                link.click();
-                return true;
-              }
-              return false;
-            }, matchingLink.text);
-            
-            await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 });
-            
-            const hasTable = await page.$('table') !== null;
-            const hasCameraData = await page.evaluate(() => {
-              const headers = Array.from(document.querySelectorAll('th'));
-              return headers.some(th => {
-                const text = th.textContent ? th.textContent.toLowerCase() : '';
-                return text.includes('camera') || text.includes('battery') || text.includes('level') || text.includes('location');
-              });
-            });
-            
-            if (hasTable && hasCameraData) {
-              deviceReportUrl = page.url();
-              logger.info(`✅ Found device report page via navigation: ${deviceReportUrl}`);
-              break;
-            }
-            
-          } catch (e) {
-            logger.debug(`❌ Failed to navigate via "${matchingLink.text}": ${e.message}`);
-            continue;
-          }
-        }
+      if (tableButton) {
+        tableButton.click();
+        return true;
       }
+      return false;
+    });
+
+    if (tableClicked) {
+      logger.debug('✅ Clicked Table button');
+      await delay(3000);
+    } else {
+      logger.warn('Could not find Table button - proceeding with current view');
     }
-    
-    if (!deviceReportUrl) {
-      throw new Error('Could not locate device report page via any navigation method');
+
+    // Wait for data grid
+    logger.debug('⏳ Waiting for Fluent Data Grid...');
+    try {
+      await page.waitForSelector('fluent-data-grid-row[row-type="default"]', { timeout: 10000 });
+      logger.debug('✅ Found Fluent Data Grid rows');
+    } catch (e) {
+      logger.warn('No Fluent Data Grid found, will try fallback extraction');
     }
 
-    // Wait for table to load
-    await page.waitForSelector('table', { timeout: 30000 });
-
-    logger.info('📋 Extracting camera data from device report...');
-
-    // Extract "Last Updated" timestamp and camera data
+    // Extract camera data from Fluent Data Grid
     const extractionResult = await page.evaluate(() => {
-      // Find "Last Updated" text on page
       let lastUpdated = null;
-      const allText = document.body.textContent || '';
-      const lastUpdatedMatch = allText.match(/Last Updated[:\s]*([^<\n]+)/i);
-      if (lastUpdatedMatch) {
-        lastUpdated = lastUpdatedMatch[1].trim();
-      }
-
-      // Extract camera data from table
       const cameras = [];
-      const table = document.querySelector('table');
-      if (!table) return { cameras: [], lastUpdated };
 
-      const rows = Array.from(table.querySelectorAll('tbody tr'));
-      
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        const cells = Array.from(row.querySelectorAll('td'));
-        
-        // Expecting 13 columns as specified
+      // Extract from fluent-data-grid-row elements (Table view - 12 columns)
+      const dataRows = document.querySelectorAll('fluent-data-grid-row[row-type="default"]');
+
+      for (const row of dataRows) {
+        const cells = row.querySelectorAll('fluent-data-grid-cell');
+
+        // Only process rows with 10+ cells (Table view has 12 columns)
         if (cells.length >= 10) {
+          // Table structure: 0=icon, 1=Camera Number, 2=Name, 3=Level, 4=Links,
+          // 5=Battery, 6=Battery Days, 7=Photo Queue, 8=SD Photos, 9=SD Free Space,
+          // 10=HW Version, 11=FW Version
           const camera = {
-            sequence_number: cells[0] ? cells[0].textContent.trim() : '',
-            location_id: cells[1] ? cells[1].textContent.trim() : '',      // This maps to device_id
-            camera_id: cells[2] ? cells[2].textContent.trim() : '',
-            level: cells[3] ? cells[3].textContent.trim() : '',            // Signal level
-            links: cells[4] ? cells[4].textContent.trim() : '',            // Network links
-            battery: cells[5] ? cells[5].textContent.trim() : '',          // Battery level (don't normalize)
-            battery_days: cells[6] ? cells[6].textContent.trim() : '',     // Battery days remaining
-            image_queue: cells[7] ? cells[7].textContent.trim() : '',      // Images queued for upload
-            sd_images: cells[8] ? cells[8].textContent.trim() : '',        // Images on SD card
-            sd_free_space: cells[9] ? cells[9].textContent.trim() : '',    // SD free space
-            hw_version: cells[10] ? cells[10].textContent.trim() : '',     // Hardware version
-            fw_version: cells[11] ? cells[11].textContent.trim() : '',     // Firmware version
-            cl_version: cells[12] ? cells[12].textContent.trim() : '',     // CuddeLink version
+            location_id: cells[1]?.textContent?.trim() || '',      // Camera Number (maps to device_id)
+            camera_id: cells[2]?.textContent?.trim() || '',        // Camera Name
+            level: cells[3]?.textContent?.trim() || '',            // Signal Level
+            links: cells[4]?.textContent?.trim() || '',            // Network Links
+            battery: cells[5]?.textContent?.trim() || '',          // Battery status
+            battery_days: cells[6]?.textContent?.trim() || '',     // Battery Days
+            image_queue: cells[7]?.textContent?.trim() || '',      // Photo Queue
+            sd_images: cells[8]?.textContent?.trim() || '',        // SD Photos
+            sd_free_space: cells[9]?.textContent?.trim() || '',    // SD Free Space
+            hw_version: cells[10]?.textContent?.trim() || '',      // HW Version
+            fw_version: cells[11]?.textContent?.trim() || '',      // FW Version
             extracted_at: new Date().toISOString()
           };
-          
-          cameras.push(camera);
+
+          // Only add if we have a valid camera number
+          if (camera.location_id && !isNaN(parseInt(camera.location_id))) {
+            cameras.push(camera);
+          }
         }
       }
-      
+
+      // Fallback to traditional table if no fluent data grid
+      if (cameras.length === 0) {
+        const table = document.querySelector('table');
+        if (table) {
+          const rows = Array.from(table.querySelectorAll('tbody tr'));
+          for (const row of rows) {
+            const cells = Array.from(row.querySelectorAll('td'));
+            if (cells.length >= 10) {
+              cameras.push({
+                sequence_number: cells[0]?.textContent?.trim() || '',
+                location_id: cells[1]?.textContent?.trim() || '',
+                camera_id: cells[2]?.textContent?.trim() || '',
+                level: cells[3]?.textContent?.trim() || '',
+                links: cells[4]?.textContent?.trim() || '',
+                battery: cells[5]?.textContent?.trim() || '',
+                battery_days: cells[6]?.textContent?.trim() || '',
+                image_queue: cells[7]?.textContent?.trim() || '',
+                sd_images: cells[8]?.textContent?.trim() || '',
+                sd_free_space: cells[9]?.textContent?.trim() || '',
+                hw_version: cells[10]?.textContent?.trim() || '',
+                fw_version: cells[11]?.textContent?.trim() || '',
+                extracted_at: new Date().toISOString()
+              });
+            }
+          }
+        }
+      }
+
       return { cameras, lastUpdated };
     });
 
     logger.info(`📊 Successfully extracted ${extractionResult.cameras.length} camera records`);
-    logger.info(`🕒 Report last updated: ${extractionResult.lastUpdated}`);
-    
-    if (CONFIG.DEBUG) {
+
+    if (CONFIG.DEBUG && extractionResult.cameras.length > 0) {
       logger.debug('📋 Sample camera data:');
-      if (extractionResult.cameras.length > 0) {
-        logger.debug(JSON.stringify(extractionResult.cameras[0], null, 2));
-      }
+      logger.debug(JSON.stringify(extractionResult.cameras[0], null, 2));
     }
-    
+
     return extractionResult;
 
   } catch (error) {
@@ -705,9 +670,9 @@ async function syncCameraData(cuddebackData, deployments, cuddebackReportTime) {
 
   for (const cameraItem of cuddebackData) {
     try {
-      // Find matching deployment by location_id -> device_id
-      const deployment = deployments.find(d => 
-        d.hardware?.device_id === cameraItem.location_id
+      // Find matching deployment by location_id -> device_id (string comparison)
+      const deployment = deployments.find(d =>
+        String(d.hardware?.device_id) === String(cameraItem.location_id)
       );
 
       if (!deployment) {
@@ -840,9 +805,9 @@ async function createDailySnapshots(cuddebackData, deployments) {
   
   for (const cameraItem of cuddebackData) {
     try {
-      // Find matching deployment
-      const deployment = deployments.find(d => 
-        d.hardware?.device_id === cameraItem.location_id
+      // Find matching deployment (string comparison)
+      const deployment = deployments.find(d =>
+        String(d.hardware?.device_id) === String(cameraItem.location_id)
       );
       
       if (!deployment) {

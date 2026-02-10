@@ -302,16 +302,75 @@ async function testCuddebackAccess() {
     
     log.debug('Filling login credentials...');
 
-    // For Fluent UI components, we need to click to focus, then type
-    await emailField.click();
-    await new Promise(resolve => setTimeout(resolve, 300));
-    await page.keyboard.type(process.env.CUDDEBACK_EMAIL, { delay: 50 });
+    // For Fluent UI components in Blazor, we need to simulate real user interaction:
+    // 1. Click to focus
+    // 2. Type the value character by character (slower to trigger Blazor bindings)
+    // 3. Use Tab to move between fields (triggers blur/change events)
 
-    await passwordField.click();
-    await new Promise(resolve => setTimeout(resolve, 300));
-    await page.keyboard.type(process.env.CUDDEBACK_PASSWORD, { delay: 50 });
-    
-    // Submit login - try multiple selectors including Fluent UI
+    // Clear any existing content and fill email field
+    await emailField.click();
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Select all and delete any existing content
+    await page.keyboard.down('Control');
+    await page.keyboard.press('a');
+    await page.keyboard.up('Control');
+    await page.keyboard.press('Backspace');
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // Type email slowly to allow Blazor bindings to process
+    await page.keyboard.type(process.env.CUDDEBACK_EMAIL, { delay: 80 });
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Use Tab to move to password field (triggers blur event on email)
+    await page.keyboard.press('Tab');
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Type password slowly
+    await page.keyboard.type(process.env.CUDDEBACK_PASSWORD, { delay: 80 });
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Tab away from password field to trigger validation
+    await page.keyboard.press('Tab');
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Wait for Blazor to fully process and enable the submit button
+    log.debug('Waiting for submit button to be enabled...');
+
+    // Poll for button enabled state with timeout
+    let buttonEnabled = false;
+    for (let i = 0; i < 20; i++) {
+      const buttonState = await page.evaluate(() => {
+        const btn = document.querySelector('fluent-button[type="submit"]');
+        return {
+          disabled: btn?.hasAttribute('disabled'),
+          className: btn?.className
+        };
+      });
+
+      if (!buttonState.disabled) {
+        buttonEnabled = true;
+        log.success('Submit button is enabled');
+        break;
+      }
+
+      log.debug(`Button still disabled (attempt ${i + 1}/20), waiting...`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    if (!buttonEnabled) {
+      log.warn('Button still disabled after polling - attempting to enable it manually...');
+      await page.evaluate(() => {
+        const btn = document.querySelector('fluent-button[type="submit"]');
+        if (btn) {
+          btn.removeAttribute('disabled');
+          btn.classList.remove('disabled');
+        }
+      });
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    // Get submit button reference
     let submitButton = await page.$('fluent-button[type="submit"]');
     if (!submitButton) {
       submitButton = await page.$('button[type="submit"]');
@@ -320,48 +379,179 @@ async function testCuddebackAccess() {
       submitButton = await page.$('input[type="submit"]');
     }
     if (!submitButton) {
-      // Try finding any button with "Sign" or "Log" text
-      submitButton = await page.$('button:has-text("Sign"), button:has-text("Log")');
-    }
-    if (!submitButton) {
       throw new Error('Could not find submit button');
     }
     log.success('Found submit button');
-    
-    log.debug('Submitting login...');
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle2' }),
-      submitButton.click()
-    ]);
-    
-    // Check if login was successful
-    const currentUrl = page.url();
-    if (currentUrl.includes('login') || currentUrl.includes('Login')) {
-      throw new Error('Login failed - still on login page');
-    }
-    
-    log.success('Cuddeback login successful');
-    
-    // Navigate to device report
-    log.debug('Looking for Report navigation...');
-    
-    const clicked = await page.evaluate(() => {
-      const links = Array.from(document.querySelectorAll('a'));
-      const reportLink = links.find(l => l.textContent && l.textContent.includes('Report'));
-      if (reportLink) {
-        reportLink.click();
-        return true;
+
+    // Try multiple login submission strategies
+    const loginStrategies = [
+      {
+        name: 'Button click',
+        action: async () => {
+          await submitButton.click();
+        }
+      },
+      {
+        name: 'Enter key on password field',
+        action: async () => {
+          await passwordField.click();
+          await page.keyboard.press('Enter');
+        }
+      },
+      {
+        name: 'JavaScript click',
+        action: async () => {
+          await page.evaluate(() => {
+            const btn = document.querySelector('fluent-button[type="submit"]');
+            if (btn) btn.click();
+          });
+        }
       }
-      return false;
-    });
-    
-    if (!clicked) {
-      throw new Error('Could not find Report link');
+    ];
+
+    let loginSuccess = false;
+    let currentUrl = page.url();
+
+    for (const strategy of loginStrategies) {
+      if (loginSuccess) break;
+
+      log.debug(`Trying login strategy: ${strategy.name}...`);
+      await strategy.action();
+
+      // Wait for navigation or URL change
+      try {
+        await Promise.race([
+          page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 8000 }),
+          new Promise(resolve => setTimeout(resolve, 8000))
+        ]);
+      } catch (e) {
+        // Navigation timeout is expected for SPA
+      }
+
+      currentUrl = page.url();
+      log.debug(`URL after ${strategy.name}: ${currentUrl}`);
+
+      // Check if we're no longer on the login page
+      if (!currentUrl.includes('login') && !currentUrl.includes('Login') && !currentUrl.includes('chrome-error')) {
+        loginSuccess = true;
+        log.success(`Login succeeded with strategy: ${strategy.name}`);
+        break;
+      }
+
+      // Check for error messages
+      const errorMessage = await page.evaluate(() => {
+        const errorSelectors = [
+          '.error', '.alert-danger', '.validation-message',
+          '[class*="error"]', '[class*="invalid"]',
+          '.text-danger', '.field-validation-error'
+        ];
+        for (const selector of errorSelectors) {
+          const el = document.querySelector(selector);
+          if (el && el.textContent?.trim()) {
+            return el.textContent.trim();
+          }
+        }
+        return null;
+      });
+
+      if (errorMessage) {
+        log.error(`Login error: ${errorMessage}`);
+      }
     }
-    
-    await page.waitForNavigation({ waitUntil: 'networkidle2' });
-    log.success(`Navigated to device report: ${page.url()}`);
-    
+
+    if (!loginSuccess) {
+      await page.screenshot({ path: 'debug-login-failed.png', fullPage: true });
+      const fs = require('fs').promises;
+      const failedHtml = await page.content();
+      await fs.writeFile('debug-login-failed.html', failedHtml);
+      log.error('Saved debug-login-failed.png and .html');
+      throw new Error('Login failed after trying all strategies. Check debug files.');
+    }
+
+    log.success('Cuddeback login successful');
+
+    const fs = require('fs').promises;
+
+    // Navigate directly to the device report page
+    log.info('Navigating directly to device report page...');
+    await page.goto('https://camp.cuddeback.com/devices/report', { waitUntil: 'networkidle2' });
+    log.success(`Navigated to: ${page.url()}`);
+
+    // Wait for the page content to fully render (Blazor SPA)
+    log.debug('Waiting for report page to fully render...');
+    try {
+      // Wait for either fluent-button (view tabs) or fluent-data-grid-row (data) to appear
+      await Promise.race([
+        page.waitForSelector('fluent-button:not([class*="Manage"])', { timeout: 15000 }),
+        page.waitForSelector('fluent-data-grid-row', { timeout: 15000 }),
+        page.waitForSelector('.device-row', { timeout: 15000 })
+      ]);
+      log.success('Report page content loaded');
+    } catch (e) {
+      log.warn('Timeout waiting for report content, proceeding anyway...');
+    }
+    // Extra wait for any late-loading content
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Save initial report page
+    log.info('📸 Saving initial report page...');
+    await page.screenshot({ path: 'debug-report-initial.png', fullPage: true });
+    const reportInitialHtml = await page.content();
+    await fs.writeFile('debug-report-initial.html', reportInitialHtml);
+    log.success('Saved debug-report-initial.png and debug-report-initial.html');
+
+    // Look for and click "Table" button/tab (Fluent UI button)
+    log.info('Looking for "Table" button/tab...');
+    const tableClicked = await page.evaluate(() => {
+      // Try various ways to find the Table button, including Fluent UI
+      const buttons = Array.from(document.querySelectorAll('button, a, [role="tab"], .nav-link, .tab, fluent-button'));
+      const tableButton = buttons.find(b => {
+        const text = b.textContent?.trim().toLowerCase();
+        // Match "Table" but not column sort buttons
+        return text === 'table' && !b.classList.contains('col-sort-button');
+      });
+      if (tableButton) {
+        tableButton.click();
+        return { found: true, text: tableButton.textContent?.trim() };
+      }
+      return { found: false };
+    });
+
+    if (tableClicked.found) {
+      log.success(`Clicked "${tableClicked.text}" button`);
+      // Wait for table content to load
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // Save table view
+      log.info('📸 Saving table view...');
+      await page.screenshot({ path: 'debug-report-table.png', fullPage: true });
+      const reportTableHtml = await page.content();
+      await fs.writeFile('debug-report-table.html', reportTableHtml);
+      log.success('Saved debug-report-table.png and debug-report-table.html');
+    } else {
+      log.warn('Could not find "Table" button - listing all clickable elements...');
+      const allButtons = await page.evaluate(() => {
+        const elements = Array.from(document.querySelectorAll('button, a, [role="tab"], .nav-link, .tab, fluent-tab, fluent-button'));
+        return elements.map(e => ({
+          tag: e.tagName,
+          text: e.textContent?.trim().substring(0, 50),
+          className: e.className,
+          role: e.getAttribute('role')
+        }));
+      });
+      log.info('Available clickable elements:');
+      allButtons.forEach(b => log.debug(`  ${b.tag}: "${b.text}" (class: ${b.className}, role: ${b.role})`));
+    }
+
+    log.info('');
+    log.info('📁 Debug files saved to project root:');
+    log.info('   - debug-report-initial.png/html');
+    if (tableClicked.found) {
+      log.info('   - debug-report-table.png/html');
+    }
+    log.info('');
+    log.info('Open the HTML files in a browser to inspect the page structure.');
+
     return { browser, page };
     
   } catch (error) {
@@ -376,85 +566,150 @@ async function testCuddebackAccess() {
  */
 async function extractAndAnalyzeData(page, deployments) {
   log.step('Extracting camera data from Cuddeback...');
-  
-  // Wait for table to load
-  await page.waitForSelector('table', { timeout: 30000 });
-  
+
+  // Wait for fluent data grid to load (new Cuddeback site structure)
+  log.debug('Waiting for Fluent Data Grid...');
+  try {
+    await page.waitForSelector('fluent-data-grid-row[row-type="default"]', { timeout: 10000 });
+    log.success('Found Fluent Data Grid rows');
+  } catch (e) {
+    // Fallback to traditional table if no fluent data grid
+    log.debug('No Fluent Data Grid found, trying traditional table...');
+    try {
+      await page.waitForSelector('table', { timeout: 10000 });
+    } catch (e2) {
+      log.error('No table or data grid found on page');
+      throw new Error('Could not find camera data table');
+    }
+  }
+
   // Extract data and analyze structure
   const extractionResult = await page.evaluate(() => {
-    // Find "Last Updated" timestamp
+    // Find "Last Updated" timestamp - look in fluent-data-grid-cell or page text
     let lastUpdated = null;
-    const allText = document.body.textContent || '';
-    const lastUpdatedMatch = allText.match(/Last Updated[:\s]*([^<\n]+)/i);
-    if (lastUpdatedMatch) {
-      lastUpdated = lastUpdatedMatch[1].trim();
+
+    // Try to find header row to determine column indices
+    const headers = [];
+    const headerRow = document.querySelector('fluent-data-grid-row[row-type="header"]');
+    if (headerRow) {
+      const headerCells = headerRow.querySelectorAll('fluent-data-grid-cell');
+      headerCells.forEach(cell => {
+        headers.push(cell.textContent?.trim() || '');
+      });
     }
-    
-    // Extract table headers for field mapping verification
-    const table = document.querySelector('table');
-    if (!table) return { cameras: [], headers: [], lastUpdated };
-    
-    const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent.trim());
-    
-    // Extract camera data
-    const rows = Array.from(table.querySelectorAll('tbody tr'));
+
+    // Also check for col-sort-button elements which indicate headers
+    const sortButtons = document.querySelectorAll('fluent-button.col-sort-button');
+    if (headers.length === 0 && sortButtons.length > 0) {
+      sortButtons.forEach(btn => {
+        const text = btn.textContent?.trim();
+        if (text) headers.push(text);
+      });
+    }
+
+    // Extract camera data from fluent-data-grid-row elements
+    // The Table view has 12 columns with grid-template-columns containing many values
+    // We filter for rows with 10+ cells to get only the Table view data
+    const dataRows = document.querySelectorAll('fluent-data-grid-row[row-type="default"]');
     const cameras = [];
-    
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      const cells = Array.from(row.querySelectorAll('td'));
-      
+
+    for (const row of dataRows) {
+      const cells = row.querySelectorAll('fluent-data-grid-cell');
+
+      // Only process rows with 10+ cells (Table view has 12 columns)
+      // Skip rows with fewer cells (other views like Overview/Health)
       if (cells.length >= 10) {
+        // Table structure based on headers:
+        // 0: (empty/icon), 1: Camera Number, 2: Camera Name, 3: Level, 4: Links,
+        // 5: Battery, 6: Battery Days, 7: Photo Queue, 8: SD Photos, 9: SD Free Space,
+        // 10: HW Version, 11: FW Version
         const camera = {
-          sequence_number: cells[0] ? cells[0].textContent.trim() : '',
-          location_id: cells[1] ? cells[1].textContent.trim() : '',      // KEY: This maps to device_id
-          camera_id: cells[2] ? cells[2].textContent.trim() : '',
-          level: cells[3] ? cells[3].textContent.trim() : '',
-          links: cells[4] ? cells[4].textContent.trim() : '',
-          battery: cells[5] ? cells[5].textContent.trim() : '',
-          battery_days: cells[6] ? cells[6].textContent.trim() : '',
-          image_queue: cells[7] ? cells[7].textContent.trim() : '',
-          sd_images: cells[8] ? cells[8].textContent.trim() : '',
-          sd_free_space: cells[9] ? cells[9].textContent.trim() : '',
-          hw_version: cells[10] ? cells[10].textContent.trim() : '',
-          fw_version: cells[11] ? cells[11].textContent.trim() : '',
-          cl_version: cells[12] ? cells[12].textContent.trim() : '',
+          location_id: cells[1] ? cells[1].textContent?.trim() : '',      // Camera Number (maps to device_id)
+          camera_id: cells[2] ? cells[2].textContent?.trim() : '',        // Camera Name
+          level: cells[3] ? cells[3].textContent?.trim() : '',            // Signal Level
+          links: cells[4] ? cells[4].textContent?.trim() : '',            // Network Links
+          battery: cells[5] ? cells[5].textContent?.trim() : '',          // Battery status
+          battery_days: cells[6] ? cells[6].textContent?.trim() : '',     // Battery Days
+          image_queue: cells[7] ? cells[7].textContent?.trim() : '',      // Photo Queue
+          sd_images: cells[8] ? cells[8].textContent?.trim() : '',        // SD Photos
+          sd_free_space: cells[9] ? cells[9].textContent?.trim() : '',    // SD Free Space
+          hw_version: cells[10] ? cells[10].textContent?.trim() : '',     // HW Version
+          fw_version: cells[11] ? cells[11].textContent?.trim() : '',     // FW Version
           extracted_at: new Date().toISOString()
         };
-        
-        cameras.push(camera);
+
+        // Only add if we have a valid camera number (location_id)
+        if (camera.location_id && !isNaN(parseInt(camera.location_id))) {
+          cameras.push(camera);
+        }
       }
     }
-    
+
+    // Fallback to traditional table extraction
+    if (cameras.length === 0) {
+      const table = document.querySelector('table');
+      if (table) {
+        const tableHeaders = Array.from(table.querySelectorAll('th')).map(th => th.textContent?.trim() || '');
+        headers.push(...tableHeaders);
+
+        const rows = Array.from(table.querySelectorAll('tbody tr'));
+        for (const row of rows) {
+          const cells = Array.from(row.querySelectorAll('td'));
+          if (cells.length >= 10) {
+            cameras.push({
+              sequence_number: cells[0]?.textContent?.trim() || '',
+              location_id: cells[1]?.textContent?.trim() || '',
+              camera_id: cells[2]?.textContent?.trim() || '',
+              level: cells[3]?.textContent?.trim() || '',
+              links: cells[4]?.textContent?.trim() || '',
+              battery: cells[5]?.textContent?.trim() || '',
+              battery_days: cells[6]?.textContent?.trim() || '',
+              image_queue: cells[7]?.textContent?.trim() || '',
+              sd_images: cells[8]?.textContent?.trim() || '',
+              sd_free_space: cells[9]?.textContent?.trim() || '',
+              hw_version: cells[10]?.textContent?.trim() || '',
+              fw_version: cells[11]?.textContent?.trim() || '',
+              cl_version: cells[12]?.textContent?.trim() || '',
+              extracted_at: new Date().toISOString()
+            });
+          }
+        }
+      }
+    }
+
     return { cameras, headers, lastUpdated };
   });
-  
+
   log.success(`Extracted ${extractionResult.cameras.length} camera records`);
-  log.info(`Report last updated: ${extractionResult.lastUpdated}`);
-  
+  if (extractionResult.lastUpdated) {
+    log.info(`Last camera update: ${extractionResult.lastUpdated}`);
+  }
+
   // Analyze field mapping
   log.step('Analyzing field mapping...');
-  log.info('Cuddeback table headers:');
-  extractionResult.headers.forEach((header, index) => {
-    log.info(`  ${index}: ${header}`);
-  });
-  
+  if (extractionResult.headers.length > 0) {
+    log.info('Detected table headers:');
+    extractionResult.headers.forEach((header, index) => {
+      log.info(`  ${index}: ${header}`);
+    });
+  }
+
   // Verify device ID mapping
   log.step('Verifying device ID mapping...');
-  const dbDeviceIds = new Set(deployments.map(d => d.hardware.device_id));
-  const cuddebackLocationIds = new Set(extractionResult.cameras.map(c => c.location_id));
-  
+  const dbDeviceIds = new Set(deployments.map(d => String(d.hardware.device_id)));
+  const cuddebackLocationIds = new Set(extractionResult.cameras.map(c => String(c.location_id)));
+
   log.info('Database device_ids:');
   Array.from(dbDeviceIds).forEach(id => log.info(`  - ${id}`));
-  
-  log.info('Cuddeback Location IDs:');
+
+  log.info('Cuddeback Camera Numbers:');
   Array.from(cuddebackLocationIds).forEach(id => log.info(`  - ${id}`));
-  
+
   // Find matches and mismatches
   const matches = Array.from(dbDeviceIds).filter(id => cuddebackLocationIds.has(id));
   const dbOnly = Array.from(dbDeviceIds).filter(id => !cuddebackLocationIds.has(id));
   const cuddebackOnly = Array.from(cuddebackLocationIds).filter(id => !dbDeviceIds.has(id));
-  
+
   log.info(`\nMapping Analysis:`);
   log.success(`Matches: ${matches.length} - ${matches.join(', ')}`);
   if (dbOnly.length > 0) {
@@ -463,16 +718,18 @@ async function extractAndAnalyzeData(page, deployments) {
   if (cuddebackOnly.length > 0) {
     log.warn(`In Cuddeback only: ${cuddebackOnly.join(', ')}`);
   }
-  
+
   // Show sample data
   if (extractionResult.cameras.length > 0) {
-    log.step('Sample camera data:');
-    const sample = extractionResult.cameras[0];
-    Object.entries(sample).forEach(([key, value]) => {
-      log.debug(`  ${key}: ${value}`);
+    log.step('Sample camera data (first 2):');
+    extractionResult.cameras.slice(0, 2).forEach((camera, idx) => {
+      log.info(`\n📷 Camera ${idx + 1}:`);
+      Object.entries(camera).forEach(([key, value]) => {
+        if (value) log.debug(`  ${key}: ${value}`);
+      });
     });
   }
-  
+
   return extractionResult;
 }
 
@@ -481,15 +738,16 @@ async function extractAndAnalyzeData(page, deployments) {
  */
 async function testDatabaseUpdate(supabase, cuddebackData, deployments) {
   log.step('Testing database update (dry run)...');
-  
+
   let successCount = 0;
   let missingCount = 0;
-  
+
   for (const cameraItem of cuddebackData.cameras) {
-    const deployment = deployments.find(d => 
-      d.hardware.device_id === cameraItem.location_id
+    // Match by device_id (stored as string or number in DB)
+    const deployment = deployments.find(d =>
+      String(d.hardware.device_id) === String(cameraItem.location_id)
     );
-    
+
     if (deployment) {
       successCount++;
       log.debug(`✅ Would update: ${cameraItem.location_id} (${cameraItem.camera_id})`);
@@ -498,68 +756,64 @@ async function testDatabaseUpdate(supabase, cuddebackData, deployments) {
       log.warn(`❌ No DB record for: ${cameraItem.location_id} (${cameraItem.camera_id})`);
     }
   }
-  
+
   log.info(`\nUpdate Analysis:`);
   log.success(`${successCount} cameras would be updated`);
   if (missingCount > 0) {
     log.warn(`${missingCount} cameras have no database record`);
   }
-  
+
   // Test field parsing for multiple cameras
   log.step('Testing field parsing for ALL updatable fields...');
-  if (cuddebackData.cameras.length >= 2) {
-    [0, 1].forEach(index => {
-      if (cuddebackData.cameras[index]) {
-        const sample = cuddebackData.cameras[index];
-        
-        log.info(`\n📷 Camera ${index + 1} Field Parsing Test:`);
-        log.debug(`  Location ID: "${sample.location_id}" (maps to device_id)`);
-        log.debug(`  Camera ID: "${sample.camera_id}" (descriptive name)`);
-        
-        // Test signal level parsing
-        let signalLevel = null;
-        if (sample.level && !sample.level.includes('N/A')) {
-          const signalMatch = sample.level.match(/(\d+)/);
-          if (signalMatch) {
-            signalLevel = parseInt(signalMatch[1]);
-          }
+
+  // Helper function for parsing numbers safely
+  const parseIntSafe = (value) => {
+    if (!value || value === 'N/A' || value === '-') return null;
+    const parsed = parseInt(value.replace(/[^\d.-]/g, ''));
+    return isNaN(parsed) ? null : parsed;
+  };
+
+  const parseFloatSafe = (value) => {
+    if (!value || value === 'N/A' || value === '-') return null;
+    const parsed = parseFloat(value.replace(/[^\d.-]/g, ''));
+    return isNaN(parsed) ? null : parsed;
+  };
+
+  if (cuddebackData.cameras.length >= 1) {
+    const showCount = Math.min(2, cuddebackData.cameras.length);
+    for (let index = 0; index < showCount; index++) {
+      const sample = cuddebackData.cameras[index];
+
+      log.info(`\n📷 Camera ${index + 1} Field Parsing Test:`);
+      log.debug(`  Location ID: "${sample.location_id}" (maps to device_id)`);
+      log.debug(`  Camera Name: "${sample.camera_id}"`);
+
+      // Test signal level parsing
+      let signalLevel = null;
+      if (sample.level && !sample.level.includes('N/A') && sample.level !== '-') {
+        const signalMatch = sample.level.match(/(\d+)/);
+        if (signalMatch) {
+          signalLevel = parseInt(signalMatch[1]);
         }
-        
-        // Test numeric parsing function
-        const parseIntSafe = (value) => {
-          if (!value || value === 'N/A' || value === '-') return null;
-          const parsed = parseInt(value.replace(/[^\d]/g, ''));
-          return isNaN(parsed) ? null : parsed;
-        };
-        
-        log.debug(`\n  📊 STATUS REPORT FIELDS (all updated):`);
-        log.debug(`    Battery: "${sample.battery}" → kept as-is (no normalization)`);
-        log.debug(`    Signal Level: "${sample.level}" → parsed to ${signalLevel}`);
-        log.debug(`    Network Links: "${sample.links}" → parsed to ${parseIntSafe(sample.links)}`);
-        log.debug(`    SD Images: "${sample.sd_images}" → parsed to ${parseIntSafe(sample.sd_images)}`);
-        log.debug(`    SD Free Space: "${sample.sd_free_space}" → parsed to ${parseIntSafe(sample.sd_free_space)} MB`);
-        log.debug(`    Image Queue: "${sample.image_queue}" → parsed to ${parseIntSafe(sample.image_queue)}`);
-        log.debug(`    Battery Days: "${sample.battery_days}" → available but not stored`);
-        
-        log.debug(`\n  🔧 HARDWARE FIELDS (updated when changed):`);
-        log.debug(`    HW Version: "${sample.hw_version}" → updates camera_hardware.hw_version`);
-        log.debug(`    FW Version: "${sample.fw_version}" → updates camera_hardware.fw_version`);
-        log.debug(`    CL Version: "${sample.cl_version}" → updates camera_hardware.cl_version`);
-        
-        log.debug(`\n  📅 TIMESTAMP FIELD:`);
-        log.debug(`    Cuddeback Report Time: "${cuddebackData.lastUpdated}" → cuddeback_report_timestamp`);
       }
-    });
-  } else if (cuddebackData.cameras.length === 1) {
-    // Show single camera if only one available
-    const sample = cuddebackData.cameras[0];
-    
-    log.debug('📷 Single Camera Available - Field Parsing Test:');
-    // ... same parsing logic for single camera
+
+      log.debug(`\n  📊 STATUS REPORT FIELDS (all updated):`);
+      log.debug(`    Battery: "${sample.battery}" → kept as-is`);
+      log.debug(`    Signal Level: "${sample.level}" → parsed to ${signalLevel}`);
+      log.debug(`    Network Links: "${sample.links}" → parsed to ${parseIntSafe(sample.links)}`);
+      log.debug(`    SD Images: "${sample.sd_images}" → parsed to ${parseIntSafe(sample.sd_images)}`);
+      log.debug(`    SD Free Space: "${sample.sd_free_space}" → parsed to ${parseFloatSafe(sample.sd_free_space)} GB`);
+      log.debug(`    Image Queue: "${sample.image_queue}" → parsed to ${parseIntSafe(sample.image_queue)}`);
+      log.debug(`    Battery Days: "${sample.battery_days}" → parsed to ${parseIntSafe(sample.battery_days)}`);
+
+      log.debug(`\n  🔧 HARDWARE FIELDS (updated when changed):`);
+      log.debug(`    HW Version: "${sample.hw_version}"`);
+      log.debug(`    FW Version: "${sample.fw_version}"`);
+    }
   } else {
     log.warn('No camera data available for field parsing test');
   }
-  
+
   return { successCount, missingCount };
 }
 
@@ -590,22 +844,18 @@ async function runLocalTest() {
       // Summary
       log.step('Test Summary:');
       log.success('✅ Cuddeback login and navigation working');
-      log.success(`✅ Extracted ${cuddebackData.cameras.length} cameras with all 13 fields`);
-      log.success(`✅ Found Cuddeback timestamp: ${cuddebackData.lastUpdated}`);
+      log.success(`✅ Extracted ${cuddebackData.cameras.length} cameras from Fluent Data Grid`);
       log.success(`✅ ${updateResults.successCount} cameras would sync successfully`);
-      log.success('✅ ALL status report fields (7) and hardware fields (3) would be updated');
-      
+
       if (updateResults.missingCount > 0) {
-        log.warn(`⚠️ ${updateResults.missingCount} cameras need database records created`);
+        log.warn(`⚠️ ${updateResults.missingCount} cameras in Cuddeback have no database record`);
       }
-      
-      log.info('\n📋 Fields Updated by Automation:');
-      log.info('  Status Reports: battery_status, signal_level, network_links,');
-      log.info('                  sd_images_count, sd_free_space_mb, image_queue,');
-      log.info('                  cuddeback_report_timestamp');
-      log.info('  Hardware Info:  hw_version, fw_version, cl_version (when changed)');
-      log.info('  Deployment:     last_seen_date, is_missing, consecutive_missing_days');
-      
+
+      log.info('\n📋 Fields Available from Cuddeback Table:');
+      log.info('  Camera Number (location_id), Camera Name, Level, Links,');
+      log.info('  Battery, Battery Days, Photo Queue, SD Photos,');
+      log.info('  SD Free Space, HW Version, FW Version');
+
       log.info('\n🚀 Ready for GitHub Actions deployment!');
       
     } finally {
