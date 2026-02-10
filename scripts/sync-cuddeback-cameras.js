@@ -262,8 +262,10 @@ async function syncCuddebackCameras() {
         '--disable-accelerated-2d-canvas',
         '--no-first-run',
         '--no-zygote',
+        '--single-process',  // Important for CI environments
         '--disable-gpu',
         '--disable-blink-features=AutomationControlled',
+        '--disable-features=VizDisplayCompositor',
         '--window-size=1920,1080'
       ]
     });
@@ -449,21 +451,32 @@ async function extractCuddebackData(browser) {
       await delay(500);
     }
 
-    // Try login strategies
+    // Try login strategies (ordered by reliability in CI environments)
+    // Note: Blazor forms don't support traditional form.submit() - must use button clicks
     const loginStrategies = [
-      { name: 'Button click', action: async () => {
-        const btn = await page.$('fluent-button[type="submit"]');
-        if (btn) await btn.click();
+      { name: 'Direct selector click', action: async () => {
+        await page.click('fluent-button[type="submit"]');
       }},
-      { name: 'Enter key', action: async () => {
-        await passwordField.click();
-        await page.keyboard.press('Enter');
-      }},
-      { name: 'JavaScript click', action: async () => {
+      { name: 'JavaScript button click', action: async () => {
         await page.evaluate(() => {
           const btn = document.querySelector('fluent-button[type="submit"]');
-          if (btn) btn.click();
+          if (btn) {
+            btn.click();
+            // Also try dispatching events for Blazor
+            btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+          }
         });
+      }},
+      { name: 'Enter key on password', action: async () => {
+        await passwordField.click();
+        await delay(200);
+        await page.keyboard.press('Enter');
+      }},
+      { name: 'Element handle click', action: async () => {
+        const btn = await page.$('fluent-button[type="submit"]');
+        if (btn) {
+          await btn.click();
+        }
       }}
     ];
 
@@ -474,7 +487,12 @@ async function extractCuddebackData(browser) {
       if (loginSuccess) break;
 
       logger.debug(`🔑 Trying login strategy: ${strategy.name}...`);
-      await strategy.action();
+      try {
+        await strategy.action();
+      } catch (e) {
+        logger.debug(`Strategy ${strategy.name} threw error: ${e.message}`);
+        continue;
+      }
 
       // Wait for navigation or page content changes
       try {
@@ -490,6 +508,7 @@ async function extractCuddebackData(browser) {
       await delay(2000);
 
       currentUrl = page.url();
+      logger.debug(`📍 URL after ${strategy.name}: ${currentUrl}`);
 
       // Check URL-based success
       if (!currentUrl.includes('login') && !currentUrl.includes('Login') && !currentUrl.includes('chrome-error')) {
