@@ -531,11 +531,49 @@ async function extractCuddebackData(browser) {
         logger.info(`✅ Login succeeded with strategy: ${strategy.name} (detected logged-in state)`);
         break;
       }
+
+      // Check for validation errors or login failure messages
+      const errorInfo = await page.evaluate(() => {
+        const errors = [];
+        // Check for validation messages on Fluent UI fields
+        const validationMessages = document.querySelectorAll('.validation-message, .field-validation-error, [class*="error"], [class*="invalid"]');
+        validationMessages.forEach(el => {
+          const text = el.textContent?.trim();
+          if (text && text.length > 0 && text.length < 200) errors.push(text);
+        });
+        // Check for alert/toast messages
+        const alerts = document.querySelectorAll('[role="alert"], .alert, .toast, fluent-toast');
+        alerts.forEach(el => {
+          const text = el.textContent?.trim();
+          if (text && text.length > 0 && text.length < 200) errors.push(text);
+        });
+        // Check fluent-text-field for aria-invalid
+        const invalidFields = document.querySelectorAll('[aria-invalid="true"]');
+        invalidFields.forEach(el => {
+          const label = el.getAttribute('aria-label') || el.id || 'field';
+          errors.push(`Invalid: ${label}`);
+        });
+        // Check full page text for common error patterns
+        const bodyText = document.body.innerText.toLowerCase();
+        const errorPatterns = ['invalid credentials', 'incorrect password', 'account locked', 'too many attempts', 'access denied', 'unauthorized'];
+        errorPatterns.forEach(pattern => {
+          if (bodyText.includes(pattern)) errors.push(`Page contains: "${pattern}"`);
+        });
+        return errors;
+      });
+
+      if (errorInfo.length > 0) {
+        logger.debug(`⚠️ Validation/error messages found: ${errorInfo.join(', ')}`);
+      }
     }
 
     if (!loginSuccess) {
       const debugTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
       await page.screenshot({ path: `debug-login-failed-${debugTimestamp}.png`, fullPage: true });
+      // Also save the HTML for debugging
+      const pageHtml = await page.content();
+      await fs.writeFile(`debug-login-failed-${debugTimestamp}.html`, pageHtml);
+      logger.debug(`📸 Debug files saved: debug-login-failed-${debugTimestamp}.png and .html`);
       throw new Error('Login failed after trying all strategies');
     }
 

@@ -71,19 +71,19 @@ jobs:
         id: enhanced_sync
         run: |
           echo "🔍 Starting enhanced Cuddeback sync with trend analysis..."
-          
-          # Set debug mode based on input
-          if [ "${{ github.event.inputs.debug_mode }}" = "true" ]; then
+
+          # Always enable debug mode for workflow_dispatch (manual runs)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event.inputs.debug_mode }}" = "true" ]; then
             export DEBUG_MODE=true
-            echo "🐛 Debug mode enabled"
+            echo "🐛 Debug mode enabled (manual trigger or explicit)"
           fi
-          
+
           # Run the enhanced sync script
           node scripts/sync-cuddeback-cameras.js
-          
+
           echo "✅ Enhanced sync completed"
         env:
-          DEBUG_MODE: ${{ github.event.inputs.debug_mode || 'false' }}
+          DEBUG_MODE: ${{ github.event_name == 'workflow_dispatch' || github.event.inputs.debug_mode == 'true' }}
 
       - name: 📝 Log Collection Results
         if: always()
@@ -225,8 +225,8 @@ jobs:
           path: |
             sync-results*.json
             sync-log*.txt
-            debug-login-page-*.png
-            debug-login-page-*.html
+            debug-*.png
+            debug-*.html
           retention-days: 7
 
       - name: 🎉 Success Notification
