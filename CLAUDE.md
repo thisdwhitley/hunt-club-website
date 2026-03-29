@@ -143,14 +143,23 @@ To add a new navigation item, edit this config file rather than modifying the Na
 
 See `supabase/schema.sql` for the authoritative schema and `docs/database/migrations.md` for change history.
 
-**Before proposing any schema change, always read `supabase/schema.sql` first.** Never assume what columns or tables exist — the schema evolves and the exported file is the source of truth.
+**Before proposing any schema change, always verify the current schema first.** The exported file in the repo can be stale.
 
-**Workflow for schema changes:**
-1. Read `supabase/schema.sql` to understand current state
-2. Propose the specific SQL and explain what it does
-3. Wait for confirmation that the user has applied it in the Supabase dashboard
-4. Only then proceed with code changes that depend on the new schema
-5. Remind the user to run `npm run db:export` after applying changes
+**Step 1 — Refresh and verify the schema:**
+Ask the user to run:
+```bash
+npm run db:export
+```
+Then read `supabase/schema.sql` to understand what currently exists.
+
+**Step 2 — Propose changes:**
+Show the exact SQL to run in the Supabase SQL editor and explain what it does. Do not write any code yet.
+
+**Step 3 — Wait for confirmation:**
+Ask the user to apply the SQL in the Supabase dashboard and confirm it succeeded.
+
+**Step 4 — Refresh again:**
+Ask the user to run `npm run db:export` again, then proceed with code changes.
 
 **Never write code that assumes a schema change has been applied until the user explicitly confirms it.**
 
