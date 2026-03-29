@@ -501,9 +501,10 @@ After Hunt Management is complete and tested, repeat the process for:
 
 **To resume development:**
 ```bash
-# Start dev server
+# Start dev server (MUST run from /Users path on macOS)
+cd /Users/daniel/GIT/hunt-club-website
 podman run -it --rm --name hunt-club-dev -p 3000:3000 \
-  -v /Users/daniel/GIT/hunt-club-website:/app:Z \
+  -v $(pwd):/app:Z \
   -v /app/node_modules --env-file .env.local hunt-club-dev
 
 # View preview page
@@ -512,6 +513,8 @@ open http://localhost:3000/management/hunts-preview
 # Check integration status
 cat docs/refactoring/INTEGRATION_STATUS.md
 ```
+
+**Note:** Podman on macOS only has access to `/Users` paths. Don't run from `/depot/...` or similar symlinks.
 
 ---
 

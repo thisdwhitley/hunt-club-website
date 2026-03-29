@@ -4,7 +4,8 @@
 
 ### Daily Development Workflow
 ```bash
-# 1. Start development
+# 1. Start development (IMPORTANT: must be in /Users path on macOS)
+cd /Users/daniel/GIT/hunt-club-website
 podman run -it --rm --name hunt-club-dev -p 3000:3000 -v $(pwd):/app:Z -v /app/node_modules --env-file .env.local hunt-club-dev
 
 # 2. Work on features in feature branches
@@ -190,6 +191,8 @@ git push origin main
 ### Container Management
 ```bash
 # Your standard container command (save this!)
+# ⚠️ IMPORTANT: On macOS, you MUST run from the /Users path
+cd /Users/daniel/GIT/hunt-club-website
 podman run -it --rm --name hunt-club-dev -p 3000:3000 -v $(pwd):/app:Z -v /app/node_modules --env-file .env.local hunt-club-dev
 
 # If container gets stuck
@@ -199,6 +202,8 @@ podman rm hunt-club-dev
 # Check running containers
 podman ps
 ```
+
+**Why the /Users path?** Podman on macOS runs in a VM that only mounts `/Users` by default. Paths like `/depot/...` or `/System/Volumes/Data/...` are not accessible to the VM, causing "no such file or directory" errors on volume mounts.
 
 ## 📁 File Structure Reference
 
@@ -263,6 +268,20 @@ lsof -i :3000
 podman stop hunt-club-dev
 podman rm hunt-club-dev
 ```
+
+### "Podman volume mount fails with 'no such file or directory'"
+This happens on macOS when running podman from a path outside `/Users`.
+```bash
+# ❌ This will fail:
+cd /depot/git/hunt-club-website  # or /System/Volumes/Data/...
+podman run ... -v $(pwd):/app ...
+# Error: statfs /System/Volumes/Data/...: no such file or directory
+
+# ✅ This works:
+cd /Users/daniel/GIT/hunt-club-website
+podman run ... -v $(pwd):/app ...
+```
+**Why:** Podman on macOS runs in a VM that only has `/Users` mounted by default.
 
 ---
 
