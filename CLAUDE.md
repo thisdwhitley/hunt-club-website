@@ -122,18 +122,6 @@ function MyComponent() {
 import { Target, Edit } from 'lucide-react'
 ```
 
-**Available Icon Categories:**
-- Navigation (menu, close, chevrons)
-- Features (calendar, map, stands, cameras, hunts)
-- Actions (plus, edit, delete, save, search)
-- User (user, login, logout, profile, settings)
-- Status (check, alert, success, error, warning)
-- Hunting (target, binoculars, compass, wind, sun, moon)
-- Stand Types (ladderStand, baleBlind, boxStand, tripodStand, groundBlind)
-- Hardware (camera, battery, wifi, signal, power)
-- Time (clock, timer, sunrise, sunset)
-- Data (chartLine, chartBar, trendingUp)
-
 **Adding New Icons:**
 If you need an icon that doesn't exist in the registry:
 1. Add it to `src/lib/shared/icons/types.ts` in the `IconName` type
@@ -154,6 +142,17 @@ To add a new navigation item, edit this config file rather than modifying the Na
 ### Database Schema
 
 See `supabase/schema.sql` for the authoritative schema and `docs/database/migrations.md` for change history.
+
+**Before proposing any schema change, always read `supabase/schema.sql` first.** Never assume what columns or tables exist — the schema evolves and the exported file is the source of truth.
+
+**Workflow for schema changes:**
+1. Read `supabase/schema.sql` to understand current state
+2. Propose the specific SQL and explain what it does
+3. Wait for confirmation that the user has applied it in the Supabase dashboard
+4. Only then proceed with code changes that depend on the new schema
+5. Remind the user to run `npm run db:export` after applying changes
+
+**Never write code that assumes a schema change has been applied until the user explicitly confirms it.**
 
 **After schema changes:**
 1. Make changes in Supabase dashboard
@@ -411,11 +410,3 @@ Skills live in `.claude/skills/`. If you don't use `/start`, ask yourself: "what
 - `docs/KNOWN_ISSUES.md` - Known limitations and technical debt
 - `docs/refactoring/CARD_SYSTEM_V2_FINAL.md` - Card System V2 implementation guide
 
-## Related Documentation
-
-- See `WORKFLOW.md` for complete development workflows and database procedures
-- See `PROJECT_CONTEXT.md` for project requirements and goals
-- See `DESIGN_SYSTEM.md` for complete design specifications
-- See `FEATURES.md` for planned features and roadmap
-- See `docs/KNOWN_ISSUES.md` for known limitations and areas needing improvement
-- See `docs/refactoring/CARD_SYSTEM_V2_FINAL.md` for Card V2 system details and integration guide
