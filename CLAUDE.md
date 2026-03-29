@@ -417,5 +417,6 @@ Skills live in `.claude/skills/`. If you don't use `/start`, ask yourself: "what
 - `DESIGN_SYSTEM.md` - Complete design system documentation
 - `docs/database/migrations.md` - Database change history
 - `docs/KNOWN_ISSUES.md` - Known limitations and technical debt
+- `docs/database/schema.md` - Human-readable schema documentation with field context
 - `docs/refactoring/CARD_SYSTEM_V2_FINAL.md` - Card System V2 implementation guide
 
