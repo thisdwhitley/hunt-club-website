@@ -18,6 +18,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Development
 ```bash
 # Start development server (primary command)
+# IMPORTANT: On macOS, must run from /Users path (see note below)
+cd /Users/daniel/GIT/hunt-club-website
 podman run -it --rm --name hunt-club-dev -p 3000:3000 -v $(pwd):/app:Z -v /app/node_modules --env-file .env.local hunt-club-dev
 
 # Build and check
@@ -27,6 +29,11 @@ npm run lint:fix           # Fix ESLint issues
 npm run type-check         # TypeScript type checking
 npm run build:safe         # Lint + type-check + build
 ```
+
+**⚠️ macOS Podman Path Requirement:**
+Podman on macOS runs in a VM that only has access to paths under `/Users` by default. If you access the repo via symlinks or alternate paths (e.g., `/depot/git/...` or `/System/Volumes/Data/...`), podman volume mounts will fail with "no such file or directory".
+
+**Always run podman commands from:** `/Users/daniel/GIT/hunt-club-website`
 
 ### Database Management
 ```bash
@@ -54,54 +61,7 @@ npm run cuddeback:test     # Test sync in debug mode
 
 ## Code Architecture
 
-### Directory Structure
-```
-src/
-├── app/                    # Next.js App Router pages
-│   ├── management/         # Data management pages (hunts, stands, cameras)
-│   ├── hunt-logging/       # Hunt logging interface
-│   ├── hunts/              # Hunt data display
-│   ├── property-map/       # Interactive property map
-│   └── api/                # API routes (calendar integration)
-├── components/             # React components
-│   ├── Navigation.tsx      # Main navigation component
-│   ├── hunt-logging/       # Hunt logging forms and UI
-│   ├── stands/             # Stand management components
-│   ├── cameras/            # Trail camera components
-│   ├── map/                # Map-related components
-│   ├── modals/             # Modal dialogs
-│   └── ui/                 # Reusable UI components
-├── lib/                    # Utility libraries and services
-│   ├── supabase/           # Supabase client configuration
-│   │   ├── client.ts       # Browser client
-│   │   ├── server.ts       # Server component client
-│   │   └── middleware.ts   # Middleware for auth
-│   ├── services/           # External service integrations
-│   │   └── googleCalendar.ts
-│   ├── weather/            # Weather service integration
-│   ├── navigation/         # Navigation configuration
-│   ├── hunt-logging/       # Hunt logging utilities
-│   ├── stands/             # Stand management logic
-│   ├── cameras/            # Camera management logic
-│   ├── shared/             # Shared utilities
-│   │   └── icons/          # Centralized icon registry (USE THIS!)
-│   └── utils/              # General utilities
-│       └── date.ts         # Date/timezone utilities (CRITICAL!)
-├── hooks/                  # Custom React hooks
-│   ├── useAuth.ts          # Authentication hook
-│   ├── useStands.ts        # Stand data management
-│   └── useMapData.ts       # Map data management
-└── types/                  # TypeScript type definitions
-    └── database.ts         # Database types
-
-scripts/                    # Database and utility scripts
-├── db-export.sh           # Export schema securely
-├── db-test.sh             # Test database connection
-└── sync-cuddeback-cameras.js  # Cuddeback camera sync
-
-docs/database/             # Database documentation
-└── migrations.md          # Database change history
-```
+See `PROJECT_CONTEXT.md` for directory structure and full project background.
 
 ### Supabase Integration Patterns
 
@@ -193,20 +153,7 @@ To add a new navigation item, edit this config file rather than modifying the Na
 
 ### Database Schema
 
-Core tables:
-- `members` - User profiles and authentication
-- `stands` - Hunting stand locations with GPS coordinates
-- `hunts` - Hunt logs with weather data integration
-- `maintenance_tasks` - Camp maintenance tracking
-- `camp_todos` - Shared supply and task lists
-- `trail_camera_photos` - Trail camera image management
-- `trail_cameras` - Camera device information
-- `cuddeback_cameras` - Cuddeback-specific camera data
-
-Key relationships:
-- `hunts.member_id` → `members.id`
-- `hunts.stand_id` → `stands.id`
-- `hunts.weather_data` → Embedded JSON with temperature, wind, etc.
+See `supabase/schema.sql` for the authoritative schema and `docs/database/migrations.md` for change history.
 
 **After schema changes:**
 1. Make changes in Supabase dashboard
@@ -259,30 +206,7 @@ See `DESIGN_SYSTEM.md` for complete color specifications.
 
 ## Development Workflows
 
-### Feature Development Workflow
-
-**Frontend-only changes:**
-```bash
-git checkout -b feature/your-feature
-# Make changes
-git add .
-git commit -m "feat: description"
-git checkout main && git merge feature/your-feature
-git push origin main
-```
-
-**With database changes:**
-```bash
-git checkout -b feature/your-feature
-# 1. Make schema changes in Supabase dashboard
-npm run db:export
-# 2. Document changes in docs/database/migrations.md
-git add supabase/ docs/ && git commit -m "db: schema changes"
-# 3. Build frontend features
-git add . && git commit -m "feat: feature implementation"
-git checkout main && git merge feature/your-feature
-git push origin main
-```
+See `WORKFLOW.md` for complete git workflows, database procedures, and container troubleshooting.
 
 ### Production Deployment Workflow
 
@@ -317,20 +241,6 @@ git checkout main
 - Always test features in `main` (staging) before merging to `production`
 - Never commit directly to `production` - always merge from `main`
 - Keep `production` stable and ready for public use at all times
-
-### Container Management
-
-Standard development container command (save this):
-```bash
-podman run -it --rm --name hunt-club-dev -p 3000:3000 -v $(pwd):/app:Z -v /app/node_modules --env-file .env.local hunt-club-dev
-```
-
-If container issues occur:
-```bash
-podman stop hunt-club-dev
-podman rm hunt-club-dev
-podman ps  # Check running containers
-```
 
 ## Important Notes
 
@@ -400,11 +310,6 @@ Hunt dates, camera deployment dates, and maintenance dates will all display inco
 - Unfinished features use "Coming Soon" pattern
 - Authentication-aware UI (public vs member views)
 
-### Testing API Integrations
-- Google Calendar integration via `/api/calendar/google` route
-- Weather data auto-populated on hunt logging
-- Cuddeback camera sync runs as Node.js script
-
 ## Common Patterns
 
 ### Creating a New Page
@@ -425,57 +330,68 @@ Hunt dates, camera deployment dates, and maintenance dates will all display inco
 
 ### Working with Cards (V2 System)
 **IMPORTANT:** Use the V2 card components for all new development:
-- `StandCardV2` - Stand management cards
-- `HuntCardV2` - Hunt logging cards
-- `CameraCardV2` - Camera management cards
+- `StandCardV2` — `src/components/stands/StandCardV2.tsx`
+- `HuntCardV2` — `src/components/hunt-logging/HuntCardV2.tsx`
+- `CameraCardV2` — `src/components/cameras/CameraCardV2.tsx`
 
 **Three Display Modes:** All cards support `mode` prop:
 - `'full'` - Complete card with all details
 - `'compact'` - Mini card for grids
 - `'list'` - Table row for list views
 
-**Composable Base Components** (`src/components/shared/cards/`):
-- `BaseCard` - Container with hover/click effects
-- `CardHeader` - Title area with icon, badges, actions
-- `CardStatsGrid` - Flexible grid for metrics
-- `CardSection` - Collapsible sections
+**Architecture: Composable, not Universal**
+Hunts, Stands, and Cameras have genuinely different content — do not try to force shared inner components. What IS shared and must be consistent:
+- `BaseCard` wrapper (`src/components/shared/cards/BaseCard.tsx`) — use for all cards
+- Action button colors — identical across every card type, no exceptions:
+  - View: `text-dark-teal hover:bg-dark-teal/10`
+  - Edit: `text-olive-green hover:bg-olive-green/10`
+  - Delete: `text-clay-earth hover:bg-clay-earth/10`
+- Icon sizing: Full/Compact → `p-2 rounded-lg` size `24` · List → `p-1 rounded` size `16`
 
-**Icon Sizing Consistency:**
-- Full/Compact: `p-2 rounded-lg` with size `24`
-- List: `p-1 rounded` with size `16`
+**Color Management — HUNTING_COLORS constant**
+Each card component must define a `HUNTING_COLORS` constant at the top of the file with named hex values. Never mix hardcoded hex values and Tailwind color names for the same color within a component.
 
-See `docs/refactoring/CARD_SYSTEM_V2_FINAL.md` for complete implementation details.
+```typescript
+const HUNTING_COLORS = {
+  oliveGreen: '#566E3D',
+  burntOrange: '#FA7921',
+  brightOrange: '#FE9920',
+  mutedGold: '#B9A44C',
+  darkTeal: '#0C4767',
+  forestShadow: '#2D3E1F',
+  weatheredWood: '#8B7355',
+  morningMist: '#E8E6E0',
+  clayEarth: '#A0653A',
+}
+```
+
+**Inactive / undeployed state**
+Every card must handle inactive items visually — never display an inactive item identically to an active one. Use muted opacity and a visible "Not Deployed" or "Inactive" badge. Management pages default to showing **active items only**; inactive items require the user to explicitly toggle a filter.
+
+See `docs/refactoring/CARD_SYSTEM_V2_FINAL.md` for full implementation reference.
+
+### Camera Data Model
+The camera system is split into two separate concepts — never conflate them:
+
+- **`camera_hardware`** — the physical device. Persists forever. Fields: `device_id`, `brand`, `model`, `battery_type`, `condition`, `active`.
+- **`camera_deployments`** — where the device is deployed this season. Seasonal. Fields: `hardware_id` (FK), `location_name`, `latitude`, `longitude`, `season_year`, `has_solar_panel`, `solar_panel_id`, `active`.
+- **`camera_status_reports`** — automated daily status from sync. Fields: `battery_status`, `signal_level`, `sd_images_count`, etc.
+
+When a camera is pulled from the field, its **deployment** is deactivated (`active=false`) — the hardware record is untouched. Historical deployments are preserved for every season.
 
 ### Working with Forms
 - Use `react-hook-form` for form state management
 - Use `zod` for validation schemas
 - Follow pattern in `src/components/hunt-logging/` for reference
 
-### Using Icons
-```typescript
-// Always use the centralized icon registry
-import { getIcon } from '@/lib/shared/icons'
+## Session Workflow Skills
 
-function Component() {
-  const Icon = getIcon('target') // Type-safe icon names
-  return <Icon className="w-5 h-5 text-olive-green" />
-}
-```
+Two slash commands are available to keep sessions focused:
 
-### Working with Dates
-```typescript
-// Always use date utilities for database dates
-import { parseDBDate, formatDate, formatForDB } from '@/lib/utils/date'
+- **`/start`** — Run at the beginning of every session. Asks "what does done look like?" and holds the conversation accountable to that goal.
+- **`/done`** — Run at the end of every session. Checks git status, captures any new decisions into CLAUDE.md, flags obsolete docs, and summarizes what was accomplished.
 
-// Parse from database
-const date = parseDBDate(hunt.hunt_date)
-
-// Display to user
-const displayDate = formatDate(hunt.hunt_date, { style: 'short' })
-
-// Store to database
-const dbDate = formatForDB(new Date())
-```
+Skills live in `.claude/skills/`. If you don't use `/start`, ask yourself: "what exactly am I trying to finish today?"
 
 ## Key Files Reference
 
