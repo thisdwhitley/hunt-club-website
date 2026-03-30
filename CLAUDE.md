@@ -446,6 +446,10 @@ Two slash commands are available to keep sessions focused:
 
 Skills live in `.claude/skills/`. If you don't use `/start`, ask yourself: "what exactly am I trying to finish today?"
 
+### Task Backlog
+
+GitHub Issues (`thisdwhitley/hunt-club-website`) is the primary task backlog. When starting a session, use the GitHub MCP to pull open issues and recommend the best one to tackle. File new tasks as issues rather than keeping them in notes or memory.
+
 ### Approved Plans
 
 Approved implementation plans are stored in `~/.claude/plans/` (e.g., `/Users/daniel/.claude/plans/cosmic-sniffing-lightning.md`). At `/start`, always check this directory for pending plans before looking at in-repo docs like `INTEGRATION_STATUS.md`.
