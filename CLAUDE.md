@@ -59,6 +59,51 @@ npm run cuddeback:sync     # Sync Cuddeback cameras
 npm run cuddeback:test     # Test sync in debug mode
 ```
 
+## MCP Servers
+
+Two MCP servers are configured at user scope (`~/.claude/`) and available in all sessions:
+
+### GitHub MCP
+
+Gives Claude direct access to the GitHub API — issues, PRs, commits, branches, and more.
+
+**Example prompts:**
+```
+"Show me all open issues on this repo"
+"What PRs have been merged in the last two weeks?"
+"Create a PR from my current branch targeting main"
+"Summarize the changes in PR #42"
+"What's the diff between main and production?"
+"List branches that haven't been merged"
+```
+
+**Useful for:**
+- Reviewing PR status without leaving the terminal
+- Filing issues directly from Claude Code
+- Cross-referencing commits with feature work
+
+### Supabase MCP
+
+Gives Claude direct access to your Supabase project — tables, queries, schema inspection, RLS policies, and more. Uses your account-level access token.
+
+**Example prompts:**
+```
+"Show me all tables in the database"
+"What are the RLS policies on camera_deployments?"
+"Run: SELECT * FROM camera_hardware WHERE active = true"
+"What indexes exist on hunt_logs?"
+"Show me the foreign key relationships for camera_deployments"
+"How many active deployments are there this season?"
+```
+
+**Useful for:**
+- Exploring schema without running `npm run db:export`
+- Running ad-hoc queries during debugging
+- Verifying RLS policies are set up correctly
+- Checking data directly while building features
+
+**Note:** The Supabase MCP operates with your account-level token, not project-scoped keys — it has broad access. Treat it like the Supabase dashboard.
+
 ## Code Architecture
 
 See `PROJECT_CONTEXT.md` for directory structure and full project background.
