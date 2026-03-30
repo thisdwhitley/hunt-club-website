@@ -7,7 +7,8 @@ import CameraCard from '@/components/cameras/CameraCard'
 import { CameraForm } from '@/components/cameras/CameraForms'
 import { CameraDetailModal } from '@/components/cameras/CameraDetailModal'
 import { GPXImportModal } from '@/components/cameras/GPXImportModal'
-import { updateCameraDeployment, deactivateCameraDeployment, createCameraDeployment, hardDeleteCameraHardware, createCameraHardware, updateCameraHardware } from '@/lib/cameras/database'
+import { DeploymentImportModal } from '@/components/cameras/DeploymentImportModal'
+import { updateCameraDeployment, deactivateCameraDeployment, createCameraDeployment, hardDeleteCameraHardware, createCameraHardware, updateCameraHardware, deactivateAllActiveDeployments } from '@/lib/cameras/database'
 import type { CameraWithStatus, CameraHardware, CameraFilters, CameraHardwareFormData, CameraDeploymentFormData } from '@/lib/cameras/types'
 
 // Define the same filters interface pattern as stands
@@ -206,6 +207,9 @@ export default function CameraManagementPage() {
   const [showCameraForm, setShowCameraForm] = useState(false)
   const [showCameraDetail, setShowCameraDetail] = useState(false)
   const [showGPXImport, setShowGPXImport] = useState(false)
+  const [showDeploymentImport, setShowDeploymentImport] = useState(false)
+  const [showEndSeasonConfirm, setShowEndSeasonConfirm] = useState(false)
+  const [endSeasonLoading, setEndSeasonLoading] = useState(false)
   
   // Form/detail management state  
   const [editingCamera, setEditingCamera] = useState<CameraWithStatus | null>(null)
@@ -344,6 +348,19 @@ export default function CameraManagementPage() {
       hasCoordinates: 'all',
       season: 'all'
     })
+  }
+
+  // End Season handler
+  const handleEndSeason = async () => {
+    setEndSeasonLoading(true)
+    const result = await deactivateAllActiveDeployments()
+    setEndSeasonLoading(false)
+    setShowEndSeasonConfirm(false)
+    if (result.success) {
+      refreshCameras()
+    } else {
+      alert(`Failed to end season: ${result.error}`)
+    }
   }
 
   // GPX Import handler
@@ -597,7 +614,7 @@ Type "${deviceId}" to confirm deletion:`
                 <button
                   onClick={() => setShowFilters(!showFilters)}
                   className={`p-2 rounded-lg border-2 transition-colors ${
-                    showFilters 
+                    showFilters
                       ? 'bg-pine-needle border-pine-needle text-white'
                       : 'border-green-200 text-green-100 hover:bg-green-700'
                   }`}
@@ -605,7 +622,24 @@ Type "${deviceId}" to confirm deletion:`
                 >
                   <Filter size={20} />
                 </button>
-                
+
+                <button
+                  onClick={() => setShowEndSeasonConfirm(true)}
+                  className="bg-clay-earth hover:bg-red-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium"
+                  title="Deactivate all active deployments"
+                >
+                  <span className="hidden sm:inline">End Season</span>
+                </button>
+
+                <button
+                  onClick={() => setShowDeploymentImport(true)}
+                  className="bg-olive-green hover:bg-pine-needle border border-green-300 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium"
+                  title="Import camera deployments"
+                >
+                  <Upload size={20} />
+                  <span className="hidden sm:inline">Import Deployments</span>
+                </button>
+
                 <button
                   onClick={() => setShowGPXImport(true)}
                   className="bg-burnt-orange hover:bg-clay-earth text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium"
@@ -614,7 +648,7 @@ Type "${deviceId}" to confirm deletion:`
                   <Upload size={20} />
                   <span className="hidden sm:inline">Import GPX</span>
                 </button>
-                
+
                 <button
                   onClick={handleCreateCamera}
                   className="bg-burnt-orange hover:bg-clay-earth text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium"
@@ -884,6 +918,46 @@ Type "${deviceId}" to confirm deletion:`
           onImport={handleGPXImport}
           isImporting={importing}
         />
+      )}
+
+      {/* Deployment Import Modal */}
+      {showDeploymentImport && (
+        <DeploymentImportModal
+          onClose={() => setShowDeploymentImport(false)}
+          onImportComplete={() => { setShowDeploymentImport(false); refreshCameras() }}
+        />
+      )}
+
+      {/* End Season Confirmation Modal */}
+      {showEndSeasonConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <h2 className="text-lg font-semibold text-forest-shadow mb-2">End Season</h2>
+            <p className="text-gray-600 text-sm mb-6">
+              This will deactivate all{' '}
+              <strong>{cameras.filter(c => c.deployment?.active).length}</strong>{' '}
+              active camera deployments. Hardware records and historical data are preserved.
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowEndSeasonConfirm(false)}
+                disabled={endSeasonLoading}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEndSeason}
+                disabled={endSeasonLoading}
+                className="px-5 py-2 bg-clay-earth hover:bg-red-800 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+              >
+                {endSeasonLoading
+                  ? 'Deactivating…'
+                  : `Deactivate All ${cameras.filter(c => c.deployment?.active).length} Deployments`}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -20,6 +20,9 @@ export const BATTERY_STATUSES = [
   'Full', 'Good', 'OK', 'Low', 'Critical', 'Ext OK'
 ] as const;
 
+export const BATTERY_TYPES = ['AA', 'D', 'External'] as const;
+export type BatteryType = typeof BATTERY_TYPES[number];
+
 export type CameraCondition = typeof CAMERA_CONDITIONS[number];
 export type FacingDirection = typeof FACING_DIRECTIONS[number];
 export type BatteryStatus = typeof BATTERY_STATUSES[number];
@@ -42,6 +45,7 @@ export interface CameraHardware {
   fw_version: string | null;    // "8.3.0", "1.7.0"
   cl_version: string | null;    // "1.0.44 / 5.5.11"
   condition: CameraCondition;
+  battery_type: BatteryType | null;
   active: boolean;
   notes: string | null;
   created_at: string;          // ISO timestamp
@@ -62,6 +66,7 @@ export interface CameraDeployment {
   stand_id: string | null;
   facing_direction: FacingDirection | null;
   has_solar_panel: boolean;    // Critical for battery alerts
+  solar_panel_id: string | null;
   active: boolean;
   notes: string | null;
   // Missing detection fields
@@ -158,6 +163,7 @@ export interface CameraHardwareFormData {
   fw_version?: string;
   cl_version?: string;
   condition: CameraCondition;
+  battery_type?: BatteryType;
   active: boolean;
   notes?: string;
 }
@@ -174,6 +180,7 @@ export interface CameraDeploymentFormData {
   stand_id?: string;
   facing_direction?: FacingDirection;
   has_solar_panel: boolean;
+  solar_panel_id?: string;
   active: boolean;
   notes?: string;
 }

@@ -6,12 +6,13 @@
 import React, { useState, useEffect } from 'react'
 import { X, Save, AlertCircle, MapPin, Camera, Settings } from 'lucide-react'
 import { useStands } from '@/hooks/useStands' // Import your stands hook
-import type { 
-  CameraHardware, 
-  CameraDeployment, 
+import { BATTERY_TYPES } from '@/lib/cameras/types'
+import type {
+  CameraHardware,
+  CameraDeployment,
   CameraWithStatus,
   CameraHardwareFormData,
-  CameraDeploymentFormData 
+  CameraDeploymentFormData
 } from '@/lib/cameras/types'
 
 // Combined Camera Form (Hardware + Deployment) - Simplified Modes
@@ -34,6 +35,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
     fw_version: '',
     cl_version: '',
     condition: 'good',
+    battery_type: undefined,
     active: true,
     notes: ''
   })
@@ -47,6 +49,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
     season_year: new Date().getFullYear(),
     facing_direction: undefined,
     has_solar_panel: false,
+    solar_panel_id: undefined,
     active: true,
     notes: ''
   })
@@ -98,6 +101,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
           fw_version: camera.hardware.fw_version || '',
           cl_version: camera.hardware.cl_version || '',
           condition: camera.hardware.condition,
+          battery_type: camera.hardware.battery_type || undefined,
           active: camera.hardware.active,
           notes: camera.hardware.notes || ''
         })
@@ -121,6 +125,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
           stand_id: camera.deployment.stand_id || undefined,
           facing_direction: camera.deployment.facing_direction || undefined,
           has_solar_panel: camera.deployment.has_solar_panel,
+          solar_panel_id: camera.deployment.solar_panel_id || undefined,
           active: camera.deployment.active,
           notes: camera.deployment.notes || ''
         }))
@@ -315,6 +320,23 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                   <option value="fair">Fair</option>
                   <option value="poor">Poor</option>
                   <option value="retired">Retired</option>
+                </select>
+              </div>
+
+              {/* Battery Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Battery Type
+                </label>
+                <select
+                  value={hardwareData.battery_type ?? ''}
+                  onChange={(e) => setHardwareData({ ...hardwareData, battery_type: e.target.value as any || undefined })}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                >
+                  <option value="">Not specified</option>
+                  {BATTERY_TYPES.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
                 </select>
               </div>
 
@@ -551,6 +573,23 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                       </label>
                     </div>
                   </div>
+
+                  {/* Solar Panel ID */}
+                  {deploymentData.has_solar_panel && (
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Solar Panel ID
+                      </label>
+                      <input
+                        type="text"
+                        value={deploymentData.solar_panel_id ?? ''}
+                        onChange={(e) => setDeploymentData({ ...deploymentData, solar_panel_id: e.target.value || undefined })}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                        placeholder="e.g., Solar 001"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">Panel label attached to the camera</p>
+                    </div>
+                  )}
 
                   {/* Active Status */}
                   <div className="md:col-span-2">

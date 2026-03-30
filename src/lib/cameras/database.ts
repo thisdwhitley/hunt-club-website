@@ -16,7 +16,8 @@ import type {
   CameraFilters,
   CameraSortOptions,
   CameraAPIResponse,
-  CameraPaginatedResponse
+  CameraPaginatedResponse,
+  BatteryType
 } from './types';
 
 // ============================================================================
@@ -928,4 +929,126 @@ export async function softDeleteCameraHardware(
     console.error('Error in softDeleteCameraHardware:', error);
     return { success: false, error: 'Unknown error occurred' };
   }
+}
+
+// ============================================================================
+// SEASONAL DEPLOYMENT OPERATIONS
+// ============================================================================
+
+/**
+ * Deactivate all active camera deployments (end of season)
+ */
+export async function deactivateAllActiveDeployments(): Promise<CameraAPIResponse<{ count: number }>> {
+  try {
+    const { data, error } = await supabase
+      .from('camera_deployments')
+      .update({ active: false, updated_at: new Date().toISOString() })
+      .eq('active', true)
+      .select('id');
+
+    if (error) {
+      console.error('Error deactivating deployments:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: { count: data?.length ?? 0 } };
+  } catch (error) {
+    console.error('Error in deactivateAllActiveDeployments:', error);
+    return { success: false, error: 'Unknown error occurred' };
+  }
+}
+
+/**
+ * Get a single camera hardware record by device_id
+ */
+export async function getCameraHardwareByDeviceId(
+  deviceId: string
+): Promise<CameraAPIResponse<CameraHardware>> {
+  try {
+    const { data, error } = await supabase
+      .from('camera_hardware')
+      .select('*')
+      .eq('device_id', deviceId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return { success: false, error: 'Device not found' };
+      }
+      console.error('Error fetching camera hardware by device_id:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error in getCameraHardwareByDeviceId:', error);
+    return { success: false, error: 'Unknown error occurred' };
+  }
+}
+
+export interface DeploymentImportRow {
+  hardware_id: string;
+  device_id: string;
+  battery_type: BatteryType | null;
+  solar_panel_id: string | null;
+  has_solar_panel: boolean;
+  latitude: number;
+  longitude: number;
+  location_name: string;
+  season_year: number;
+}
+
+export interface DeploymentImportResult {
+  device_id: string;
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Batch import camera deployments and update hardware battery types
+ */
+export async function importDeployments(
+  rows: DeploymentImportRow[]
+): Promise<CameraAPIResponse<DeploymentImportResult[]>> {
+  const results: DeploymentImportResult[] = [];
+
+  for (const row of rows) {
+    try {
+      const { error: deployError } = await supabase
+        .from('camera_deployments')
+        .insert({
+          hardware_id: row.hardware_id,
+          location_name: row.location_name,
+          latitude: row.latitude,
+          longitude: row.longitude,
+          season_year: row.season_year,
+          has_solar_panel: row.has_solar_panel,
+          solar_panel_id: row.solar_panel_id,
+          active: true,
+        });
+
+      if (deployError) {
+        results.push({ device_id: row.device_id, success: false, error: deployError.message });
+        continue;
+      }
+
+      if (row.battery_type) {
+        const { error: hwError } = await supabase
+          .from('camera_hardware')
+          .update({ battery_type: row.battery_type, updated_at: new Date().toISOString() })
+          .eq('id', row.hardware_id);
+
+        if (hwError) {
+          results.push({ device_id: row.device_id, success: false, error: `Deployment created but battery_type update failed: ${hwError.message}` });
+          continue;
+        }
+      }
+
+      results.push({ device_id: row.device_id, success: true });
+    } catch (err) {
+      results.push({ device_id: row.device_id, success: false, error: 'Unknown error occurred' });
+    }
+  }
+
+  return { success: true, data: results };
 }

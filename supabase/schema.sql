@@ -2,8 +2,10 @@
 -- PostgreSQL database dump
 --
 
+\restrict CzWZeBBucoI13YYXXgbwiahduoirvNK2QfyckLEdTugQTUZZoYUx5nFnAfMqxxD
+
 -- Dumped from database version 17.4
--- Dumped by pg_dump version 17.5 (Debian 17.5-1.pgdg120+1)
+-- Dumped by pg_dump version 17.9 (Debian 17.9-1.pgdg13+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -926,6 +928,7 @@ CREATE TABLE "public"."camera_deployments" (
     "consecutive_missing_days" integer DEFAULT 0,
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
+    "solar_panel_id" character varying(50),
     CONSTRAINT "camera_deployments_facing_direction_check" CHECK ((("facing_direction")::"text" = ANY ((ARRAY['N'::character varying, 'NE'::character varying, 'E'::character varying, 'SE'::character varying, 'S'::character varying, 'SW'::character varying, 'W'::character varying, 'NW'::character varying])::"text"[])))
 );
 
@@ -950,6 +953,8 @@ CREATE TABLE "public"."camera_hardware" (
     "notes" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
+    "battery_type" character varying(10),
+    CONSTRAINT "camera_hardware_battery_type_check" CHECK ((("battery_type")::"text" = ANY ((ARRAY['AA'::character varying, 'D'::character varying, 'External'::character varying])::"text"[]))),
     CONSTRAINT "camera_hardware_condition_check" CHECK ((("condition")::"text" = ANY ((ARRAY['good'::character varying, 'questionable'::character varying, 'poor'::character varying, 'retired'::character varying])::"text"[])))
 );
 
@@ -3768,4 +3773,6 @@ ALTER EVENT TRIGGER "pgrst_drop_watch" OWNER TO "supabase_admin";
 --
 -- PostgreSQL database dump complete
 --
+
+\unrestrict CzWZeBBucoI13YYXXgbwiahduoirvNK2QfyckLEdTugQTUZZoYUx5nFnAfMqxxD
 

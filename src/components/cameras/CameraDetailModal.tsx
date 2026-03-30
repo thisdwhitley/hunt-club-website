@@ -188,7 +188,12 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
                     {camera.hardware.condition}
                   </span>
                 </div>
-                
+
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Battery Type</label>
+                  <p className="text-gray-900">{camera.hardware.battery_type || 'Not specified'}</p>
+                </div>
+
                 <div>
                   <label className="text-sm font-medium text-gray-600">Status</label>
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -239,7 +244,14 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
                       {camera.deployment.has_solar_panel ? 'Yes' : 'No'}
                     </span>
                   </div>
-                  
+
+                  {camera.deployment.solar_panel_id && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Solar Panel ID</label>
+                      <p className="text-gray-900">{camera.deployment.solar_panel_id}</p>
+                    </div>
+                  )}
+
                   <div>
                     <label className="text-sm font-medium text-gray-600">Deployment Status</label>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
