@@ -996,6 +996,7 @@ export interface DeploymentImportRow {
   longitude: number;
   location_name: string;
   season_year: number;
+  notes: string | null;
 }
 
 export interface DeploymentImportResult {
@@ -1024,6 +1025,7 @@ export async function importDeployments(
           season_year: row.season_year,
           has_solar_panel: row.has_solar_panel,
           solar_panel_id: row.solar_panel_id,
+          notes: row.notes || null,
           active: true,
         });
 

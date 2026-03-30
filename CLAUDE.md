@@ -401,6 +401,10 @@ Two slash commands are available to keep sessions focused:
 
 Skills live in `.claude/skills/`. If you don't use `/start`, ask yourself: "what exactly am I trying to finish today?"
 
+### Approved Plans
+
+Approved implementation plans are stored in `~/.claude/plans/` (e.g., `/Users/daniel/.claude/plans/cosmic-sniffing-lightning.md`). At `/start`, always check this directory for pending plans before looking at in-repo docs like `INTEGRATION_STATUS.md`.
+
 ## Key Files Reference
 
 - `package.json` - Scripts and dependencies

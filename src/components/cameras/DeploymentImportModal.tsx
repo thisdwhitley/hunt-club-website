@@ -22,6 +22,7 @@ interface ParsedRow {
   raw: string;
   device_id: string;
   location_name: string;
+  notes: string | null;
   latitude: number | null;
   longitude: number | null;
   season_year: number | null;
@@ -48,13 +49,17 @@ interface DeploymentImportModalProps {
 
 function parseBatteryType(raw: string): BatteryType | null {
   const trimmed = raw.trim();
-  // Check for parenthetical override: "AA (converted to D)" → "D"
-  const override = trimmed.match(/\(converted to ([A-Za-z]+)\)/i);
-  const candidate = override ? override[1] : trimmed.split(/\s+/)[0];
+  const candidate = trimmed.split(/\s+/)[0];
   const upper = candidate.toUpperCase();
-  // Match case-insensitively against known types
   const match = BATTERY_TYPES.find(t => t.toUpperCase() === upper);
   return match ?? null;
+}
+
+function formatSolarDisplay(id: string | null): string {
+  if (!id) return '—';
+  const stripped = id.replace(/^solar\s+/i, '');
+  const num = parseInt(stripped, 10);
+  return isNaN(num) ? stripped : String(num);
 }
 
 function parseSolarField(raw: string): { solar_panel_id: string | null; has_solar_panel: boolean } {
@@ -83,6 +88,7 @@ function parseImportLine(line: string, lineNumber: number): ParsedRow {
     raw: line,
     device_id: '',
     location_name: '',
+    notes: null,
     latitude: null,
     longitude: null,
     season_year: null,
@@ -98,7 +104,9 @@ function parseImportLine(line: string, lineNumber: number): ParsedRow {
     return { ...base, parseError: `Expected 6 pipe-delimited fields, got ${parts.length}` };
   }
 
-  const [timestampRaw, deviceId, batteryRaw, solarRaw, coordsRaw, locationName] = parts;
+  const [timestampRaw, deviceIdRaw, batteryRaw, solarRaw, coordsRaw, locationName] = parts;
+  // Strip leading zeros so "010" matches hardware device_id "10"
+  const deviceId = deviceIdRaw.replace(/^0+/, '') || deviceIdRaw;
 
   // Timestamp → season year
   const ts = new Date(timestampRaw);
@@ -140,6 +148,8 @@ export function DeploymentImportModal({ onClose, onImportComplete }: DeploymentI
   const [rows, setRows] = useState<PreviewRow[]>([])
   const [parsing, setParsing] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [editingLine, setEditingLine] = useState<number | null>(null)
+  const [skippedLines, setSkippedLines] = useState<Set<number>>(new Set())
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const CloseIcon = getIcon('close')
@@ -190,7 +200,7 @@ export function DeploymentImportModal({ onClose, onImportComplete }: DeploymentI
   // ── Import ────────────────────────────────────────────────────────────────
 
   async function handleImport() {
-    const readyRows = rows.filter(r => !r.parseError && r.hardware_id !== null)
+    const readyRows = rows.filter(r => !r.parseError && r.hardware_id !== null && !skippedLines.has(r.lineNumber))
     if (readyRows.length === 0) return
 
     setImporting(true)
@@ -205,6 +215,7 @@ export function DeploymentImportModal({ onClose, onImportComplete }: DeploymentI
       longitude: r.longitude!,
       location_name: r.location_name,
       season_year: r.season_year!,
+      notes: r.notes,
     }))
 
     const result = await importDeployments(importRows)
@@ -223,7 +234,24 @@ export function DeploymentImportModal({ onClose, onImportComplete }: DeploymentI
 
   // ── Derived counts ────────────────────────────────────────────────────────
 
-  const readyCount = rows.filter(r => !r.parseError && r.hardware_id !== null).length
+  function handleLocationChange(lineNumber: number, value: string) {
+    setRows(prev => prev.map(r => r.lineNumber === lineNumber ? { ...r, location_name: value } : r))
+  }
+
+  function handleNotesChange(lineNumber: number, value: string) {
+    setRows(prev => prev.map(r => r.lineNumber === lineNumber ? { ...r, notes: value || null } : r))
+  }
+
+  function toggleSkip(lineNumber: number) {
+    setSkippedLines(prev => {
+      const next = new Set(prev)
+      if (next.has(lineNumber)) next.delete(lineNumber)
+      else next.add(lineNumber)
+      return next
+    })
+  }
+
+  const readyCount = rows.filter(r => !r.parseError && r.hardware_id !== null && !skippedLines.has(r.lineNumber)).length
   const skippedCount = rows.length - readyCount
   const importedCount = rows.filter(r => r.importResult?.success).length
   const hasImportResults = rows.some(r => r.importResult !== undefined)
@@ -264,7 +292,7 @@ export function DeploymentImportModal({ onClose, onImportComplete }: DeploymentI
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 text-gray-900">
 
           {step === 'input' && (
             <div className="space-y-4">
@@ -280,7 +308,7 @@ export function DeploymentImportModal({ onClose, onImportComplete }: DeploymentI
                 onChange={e => setText(e.target.value)}
                 rows={12}
                 placeholder="Paste records here…"
-                className="w-full border border-gray-200 rounded-lg p-3 font-mono text-sm resize-y focus:outline-none focus:ring-2 focus:ring-olive-green/40"
+                className="w-full border border-gray-200 rounded-lg p-3 font-mono text-sm text-gray-900 resize-y focus:outline-none focus:ring-2 focus:ring-olive-green/40"
               />
 
               <div className="flex items-center gap-3">
@@ -314,26 +342,70 @@ export function DeploymentImportModal({ onClose, onImportComplete }: DeploymentI
               </p>
 
               <div className="overflow-x-auto rounded-lg border border-gray-200">
-                <table className="w-full text-xs">
+                <table className="w-full text-xs text-gray-900">
                   <thead className="bg-morning-mist text-forest-shadow font-medium">
                     <tr>
                       <th className="px-3 py-2 text-left">#</th>
                       <th className="px-3 py-2 text-left">Device ID</th>
                       <th className="px-3 py-2 text-left">Location</th>
+                      <th className="px-3 py-2 text-left">Notes</th>
                       <th className="px-3 py-2 text-left">Coords</th>
                       <th className="px-3 py-2 text-left">Season</th>
                       <th className="px-3 py-2 text-left">Battery</th>
-                      <th className="px-3 py-2 text-left">Solar Panel ID</th>
-                      <th className="px-3 py-2 text-left">Solar?</th>
+                      <th className="px-3 py-2 text-left">Solar Panel</th>
                       <th className="px-3 py-2 text-left">Status</th>
+                      {!hasImportResults && <th className="px-3 py-2 text-left">Import</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {rows.map(row => (
-                      <tr key={row.lineNumber} className={row.parseError || row.hardware_id === null ? 'bg-red-50/40' : ''}>
+                      <tr key={row.lineNumber} className={
+                        skippedLines.has(row.lineNumber) ? 'opacity-40' :
+                        row.parseError || row.hardware_id === null ? 'bg-red-50/40' : ''
+                      }>
                         <td className="px-3 py-2 text-gray-400">{row.lineNumber}</td>
-                        <td className="px-3 py-2 font-mono font-medium">{row.device_id || '—'}</td>
-                        <td className="px-3 py-2">{row.location_name || '—'}</td>
+                        <td className="px-3 py-2 font-medium">{row.device_id || '—'}</td>
+                        <td className="px-3 py-2 min-w-[120px]">
+                          {editingLine === row.lineNumber ? (
+                            <input
+                              type="text"
+                              value={row.location_name}
+                              onChange={e => handleLocationChange(row.lineNumber, e.target.value)}
+                              onBlur={() => setEditingLine(null)}
+                              autoFocus
+                              className="w-full border border-olive-green/40 rounded px-1 py-0.5 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-olive-green/40"
+                            />
+                          ) : (
+                            <span
+                              className="cursor-pointer hover:text-olive-green hover:underline underline-offset-2"
+                              onClick={() => !hasImportResults && setEditingLine(row.lineNumber)}
+                              title={hasImportResults ? undefined : 'Click to edit'}
+                            >
+                              {row.location_name || '—'}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 min-w-[140px]">
+                          {editingLine === row.lineNumber + 1000 ? (
+                            <input
+                              type="text"
+                              value={row.notes ?? ''}
+                              onChange={e => handleNotesChange(row.lineNumber, e.target.value)}
+                              onBlur={() => setEditingLine(null)}
+                              autoFocus
+                              placeholder="Add notes…"
+                              className="w-full border border-olive-green/40 rounded px-1 py-0.5 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-olive-green/40"
+                            />
+                          ) : (
+                            <span
+                              className={`cursor-pointer hover:text-olive-green hover:underline underline-offset-2 ${!row.notes ? 'text-gray-400 italic' : ''}`}
+                              onClick={() => !hasImportResults && setEditingLine(row.lineNumber + 1000)}
+                              title={hasImportResults ? undefined : 'Click to add notes'}
+                            >
+                              {row.notes || 'Add notes…'}
+                            </span>
+                          )}
+                        </td>
                         <td className="px-3 py-2 font-mono text-gray-500">
                           {row.latitude !== null && row.longitude !== null
                             ? `${row.latitude.toFixed(4)}, ${row.longitude.toFixed(4)}`
@@ -341,9 +413,21 @@ export function DeploymentImportModal({ onClose, onImportComplete }: DeploymentI
                         </td>
                         <td className="px-3 py-2">{row.season_year ?? '—'}</td>
                         <td className="px-3 py-2">{row.battery_type ?? '—'}</td>
-                        <td className="px-3 py-2">{row.solar_panel_id ?? '—'}</td>
-                        <td className="px-3 py-2">{row.has_solar_panel ? 'Yes' : 'No'}</td>
+                        <td className="px-3 py-2">{formatSolarDisplay(row.solar_panel_id)}</td>
                         <td className="px-3 py-2 whitespace-nowrap"><RowStatus row={row} /></td>
+                        {!hasImportResults && (
+                          <td className="px-3 py-2">
+                            {!row.parseError && row.hardware_id !== null && (
+                              <input
+                                type="checkbox"
+                                checked={!skippedLines.has(row.lineNumber)}
+                                onChange={() => toggleSkip(row.lineNumber)}
+                                className="w-4 h-4 cursor-pointer accent-olive-green"
+                                title={skippedLines.has(row.lineNumber) ? 'Click to include' : 'Click to skip'}
+                              />
+                            )}
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -371,7 +455,7 @@ export function DeploymentImportModal({ onClose, onImportComplete }: DeploymentI
           ) : (
             <>
               <button
-                onClick={() => { setStep('input'); setRows([]) }}
+                onClick={() => { setStep('input'); setRows([]); setSkippedLines(new Set()) }}
                 disabled={importing}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50"
               >

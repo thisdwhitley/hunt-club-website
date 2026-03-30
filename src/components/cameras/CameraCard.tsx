@@ -171,6 +171,7 @@ export default function CameraCard({
   // }
 
   const alertStatus = getAlertStatus()
+  const isInactive = !camera.deployment || camera.deployment.active === false
 
   const getCardStyles = () => {
     const baseStyles = `
@@ -226,15 +227,27 @@ export default function CameraCard({
               <Trash2 size={16} />
             </button>
           )}
-          <div className="px-2 py-1 rounded-full text-xs font-bold"
-            style={{ 
-              backgroundColor: `${alertStatus.color}20`,
-              color: alertStatus.color,
-              border: `1px solid ${alertStatus.color}40`
-            }}
-          >
-            {badgeText}
-          </div>
+          {isInactive ? (
+            <div className="px-2 py-1 rounded-full text-xs font-bold"
+              style={{
+                backgroundColor: '#8B735520',
+                color: '#8B7355',
+                border: '1px solid #8B735540',
+              }}
+            >
+              Inactive
+            </div>
+          ) : (
+            <div className="px-2 py-1 rounded-full text-xs font-bold"
+              style={{
+                backgroundColor: `${alertStatus.color}20`,
+                color: alertStatus.color,
+                border: `1px solid ${alertStatus.color}40`
+              }}
+            >
+              {badgeText}
+            </div>
+          )}
 
         </div>
       </div>
@@ -697,7 +710,7 @@ export default function CameraCard({
     <div
       className={`${getCardStyles()} ${className} ${
         onClick ? 'cursor-pointer' : ''
-      } relative`}
+      } relative ${isInactive ? 'opacity-60' : ''}`}
       onClick={handleCardClick}
       style={{
         ...(popupWidth && mode === 'popup' ? { width: popupWidth } : {})
@@ -717,7 +730,7 @@ export default function CameraCard({
           </div>
           
           <div className="min-w-0">
-            <h3 
+            <h3
               className="truncate"
               style={{
                 color: HUNTING_COLORS.forestGreen,

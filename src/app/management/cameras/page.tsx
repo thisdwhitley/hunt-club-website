@@ -98,7 +98,7 @@ function CameraFilters({ filters, onFiltersChange, onClose }: CameraFiltersProps
             <select
               value={filters.status}
               onChange={(e) => updateFilter('status', e.target.value)}
-              className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+              className="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
             >
               <option value="all">All Statuses</option>
               <option value="active">Active Only</option>
@@ -114,7 +114,7 @@ function CameraFilters({ filters, onFiltersChange, onClose }: CameraFiltersProps
             <select
               value={filters.brand}
               onChange={(e) => updateFilter('brand', e.target.value)}
-              className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+              className="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
             >
               <option value="all">All Brands</option>
               <option value="Reconyx">Reconyx</option>
@@ -133,7 +133,7 @@ function CameraFilters({ filters, onFiltersChange, onClose }: CameraFiltersProps
             <select
               value={filters.alerts}
               onChange={(e) => updateFilter('alerts', e.target.value)}
-              className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+              className="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
             >
               <option value="all">All Cameras</option>
               <option value="has-alerts">Has Alerts</option>
@@ -149,7 +149,7 @@ function CameraFilters({ filters, onFiltersChange, onClose }: CameraFiltersProps
             <select
               value={filters.hasCoordinates}
               onChange={(e) => updateFilter('hasCoordinates', e.target.value)}
-              className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+              className="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
             >
               <option value="all">All</option>
               <option value="mapped">Mapped</option>
@@ -165,7 +165,7 @@ function CameraFilters({ filters, onFiltersChange, onClose }: CameraFiltersProps
             <select
               value={filters.season}
               onChange={(e) => updateFilter('season', e.target.value)}
-              className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+              className="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
             >
               <option value="all">All Seasons</option>
               <option value="2025">2025 Season</option>
@@ -264,6 +264,13 @@ export default function CameraManagementPage() {
 
     // Apply sorting
     const sorted = [...filtered].sort((a, b) => {
+      // When showing all statuses, always group active cameras before inactive
+      if (filters.status === 'all') {
+        const aActive = a.deployment?.active ?? false
+        const bActive = b.deployment?.active ?? false
+        if (aActive !== bActive) return aActive ? -1 : 1
+      }
+
       let aValue: any, bValue: any
 
       switch (sortBy) {
@@ -321,7 +328,7 @@ export default function CameraManagementPage() {
     })
 
     return sorted
-  }, [cameras, filters.hasCoordinates, sortBy, sortDirection])
+  }, [cameras, filters.hasCoordinates, filters.status, sortBy, sortDirection])
 
   // Check if any filters are active
   const hasActiveFilters = Object.values(filters).some(value => value !== 'all' && value !== '')
@@ -624,14 +631,6 @@ Type "${deviceId}" to confirm deletion:`
                 </button>
 
                 <button
-                  onClick={() => setShowEndSeasonConfirm(true)}
-                  className="bg-clay-earth hover:bg-red-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium"
-                  title="Deactivate all active deployments"
-                >
-                  <span className="hidden sm:inline">End Season</span>
-                </button>
-
-                <button
                   onClick={() => setShowDeploymentImport(true)}
                   className="bg-olive-green hover:bg-pine-needle border border-green-300 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium"
                   title="Import camera deployments"
@@ -655,6 +654,14 @@ Type "${deviceId}" to confirm deletion:`
                 >
                   <Plus size={20} />
                   <span className="hidden sm:inline">Add Camera</span>
+                </button>
+
+                <button
+                  onClick={() => setShowEndSeasonConfirm(true)}
+                  className="ml-4 border border-white/30 text-white/70 hover:bg-white/10 hover:text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                  title="Deactivate all active deployments"
+                >
+                  <span className="hidden sm:inline">End Season</span>
                 </button>
               </div>
             </div>
@@ -689,7 +696,7 @@ Type "${deviceId}" to confirm deletion:`
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="text-sm border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                  className="text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                 >
                   <option value="location_name">Location Name</option>
                   <option value="device_id">Device ID</option>
@@ -866,7 +873,7 @@ Type "${deviceId}" to confirm deletion:`
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredCameras.map((camera) => (
                 <CameraCard
-                  key={camera.hardware?.id || camera.deployment?.id}
+                  key={`${camera.hardware?.id}-${camera.deployment?.id ?? 'none'}`}
                   camera={camera}
                   mode="full"
                   onClick={() => handleCameraCardClick(camera)} // NEW: Click for detailed view
