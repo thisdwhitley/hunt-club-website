@@ -236,7 +236,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                   type="text"
                   value={hardwareData.device_id}
                   onChange={(e) => setHardwareData({ ...hardwareData, device_id: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                   placeholder="e.g., 002, 013"
                   required
                 />
@@ -251,7 +251,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                 <select
                   value={hardwareData.brand}
                   onChange={(e) => setHardwareData({ ...hardwareData, brand: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                 >
                   <option value="">Select Brand</option>
                   <option value="Reconyx">Reconyx</option>
@@ -273,7 +273,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                   type="text"
                   value={hardwareData.model}
                   onChange={(e) => setHardwareData({ ...hardwareData, model: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                   placeholder="e.g., HC600, P-18"
                 />
               </div>
@@ -287,7 +287,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                   type="text"
                   value={hardwareData.serial_number}
                   onChange={(e) => setHardwareData({ ...hardwareData, serial_number: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                   placeholder="Manufacturing serial number"
                 />
               </div>
@@ -301,7 +301,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                   type="date"
                   value={hardwareData.purchase_date}
                   onChange={(e) => setHardwareData({ ...hardwareData, purchase_date: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                 />
               </div>
 
@@ -313,7 +313,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                 <select
                   value={hardwareData.condition}
                   onChange={(e) => setHardwareData({ ...hardwareData, condition: e.target.value as any })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                 >
                   <option value="excellent">Excellent</option>
                   <option value="good">Good</option>
@@ -331,7 +331,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                 <select
                   value={hardwareData.battery_type ?? ''}
                   onChange={(e) => setHardwareData({ ...hardwareData, battery_type: e.target.value as any || undefined })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                 >
                   <option value="">Not specified</option>
                   {BATTERY_TYPES.map(t => (
@@ -349,7 +349,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                   type="text"
                   value={hardwareData.fw_version}
                   onChange={(e) => setHardwareData({ ...hardwareData, fw_version: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                   placeholder="e.g., v1.2.3"
                 />
               </div>
@@ -363,7 +363,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                   type="text"
                   value={hardwareData.cl_version}
                   onChange={(e) => setHardwareData({ ...hardwareData, cl_version: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                   placeholder="e.g., v2.1.0"
                 />
               </div>
@@ -378,23 +378,30 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                 value={hardwareData.notes}
                 onChange={(e) => setHardwareData({ ...hardwareData, notes: e.target.value })}
                 rows={2}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                 placeholder="Purchase details, warranty info, maintenance history, etc..."
               />
             </div>
 
             {/* Hardware Active Status */}
-            <div className="mt-4 flex items-center">
-              <input
-                type="checkbox"
-                id="hardwareActive"
-                checked={hardwareData.active}
-                onChange={(e) => setHardwareData({ ...hardwareData, active: e.target.checked })}
-                className="h-4 w-4 text-olive-green focus:ring-olive-green border-gray-300 rounded"
-              />
-              <label htmlFor="hardwareActive" className="ml-2 block text-sm text-gray-700">
-                Hardware is active (available for use)
-              </label>
+            <div className="mt-4 p-3 border border-clay-earth/30 rounded-md bg-clay-earth/5">
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="hardwareActive"
+                  checked={hardwareData.active}
+                  onChange={(e) => setHardwareData({ ...hardwareData, active: e.target.checked })}
+                  className="h-4 w-4 mt-0.5 text-olive-green focus:ring-olive-green border-gray-300 rounded"
+                />
+                <div>
+                  <label htmlFor="hardwareActive" className="block text-sm font-medium text-gray-900 cursor-pointer">
+                    Hardware is in service
+                  </label>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Uncheck only if this camera is <strong>permanently retired</strong> (sold, broken beyond repair, etc.). This hides the hardware from all views. Use <em>End Season</em> or the deployment toggle below to temporarily pull a camera from the field.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -449,7 +456,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                       type="text"
                       value={deploymentData.location_name}
                       onChange={(e) => setDeploymentData({ ...deploymentData, location_name: e.target.value })}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                       placeholder="e.g., North Creek Trail, Oak Tree Stand, Food Plot #3"
                       required={includeDeployment}
                     />
@@ -465,7 +472,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                       step="any"
                       value={deploymentData.latitude}
                       onChange={(e) => setDeploymentData({ ...deploymentData, latitude: parseFloat(e.target.value) || 0 })}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                       placeholder="36.427236"
                       required={includeDeployment}
                     />
@@ -479,7 +486,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                       step="any"
                       value={deploymentData.longitude}
                       onChange={(e) => setDeploymentData({ ...deploymentData, longitude: parseFloat(e.target.value) || 0 })}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                       placeholder="-79.510881"
                       required={includeDeployment}
                     />
@@ -511,7 +518,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                       type="number"
                       value={deploymentData.season_year}
                       onChange={(e) => setDeploymentData({ ...deploymentData, season_year: parseInt(e.target.value) || new Date().getFullYear() })}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                       min="2020"
                       max="2030"
                     />
@@ -525,7 +532,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                     <select
                       value={deploymentData.stand_id || ''}
                       onChange={(e) => setDeploymentData({ ...deploymentData, stand_id: e.target.value || undefined })}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                     >
                       <option value="">No associated stand</option>
                       {stands?.map((stand) => (
@@ -544,7 +551,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                     <select
                       value={deploymentData.facing_direction || ''}
                       onChange={(e) => setDeploymentData({ ...deploymentData, facing_direction: e.target.value as any || undefined })}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                     >
                       <option value="">Not specified</option>
                       <option value="N">North</option>
@@ -584,7 +591,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                         type="text"
                         value={deploymentData.solar_panel_id ?? ''}
                         onChange={(e) => setDeploymentData({ ...deploymentData, solar_panel_id: e.target.value || undefined })}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                         placeholder="e.g., Solar 001"
                       />
                       <p className="mt-1 text-xs text-gray-500">Panel label attached to the camera</p>
@@ -593,17 +600,22 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
 
                   {/* Active Status */}
                   <div className="md:col-span-2">
-                    <div className="flex items-center">
+                    <div className="flex items-start gap-2">
                       <input
                         type="checkbox"
                         id="deploymentActive"
                         checked={deploymentData.active}
                         onChange={(e) => setDeploymentData({ ...deploymentData, active: e.target.checked })}
-                        className="h-4 w-4 text-olive-green focus:ring-olive-green border-gray-300 rounded"
+                        className="h-4 w-4 mt-0.5 text-olive-green focus:ring-olive-green border-gray-300 rounded"
                       />
-                      <label htmlFor="deploymentActive" className="ml-2 block text-sm text-gray-700">
-                        Active deployment (camera is currently at this location)
-                      </label>
+                      <div>
+                        <label htmlFor="deploymentActive" className="block text-sm font-medium text-gray-900 cursor-pointer">
+                          Camera is currently deployed at this location
+                        </label>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Uncheck to pull this camera from the field. Hardware record and history are preserved. Use <em>End Season</em> on the management page to deactivate all cameras at once.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -617,7 +629,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                     value={deploymentData.notes}
                     onChange={(e) => setDeploymentData({ ...deploymentData, notes: e.target.value })}
                     rows={3}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                     placeholder="Camera location details, access notes, setup specifics, maintenance reminders, etc..."
                   />
                   <p className="text-xs text-gray-500 mt-1">These notes will appear on the camera card</p>

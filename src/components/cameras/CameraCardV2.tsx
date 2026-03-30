@@ -74,6 +74,8 @@ export default function CameraCardV2({
   showActions = true,
 }: CameraCardV2Props) {
 
+  const isInactive = !camera.deployment || camera.deployment.active === false
+
   // Get power source icon based on camera data
   const getPowerSourceIcon = () => {
     if (camera.deployment?.has_solar_panel) return 'solar'
@@ -201,18 +203,32 @@ export default function CameraCardV2({
   // ==================== FULL MODE ====================
   if (mode === 'full') {
     return (
-      <BaseCard mode={mode} onClick={onClick ? () => onClick(camera) : undefined} clickable={!!onClick}>
+      <BaseCard mode={mode} onClick={onClick ? () => onClick(camera) : undefined} clickable={!!onClick} className={isInactive ? 'opacity-60' : ''}>
         {/* Header - Simple title with actions (matches Stand/Hunt pattern) */}
         <div className="flex items-center gap-3 mb-3">
           <DeviceIcon deviceId={camera.hardware.device_id} mode={mode} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
-              <h3
-                className="font-bold text-lg truncate"
-                style={{ color: HUNTING_COLORS.forestGreen }}
-              >
-                {camera.deployment?.location_name || 'Unknown Location'}
-              </h3>
+              <div className="flex items-center gap-2 min-w-0">
+                <h3
+                  className="font-bold text-lg truncate"
+                  style={{ color: HUNTING_COLORS.forestGreen }}
+                >
+                  {camera.deployment?.location_name || 'Not Deployed'}
+                </h3>
+                {isInactive && (
+                  <span
+                    className="flex-shrink-0 text-xs font-bold px-2 py-0.5 rounded-full"
+                    style={{
+                      backgroundColor: `${HUNTING_COLORS.weatheredWood}20`,
+                      color: HUNTING_COLORS.weatheredWood,
+                      border: `1px solid ${HUNTING_COLORS.weatheredWood}40`,
+                    }}
+                  >
+                    Inactive
+                  </span>
+                )}
+              </div>
 
               {/* Action Buttons */}
               {showActions && (
@@ -498,15 +514,27 @@ export default function CameraCardV2({
     }
 
     return (
-      <BaseCard mode={mode} onClick={onClick ? () => onClick(camera) : undefined} clickable={!!onClick}>
+      <BaseCard mode={mode} onClick={onClick ? () => onClick(camera) : undefined} clickable={!!onClick} className={isInactive ? 'opacity-60' : ''}>
         <div className="flex items-start gap-2.5">
           <DeviceIcon deviceId={camera.hardware.device_id} mode={mode} />
           <div className="flex-1 min-w-0">
-            {/* Title row with location (no status badge) */}
+            {/* Title row with location and inactive badge */}
             <div className="flex items-center gap-2 mb-0.5">
               <h3 className="font-bold text-base truncate" style={{ color: HUNTING_COLORS.forestGreen }}>
-                {camera.deployment?.location_name || 'Unknown Location'}
+                {camera.deployment?.location_name || 'Not Deployed'}
               </h3>
+              {isInactive && (
+                <span
+                  className="flex-shrink-0 text-xs font-bold px-1.5 py-0.5 rounded-full"
+                  style={{
+                    backgroundColor: `${HUNTING_COLORS.weatheredWood}20`,
+                    color: HUNTING_COLORS.weatheredWood,
+                    border: `1px solid ${HUNTING_COLORS.weatheredWood}40`,
+                  }}
+                >
+                  Inactive
+                </span>
+              )}
             </div>
 
             {/* Key info row */}
@@ -560,7 +588,7 @@ export default function CameraCardV2({
     }
 
     return (
-      <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+      <tr className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${isInactive ? 'opacity-60' : ''}`}>
         {/* Device Column - Icon only, no text */}
         <td className="px-4 py-3 text-sm">
           <div className="flex items-center">
@@ -570,7 +598,21 @@ export default function CameraCardV2({
 
         {/* Location Column */}
         <td className="px-4 py-3 text-sm">
-          <span className="text-forest-shadow font-medium">{camera.deployment?.location_name || 'Unknown'}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-forest-shadow font-medium">{camera.deployment?.location_name || 'Not Deployed'}</span>
+            {isInactive && (
+              <span
+                className="text-xs font-bold px-1.5 py-0.5 rounded-full"
+                style={{
+                  backgroundColor: `${HUNTING_COLORS.weatheredWood}20`,
+                  color: HUNTING_COLORS.weatheredWood,
+                  border: `1px solid ${HUNTING_COLORS.weatheredWood}40`,
+                }}
+              >
+                Inactive
+              </span>
+            )}
+          </div>
         </td>
 
         {/* Hardware Column - Model + Battery Status */}

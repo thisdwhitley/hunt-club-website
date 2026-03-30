@@ -1,9 +1,9 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { Camera, Search, Filter, Plus, MapPin, AlertCircle, X, Battery, HardDrive, AlertTriangle, Upload } from 'lucide-react'
+import { Camera, Search, Filter, Plus, MapPin, AlertCircle, X, Upload, LayoutGrid, List, Grid3X3 } from 'lucide-react'
 import { useCameras, useCameraAlerts, useCameraStats, useCameraHardware } from '@/lib/cameras/hooks'
-import CameraCard from '@/components/cameras/CameraCard'
+import CameraCardV2 from '@/components/cameras/CameraCardV2'
 import { CameraForm } from '@/components/cameras/CameraForms'
 import { CameraDetailModal } from '@/components/cameras/CameraDetailModal'
 import { GPXImportModal } from '@/components/cameras/GPXImportModal'
@@ -218,6 +218,9 @@ export default function CameraManagementPage() {
   const [formLoading, setFormLoading] = useState(false)
   const [importing, setImporting] = useState(false)
 
+  // View mode
+  const [viewMode, setViewMode] = useState<'full' | 'compact' | 'list'>('full')
+
   // Sorting state
   const [sortBy, setSortBy] = useState<'location_name' | 'device_id' | 'last_seen' | 'battery_status' | 'brand'>('location_name')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
@@ -302,8 +305,8 @@ export default function CameraManagementPage() {
             if (status.includes('Full')) return 1
             return 0
           }
-          aValue = batteryPriority(a.latest_report?.battery_status)
-          bValue = batteryPriority(b.latest_report?.battery_status)
+          aValue = batteryPriority(a.latest_report?.battery_status ?? null)
+          bValue = batteryPriority(b.latest_report?.battery_status ?? null)
           break
         case 'brand':
           aValue = a.hardware?.brand || ''
@@ -721,6 +724,28 @@ Type "${deviceId}" to confirm deletion:`
               </div>
             </div>
 
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-1 border border-gray-300 rounded-md p-0.5">
+              {([
+                { mode: 'full' as const, icon: LayoutGrid, title: 'Full cards' },
+                { mode: 'compact' as const, icon: Grid3X3, title: 'Compact grid' },
+                { mode: 'list' as const, icon: List, title: 'List view' },
+              ]).map(({ mode, icon: Icon, title }) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  title={title}
+                  className={`p-1.5 rounded transition-colors ${
+                    viewMode === mode
+                      ? 'bg-olive-green text-white'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <Icon size={16} />
+                </button>
+              ))}
+            </div>
+
             {/* Stats */}
             <div className="flex items-center gap-4 text-sm text-weathered-wood">
               <div className="flex items-center gap-1">
@@ -859,34 +884,52 @@ Type "${deviceId}" to confirm deletion:`
           </div>
         )}
 
-        {/* Cameras Grid - NEW INTERACTION PATTERN */}
+        {/* Cameras Grid */}
         {!loading && !error && filteredCameras.length > 0 && (
           <>
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Interface:</strong> Click on any camera card to view detailed information • 
-                Click the <strong>Edit</strong> button to modify camera hardware and location settings • 
-                Use the sort dropdown to organize cameras by device ID, location, battery status, etc.
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredCameras.map((camera) => (
-                <CameraCard
-                  key={`${camera.hardware?.id}-${camera.deployment?.id ?? 'none'}`}
-                  camera={camera}
-                  mode="full"
-                  onClick={() => handleCameraCardClick(camera)} // NEW: Click for detailed view
-                  onEdit={handleEditCamera} // Edit button for comprehensive editing
-                  onDelete={handleDeleteCamera}
-                  onNavigate={handleNavigateToCamera}
-                  showLocation={true}
-                  showStats={true}
-                  showActions={true}
-                  className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-blue-300"
-                />
-              ))}
-            </div>
+            {viewMode === 'list' ? (
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-morning-mist">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-forest-shadow uppercase tracking-wide">Device</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-forest-shadow uppercase tracking-wide">Location</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-forest-shadow uppercase tracking-wide">Hardware / Battery</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-forest-shadow uppercase tracking-wide">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCameras.map((camera) => (
+                      <CameraCardV2
+                        key={`${camera.hardware?.id}-${camera.deployment?.id ?? 'none'}`}
+                        camera={camera}
+                        mode="list"
+                        onClick={handleCameraCardClick}
+                        onEdit={handleEditCamera}
+                        onDelete={handleDeleteCamera}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className={
+                viewMode === 'compact'
+                  ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'
+                  : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
+              }>
+                {filteredCameras.map((camera) => (
+                  <CameraCardV2
+                    key={`${camera.hardware?.id}-${camera.deployment?.id ?? 'none'}`}
+                    camera={camera}
+                    mode={viewMode}
+                    onClick={handleCameraCardClick}
+                    onEdit={handleEditCamera}
+                    onDelete={handleDeleteCamera}
+                  />
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>

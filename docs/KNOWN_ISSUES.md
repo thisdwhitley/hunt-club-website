@@ -12,6 +12,21 @@ CameraCardV2 is fully implemented with three display modes (Full, Compact, List)
 
 See `docs/refactoring/CARD_SYSTEM_V2_FINAL.md` for complete details.
 
+### Camera Storage Space Misinterpretation
+**Status:** Bug — Requires Fix in Sync Script
+**Priority:** Medium
+**Location:** `scripts/sync-cuddeback-cameras.js` (scraper parsing logic)
+
+**Issue:**
+Free storage space is being stored incorrectly. The app shows e.g. "289 MB free" when the Cuddeback site (authority) shows "28.9 GB free". The `sd_free_space_mb` field stores in MB, but the scraper appears to be stripping the decimal point from the GB value and storing the raw digits as MB (e.g. "28.9 GB" → strips dot → "289" → stored as 289 MB instead of 28,900 MB).
+
+**Next Steps:**
+- Inspect scraper parsing of the storage column
+- Fix unit conversion: if value is in GB, multiply by 1024 before storing as MB
+- Re-sync after fix to refresh stored values
+
+---
+
 ### Camera "Report Data From" Timestamp Accuracy
 **Status:** Known Limitation - Requires Investigation
 **Priority:** Medium
