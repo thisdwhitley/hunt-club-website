@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Gp3SB1ibPWxlDIpisTzWBN3h4Fk09OPHHGE6AhYCWJoR2o8AULayvDHIZOqMtEd
+\restrict 7y7c9TSGB43kZad3bhVLyYHZUBwQ26LL26r6qFqziTSFMP8DlwOrwVcXjyFDkbU
 
 -- Dumped from database version 17.4
 -- Dumped by pg_dump version 17.9 (Debian 17.9-1.pgdg13+1)
@@ -2383,7 +2383,7 @@ CREATE POLICY "Allow authenticated users to insert maintenance tasks" ON "public
 -- Name: stands Allow authenticated users to manage stands; Type: POLICY; Schema: public; Owner: postgres
 --
 
-CREATE POLICY "Allow authenticated users to manage stands" ON "public"."stands" TO "authenticated" USING (true);
+CREATE POLICY "Allow authenticated users to manage stands" ON "public"."stands" TO "authenticated" USING (("auth"."role"() = 'authenticated'::"text")) WITH CHECK (("auth"."role"() = 'authenticated'::"text"));
 
 
 --
@@ -3774,5 +3774,5 @@ ALTER EVENT TRIGGER "pgrst_drop_watch" OWNER TO "supabase_admin";
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Gp3SB1ibPWxlDIpisTzWBN3h4Fk09OPHHGE6AhYCWJoR2o8AULayvDHIZOqMtEd
+\unrestrict 7y7c9TSGB43kZad3bhVLyYHZUBwQ26LL26r6qFqziTSFMP8DlwOrwVcXjyFDkbU
 

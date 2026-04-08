@@ -82,6 +82,21 @@ Query hunt_logs directly for accurate counts until stand statistics are verified
 
 ---
 
+## Supabase Security Advisor — Persistent Warnings
+
+### Leaked Password Protection (HaveIBeenPwned)
+**Status:** Won't Fix — Pro Plan Required
+**Last Reviewed:** 2026-04-08
+
+Supabase's "Leaked Password Protection" feature checks passwords against HaveIBeenPwned.org. Enabling it requires a Pro Plan subscription. This project uses the free tier and will not be upgrading. This warning will remain permanently in the Security Advisor.
+
+### Postgres Version Security Patches
+**Status:** Upgrade In Progress (as of 2026-04-08)
+
+Supabase flagged `supabase-postgres-17.4.1.043` as having outstanding security patches. A platform upgrade was initiated via the Supabase dashboard on 2026-04-08. Once complete, this warning should clear automatically.
+
+---
+
 ## Template for New Issues
 
 ### [Issue Title]

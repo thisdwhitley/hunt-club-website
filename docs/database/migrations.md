@@ -598,6 +598,42 @@ Enhanced Camera Management System Migration (see camera-system-implementation.md
 
 ---
 
+### 2026-04-08: Fix Stands RLS Policy Always True
+
+**Type**: Security Enhancement
+**Affected Tables**: stands
+**Breaking Changes**: No
+**Rollback Available**: Yes
+
+**Purpose**: Resolve Supabase Security Advisor warning — `Allow authenticated users to manage stands` policy used literal `USING (true)` instead of an explicit auth check, unlike every other table in the schema.
+
+**Changes Made**:
+- **Modified**: `Allow authenticated users to manage stands` policy on `stands`
+- **Before**: `USING (true)` with no WITH CHECK
+- **After**: `USING (auth.role() = 'authenticated')` + `WITH CHECK (auth.role() = 'authenticated')`
+
+**Migration SQL**:
+```sql
+DROP POLICY "Allow authenticated users to manage stands" ON public.stands;
+CREATE POLICY "Allow authenticated users to manage stands"
+  ON public.stands FOR ALL TO authenticated
+  USING (auth.role() = 'authenticated')
+  WITH CHECK (auth.role() = 'authenticated');
+```
+
+**Verification Steps**:
+- [x] Security Advisor warning cleared
+- [x] Schema exported
+- [x] Functionally identical — all 3 authenticated members retain full access
+
+**Files Modified**:
+- supabase/schema.sql (exported updated schema)
+- docs/database/migrations.md (this entry)
+
+**Claude Context**: Stands RLS now consistent with all other tables. No behavioral change.
+
+---
+
 ### 2025-10-27: Add Ground Blind Stand Type
 
 **Type**: Schema Modification
