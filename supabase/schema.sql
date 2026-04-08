@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict CzWZeBBucoI13YYXXgbwiahduoirvNK2QfyckLEdTugQTUZZoYUx5nFnAfMqxxD
+\restrict Gp3SB1ibPWxlDIpisTzWBN3h4Fk09OPHHGE6AhYCWJoR2o8AULayvDHIZOqMtEd
 
 -- Dumped from database version 17.4
 -- Dumped by pg_dump version 17.9 (Debian 17.9-1.pgdg13+1)
@@ -1284,7 +1284,7 @@ COMMENT ON TABLE "public"."hunt_logs" IS 'Enhanced hunt logs with auto-populated
 -- Name: hunt_logs_with_temperature; Type: VIEW; Schema: public; Owner: postgres
 --
 
-CREATE VIEW "public"."hunt_logs_with_temperature" AS
+CREATE VIEW "public"."hunt_logs_with_temperature" WITH ("security_invoker"='true') AS
  SELECT "hl"."id",
     "hl"."member_id",
     "hl"."stand_id",
@@ -3774,5 +3774,5 @@ ALTER EVENT TRIGGER "pgrst_drop_watch" OWNER TO "supabase_admin";
 -- PostgreSQL database dump complete
 --
 
-\unrestrict CzWZeBBucoI13YYXXgbwiahduoirvNK2QfyckLEdTugQTUZZoYUx5nFnAfMqxxD
+\unrestrict Gp3SB1ibPWxlDIpisTzWBN3h4Fk09OPHHGE6AhYCWJoR2o8AULayvDHIZOqMtEd
 
