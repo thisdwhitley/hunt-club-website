@@ -4,6 +4,9 @@
 
 ### Daily Development Workflow
 ```bash
+# 0. Ensure the podman VM is running (needed after every reboot)
+podman machine start
+
 # 1. Start development (IMPORTANT: must be in /Users path on macOS)
 cd /Users/daniel/GIT/hunt-club-website
 podman run -it --rm --name hunt-club-dev -p 3000:3000 -v $(pwd):/app:Z -v /app/node_modules --env-file .env.local hunt-club-dev
@@ -187,6 +190,26 @@ git push origin main
 7. **Test everything works**
 8. **Merge to main** and push
 9. **Tell Claude** about database changes
+
+### Podman Machine Setup (macOS — one-time or after restart)
+
+Before running any container, the podman VM must be initialized and running.
+
+```bash
+# Check if the machine exists and its status
+podman machine list
+
+# First-time setup: initialize the VM (only needed once)
+podman machine init
+
+# Start the VM (needed after every system reboot, or if status shows "Stopped")
+podman machine start
+
+# Verify it's running
+podman machine list
+```
+
+Once the machine is running, you can start the dev container as normal (see below).
 
 ### Container Management
 ```bash
