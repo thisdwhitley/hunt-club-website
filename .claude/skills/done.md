@@ -13,16 +13,24 @@ Run `git status` and review what is staged, unstaged, or untracked.
 - If there is nothing to commit: confirm that out loud.
 
 ## Step 2 — Verify before committing
-If there are changes to commit, remind the user to verify them first:
+If there are changes to commit, identify which pages/features were touched and give the user a targeted functionality checklist — not just lint commands. The goal is to confirm nothing visually or behaviorally broke, not just that the build passes.
 
+**Always include:**
 ```
 Before committing, please verify:
 □ Dev server is running (podman command from /Users/daniel/GIT/hunt-club-website)
-□ Visually check the affected pages in the browser
-□ npm run lint        — no new errors
-□ npm run type-check  — no new errors
-□ npm run build       — builds cleanly (run this if touching anything non-trivial)
+□ npm run lint        — no new errors introduced
+□ npm run type-check  — no new errors introduced
+□ npm run build       — builds cleanly (run if touching anything non-trivial)
 ```
+
+**Plus a targeted UI checklist based on what changed this session.** For example:
+- If hunt logging was touched → open the hunt log modal, submit a test entry, confirm it saves
+- If camera page was touched → load /management/cameras, confirm cards render, filters work
+- If navigation was touched → confirm nav renders, login/logout works, mobile menu opens
+- If a form was touched → open the form, fill it out, submit it
+
+List the specific pages and interactions to check based on the actual changes — not a generic "check the app."
 
 Wait for the user to confirm verification is done before proceeding to commit.
 

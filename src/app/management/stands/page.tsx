@@ -5,7 +5,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { Plus, Search, Filter, MapPin, Settings, AlertCircle } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import StandCard from '@/components/stands/StandCard'
 import StandFormModal from '@/components/stands/StandFormModal'
 import StandFilters from '@/components/stands/StandFilters'

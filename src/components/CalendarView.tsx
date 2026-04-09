@@ -3,25 +3,11 @@
 
 import React, { useState, useEffect } from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns'
-import { ChevronLeft, ChevronRight, Plus, Target, Wrench, Calendar, Users, Eye, Lock, Globe, Star, Filter } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Target, Wrench, Calendar, Eye, Globe, Star, Filter } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { clientGoogleCalendarService } from '@/lib/services/clientGoogleCalendar'
 import Link from 'next/link'
-import type { Database } from '@/lib/types/database'
-
-type HuntLog = Database['public']['Tables']['hunt_logs']['Row'] & {
-  members: { full_name: string | null } | null
-  stands: { name: string } | null
-}
-
-type MaintenanceTask = Database['public']['Tables']['maintenance_tasks']['Row'] & {
-  members: { full_name: string | null } | null
-}
-
-type ClubEvent = Database['public']['Tables']['club_events']['Row'] & {
-  members: { full_name: string | null } | null
-}
 
 interface CalendarEvent {
   id: string
@@ -459,7 +445,6 @@ export function CalendarView() {
               const dayEvents = getEventsForDate(date)
               const isCurrentMonth = isSameMonth(date, currentDate)
               const isCurrentDay = isToday(date)
-              const IconComponent = dayEvents.length > 0 ? getEventIcon(dayEvents[0].type, dayEvents[0].calendarName) : null
               
               return (
                 <div

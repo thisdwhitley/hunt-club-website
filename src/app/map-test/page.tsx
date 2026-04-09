@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { MapPin, Target, AlertCircle, CheckCircle, Clock, Crosshair, TreePine, Compass } from 'lucide-react'
+import { Target, AlertCircle, Clock, Crosshair, TreePine, Compass } from 'lucide-react'
 import { createRoot } from 'react-dom/client'
 import StandCard from '@/components/stands/StandCard'
 
@@ -82,7 +82,7 @@ const handleViewStandDetails = (stand: Stand) => {
   alert(`View details for ${stand.name}`)
 }
 
-// Create new condensed stand popup content
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const createStandPopupContent = (stand: Stand) => {
   const popupDiv = document.createElement('div')
   const root = createRoot(popupDiv)
@@ -411,7 +411,7 @@ export default function MapTest2Page() {
   const [cssLoaded, setCssLoaded] = useState(false)
   const [jsLoaded, setJsLoaded] = useState(false)
   const [tilesLoaded, setTilesLoaded] = useState(0)
-  const [tilesErrored, setTilesErrored] = useState(0)
+  const [, setTilesErrored] = useState(0)
   const [currentTileLayer, setCurrentTileLayer] = useState<any>(null)
 
   const addDebugInfo = (message: string) => {
@@ -1145,7 +1145,7 @@ export default function MapTest2Page() {
     try {
       const supabase = createClient()
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('stands')
         .select('count')
         .limit(1)

@@ -214,7 +214,7 @@ export function formatTime(timeString?: string | null): string | null {
       minute: '2-digit',
       hour12: true 
     })
-  } catch (error) {
+  } catch {
     console.warn('Invalid time format:', timeString)
     return timeString // Return original if parsing fails
   }

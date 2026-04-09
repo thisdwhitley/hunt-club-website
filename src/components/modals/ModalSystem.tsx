@@ -3,7 +3,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { X, Check, Calendar, MapPin, Eye, Target, Clock, Hash } from 'lucide-react'
+import { X, Check, Calendar, MapPin, Eye, Target } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import HuntEntryForm from '@/components/hunt-logging/HuntEntryForm'

@@ -12,25 +12,17 @@
 //   * Full: All data with clear report data timestamps and freshness indicators
 
 import React from 'react'
-import { formatDate, formatHuntDate } from '@/lib/utils/date'
 import { 
-  MapPin, 
-  Camera, 
+  MapPin,
+  Camera,
   Battery as BatteryIcon,
   BatteryCharging as BatteryBankIcon,
-  Wifi,
-  WifiOff,
   Edit3,
   Trash2,
   Navigation,
   AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Clock,
   Signal,
   HardDrive,
-  Calendar,
-  Eye,
   Zap as SolarIcon,
   Images as ImagesIcon,
   GalleryHorizontalEnd as QueueIcon,
@@ -440,7 +432,6 @@ export default function CameraCard({
 
     // Show section even if no report data, but indicate data freshness
     const hasReportData = camera.latest_report !== null
-    const reportDate = camera.latest_report?.report_date
     const reportAge = camera.days_since_last_report
 
     return (
@@ -613,7 +604,7 @@ export default function CameraCard({
     )
   }
 
-  // Render simple status for popup mode
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const renderSimpleStatus = () => {
     if (mode !== 'popup') return null
 
@@ -667,7 +658,7 @@ export default function CameraCard({
     return null
   }
 
-  // Render actions
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const renderActions = () => {
     if (!showActions || mode === 'compact') return null
 

@@ -3,8 +3,8 @@
 // src/app/cameras/test/page.tsx
 // Comprehensive test page for camera management system - includes CameraCard mode testing
 
-import React, { useState, useEffect } from 'react'
-import { CheckCircle, XCircle, AlertTriangle, Camera, Wifi, Battery, Plus, Monitor } from 'lucide-react'
+import React, { useState } from 'react'
+import { CheckCircle, XCircle, AlertTriangle, Camera, Plus } from 'lucide-react'
 import { getCameraDeployments, getCameraStats } from '@/lib/cameras/database'
 import { createClient } from '@/lib/supabase/client'
 import CameraCard from '@/components/cameras/CameraCard'
@@ -131,7 +131,7 @@ export default function CamerasTestPage() {
     // Test 1: Supabase Connection
     try {
       const supabase = createClient()
-      const { data: testData, error } = await supabase.from('camera_hardware').select('count').limit(1)
+      const { error } = await supabase.from('camera_hardware').select('count').limit(1)
       
       if (error) throw error
       addDiagnostic('Supabase Connection', 'success', 'Connected to database successfully')

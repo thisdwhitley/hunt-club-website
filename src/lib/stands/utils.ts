@@ -3,7 +3,6 @@
 
 import { Stand, StandFilters, StandSort, StandCardData } from './types'
 import { STAND_TYPES, TIME_OF_DAY_OPTIONS, FOOD_SOURCE_OPTIONS, PERFORMANCE_THRESHOLDS } from './constants'
-import { formatDate } from '@/lib/utils/date'
 
 /**
  * Format stand data for display in cards/lists

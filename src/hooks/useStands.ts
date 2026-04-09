@@ -3,7 +3,7 @@
 
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { 
   Stand, 
@@ -23,7 +23,7 @@ import { DEFAULTS, PERFORMANCE_THRESHOLDS } from '@/lib/stands/constants'
 /**
  * Main hook for managing multiple stands
  */
-export function useStands(initialFilters?: StandFilters): UseStandsReturn {
+export function useStands(_initialFilters?: StandFilters): UseStandsReturn {
   const [stands, setStands] = useState<Stand[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

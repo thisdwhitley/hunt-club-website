@@ -5,7 +5,7 @@
 // Drop-in replacement for StandCard.tsx
 
 import React from 'react'
-import { BaseCard, CardHeader, CardStatsGrid } from '@/components/shared/cards'
+import { BaseCard, CardHeader } from '@/components/shared/cards'
 import { formatDate, getHuntTypeBadge, parseDBDate } from '@/lib/utils/date'
 import { getIcon } from '@/lib/shared/icons'
 import type { IconName } from '@/lib/shared/icons'
@@ -259,7 +259,7 @@ export default function StandCardV2({
     return features
   }
 
-  // Get stats for the grid
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getStats = () => {
     const stats = []
 

@@ -1,7 +1,6 @@
 // src/lib/hunt-logging/temperature-utils.ts
 // NEW FILE - Temperature display utilities for hunt logging
 
-import type { HuntWithTemperature } from '@/types/database'
 
 export interface TemperatureContext {
   temperature: number | null

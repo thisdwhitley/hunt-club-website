@@ -5,12 +5,11 @@
 
 import { useState, useEffect } from 'react'
 import { 
-  X, 
-  Calendar, 
-  MapPin, 
-  Clock, 
-  Trophy, 
-  Eye, 
+  X,
+  Calendar,
+  MapPin,
+  Clock,
+  Trophy,
   User,
   Thermometer,
   Wind,
@@ -20,7 +19,7 @@ import {
   Binoculars
 } from 'lucide-react'
 import { huntService, type HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
-import { parseDBDate, formatDate } from '@/lib/utils/date'
+import { parseDBDate } from '@/lib/utils/date'
 
 interface HuntDetailsModalProps {
   huntId: string | null
@@ -320,7 +319,7 @@ export function HuntDetailsModal({ huntId, isOpen, onClose }: HuntDetailsModalPr
                     Wildlife Sightings
                   </h3>
                   <div className="grid grid-cols-1 gap-4">
-                    {hunt.sightings.map((sighting, index) => (
+                    {hunt.sightings.map((sighting) => (
                       <div key={sighting.id} className="bg-dark-teal/5 border border-dark-teal/20 rounded-lg p-4">
                         <h4 className="font-medium text-forest-shadow mb-3">
                           {sighting.count || 1} {sighting.animal_type || 'Animal'}

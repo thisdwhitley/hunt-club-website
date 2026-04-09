@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { MapPin, Target, TreePine, Compass } from 'lucide-react'
+import { Target } from 'lucide-react'
 import { createRoot } from 'react-dom/client'
 import StandCard from '@/components/stands/StandCard'
 import type { CameraWithStatus } from '@/lib/cameras/types'
@@ -153,7 +153,6 @@ export default function PropertyMap({
       }
       setCameras(result.data || [])
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to load cameras'
       console.error('Error loading cameras:', err)
       // Don't set error state for cameras - let stands work independently
     }
@@ -227,10 +226,10 @@ export default function PropertyMap({
           setLeafletLoaded(true)
         }
         document.head.appendChild(script)
-      } catch (err) {
-        const errorMsg = 'Failed to load Leaflet'
-        setError(errorMsg)
-        onError?.(errorMsg)
+      } catch {
+        const msg = 'Failed to load Leaflet'
+        setError(msg)
+        onError?.(msg)
       }
     }
 

@@ -6,9 +6,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { huntService, type HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
-import { formatHuntDate, getHuntTypeBadge, formatTime } from '@/lib/utils/date'
-import { getStandIcon } from '@/lib/utils/standUtils'
-import { getIcon } from '@/lib/shared/icons'
+import { getHuntTypeBadge } from '@/lib/utils/date'
 import { getTemperatureContext } from '@/lib/hunt-logging/temperature-utils'
 import {
   Trophy,

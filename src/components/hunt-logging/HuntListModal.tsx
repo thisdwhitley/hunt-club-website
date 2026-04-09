@@ -5,13 +5,12 @@
 
 import { useState, useEffect } from 'react'
 import { 
-  X, 
-  Calendar, 
-  MapPin, 
-  Clock, 
-  Trophy, 
-  Eye, 
-  User,
+  X,
+  Calendar,
+  MapPin,
+  Clock,
+  Trophy,
+  Eye,
   Target,
   Filter,
   Search,

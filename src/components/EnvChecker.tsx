@@ -15,7 +15,7 @@ export default function EnvChecker() {
     setConnectionTest('Testing...')
     try {
       const supabase = createClient()
-      const { data, error } = await supabase.auth.getSession()
+      const { error } = await supabase.auth.getSession()
       
       if (error) {
         setConnectionTest(`❌ Connection failed: ${error.message}`)

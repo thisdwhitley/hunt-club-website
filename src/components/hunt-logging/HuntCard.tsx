@@ -8,12 +8,9 @@ import { HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
 import { getTemperatureContext } from '@/lib/hunt-logging/temperature-utils' // NEW IMPORT
 import { getStandIcon } from '@/lib/utils/standUtils'
 import { getIcon } from '@/lib/shared/icons'
-import { formatDate, formatHuntDate, formatTime, getHuntTypeBadge, parseDBDate } from '@/lib/utils/date'
+import { formatHuntDate, getHuntTypeBadge, parseDBDate } from '@/lib/utils/date'
 import {
-  Calendar,
-  MapPin,
   Clock,
-  Target,
   Binoculars,
   Trophy,
   Thermometer,
@@ -22,7 +19,6 @@ import {
   Eye,
   Edit,
   Trash2,
-  User,
   Timer,
   Droplets,
   CloudSun

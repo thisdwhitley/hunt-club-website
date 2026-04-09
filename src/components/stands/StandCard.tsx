@@ -4,19 +4,16 @@
 // Enhanced stand display component with hunting club styling
 // Fixed version of your superior design
 
-import React, { useState } from 'react'
+import React from 'react'
 import { formatDate } from '@/lib/utils/date'
 import { ICONS } from '@/lib/shared/icons'
 import type { IconName } from '@/lib/shared/icons'
 import {
   MapPin,
   Eye,
-  Clock,
   Users,
-  MoreHorizontal,
   Edit3,
   Trash2,
-  Navigation
 } from 'lucide-react'
 
 // Import your Stand type from database service
@@ -138,21 +135,17 @@ export default function StandCard({
   onClick,
   onEdit,
   onDelete,
-  onNavigate,
+  onNavigate: _onNavigate,
   showLocation = true,
-  showStats = true,
   showActions = true,
   className = '',
   popupWidth = 300
 }: StandCardProps) {
-  // FIXED: Renamed state variable to avoid conflict with prop
-  const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
 
   const standType = HUNTING_CLUB_STAND_TYPES[stand.type]
 
   // Icon components from centralized library
   const StandTypeIcon = ICONS[standType.iconName]
-  const TimeIcon = stand.time_of_day ? ICONS[TIME_OF_DAY_OPTIONS[stand.time_of_day].iconName] : Clock
   const FoodIcon = stand.food_source ? ICONS[FOOD_SOURCE_OPTIONS[stand.food_source].iconName] : null
 
   // Base styles for different modes with hunting club theme

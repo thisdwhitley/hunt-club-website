@@ -8,11 +8,10 @@
 
 import React, { useState, useEffect } from 'react'
 import { 
-  Target, 
-  Plus, 
-  Calendar, 
-  MapPin, 
-  Eye, 
+  Target,
+  Plus,
+  Calendar,
+  Eye,
   Clock, 
   ArrowLeft,
   Filter,

@@ -181,10 +181,10 @@ export default function MapDiagnosticPage() {
     // Test 1: Database Connection
     try {
       const supabase = createClient()
-      const { data, error } = await supabase.from('stands').select('count').limit(1)
-      
-      if (error) {
-        addDiagnostic('Database', 'error', `Connection failed: ${error.message}`)
+      const { error: dbError } = await supabase.from('stands').select('count').limit(1)
+
+      if (dbError) {
+        addDiagnostic('Database', 'error', `Connection failed: ${dbError.message}`)
       } else {
         addDiagnostic('Database', 'success', 'Connection successful')
       }

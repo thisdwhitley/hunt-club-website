@@ -2,9 +2,8 @@
 // MAJOR UPDATE: Now uses hunt_logs_with_temperature view for smart temperature display
 
 import { createClient } from '@/lib/supabase/client'
-import type { 
-  HuntLog, 
-  HuntLogInsert, 
+import type {
+  HuntLogInsert,
   HuntLogUpdate,
   HuntHarvest,
   HuntSighting,
@@ -287,17 +286,17 @@ export class HuntService {
       const currentSeason = season || String(currentYear)
 
       // Build base queries with season filter
-      let thisSeasonQuery = supabase
+      const thisSeasonQuery = supabase
         .from('hunt_logs')
         .select('id, hunt_date, harvest_count')
         .eq('season', currentSeason)
 
-      let allHuntsQuery = supabase
+      const allHuntsQuery = supabase
         .from('hunt_logs')
         .select('id, had_harvest, harvest_count')
         .eq('season', currentSeason)
 
-      let standHuntCountsQuery = supabase
+      const standHuntCountsQuery = supabase
         .from('hunt_logs')
         .select('stand_id')
         .eq('season', currentSeason)

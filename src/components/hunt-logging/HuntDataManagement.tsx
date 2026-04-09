@@ -5,37 +5,28 @@
 
 import React, { useState, useEffect } from 'react'
 import { huntService, type HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
-import { getTemperatureContext, getPrimaryTemperatureExplanation, getTemperatureRange } from '@/lib/hunt-logging/temperature-utils' // NEW IMPORTS
+import { getTemperatureContext, getPrimaryTemperatureExplanation } from '@/lib/hunt-logging/temperature-utils'
 import { getStandIcon } from '@/lib/utils/standUtils'
 import { getIcon } from '@/lib/shared/icons'
 import HuntCard from './HuntCard'
 import HuntEntryForm from './HuntEntryForm'
 import { useStands } from '@/hooks/useStands'
-import { formatDate, formatHuntDate, formatTime } from '@/lib/utils/date'
+import { formatHuntDate } from '@/lib/utils/date'
 import type { HuntFormData } from '@/lib/hunt-logging/hunt-validation'
 import {
   Table,
   Trash2,
-  Edit,
   Eye,
-  CheckCircle2,
-  XCircle,
-  Calendar,
-  MapPin,
   Target,
   Clock,
   Thermometer,
   Wind,
   Moon,
-  Filter,
-  Download,
-  RefreshCw,
   Search,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Save,
   X as XIcon,
   User,
   Timer,
@@ -82,7 +73,6 @@ const HuntDetailsModal: React.FC<{
   // UPDATED: Get contextual temperature information
   const tempContext = getTemperatureContext(hunt)
   const primaryTemp = getPrimaryTemperatureExplanation(hunt)
-  const tempRange = getTemperatureRange(hunt)
 
   // Get stand-specific icon
   const StandIcon = getIcon(getStandIcon(hunt.stand?.type) as any)
@@ -431,7 +421,7 @@ const HuntDetailsModal: React.FC<{
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {hunt.sightings.map((sighting, index) => (
+                {hunt.sightings.map((sighting) => (
                   <div key={sighting.id} className="bg-olive-green/5 border border-olive-green/20 rounded-lg p-4">
                     <h4 className="font-medium text-forest-shadow mb-3">
                       {sighting.animal_type} {sighting.count && sighting.count > 1 ? `(${sighting.count})` : ''}
@@ -535,8 +525,6 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
   const [showBulkActions, setShowBulkActions] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(25)
-  const [editingField, setEditingField] = useState<string | null>(null)
-  const [editingValue, setEditingValue] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [viewingHunt, setViewingHunt] = useState<HuntWithDetails | null>(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
@@ -740,55 +728,6 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
     } catch (error) {
       console.error('Error updating hunt:', error)
       alert('Failed to update hunt. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleInlineEdit = (huntId: string, field: string, currentValue: any) => {
-    setEditingField(`${huntId}-${field}`)
-    setEditingValue(String(currentValue || ''))
-  }
-
-  const saveInlineEdit = async (huntId: string, field: string) => {
-    try {
-      setLoading(true)
-      await huntService.updateHunt(huntId, { [field]: editingValue })
-      
-      setEditingField(null)
-      setEditingValue('')
-      onHuntUpdate() // This will refresh the parent data
-      console.log(`Updated ${field} for hunt ${huntId} to: ${editingValue}`)
-    } catch (error) {
-      console.error('Error updating hunt:', error)
-      alert('Failed to update hunt. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const cancelInlineEdit = () => {
-    setEditingField(null)
-    setEditingValue('')
-  }
-
-  const exportData = async () => {
-    try {
-      setLoading(true)
-      const csvContent = await huntService.exportHuntsToCSV({ 
-        had_harvest: filterHarvest === 'all' ? undefined : filterHarvest === 'harvest'
-      })
-      
-      const blob = new Blob([csvContent], { type: 'text/csv' })
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `hunt-data-${new Date().toISOString().split('T')[0]}.csv`
-      a.click()
-      window.URL.revokeObjectURL(url)
-    } catch (error) {
-      console.error('Error exporting data:', error)
-      alert('Failed to export data. Please try again.')
     } finally {
       setLoading(false)
     }

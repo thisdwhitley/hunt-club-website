@@ -6,9 +6,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { 
-  MapPin, Target, AlertCircle, CheckCircle, Clock, Crosshair, TreePine, Compass,
-  Database, Eye, Wifi, Bug, TestTube, Palette, Monitor, Settings,
-  Activity, BarChart3, Users, Calendar
+  MapPin, Target, AlertCircle, CheckCircle, Clock,
+  Database, Bug, TestTube, Monitor,
+  Activity, BarChart3, Users
 } from 'lucide-react'
 import { createRoot } from 'react-dom/client'
 import StandCard from '@/components/stands/StandCard'
@@ -107,7 +107,7 @@ export default function ComprehensiveMapTestPage() {
   
   // Status states
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [, setError] = useState<string | null>(null)
   const [leafletReady, setLeafletReady] = useState(false)
   const [mapReady, setMapReady] = useState(false)
   const [testing, setTesting] = useState(false)
@@ -115,8 +115,7 @@ export default function ComprehensiveMapTestPage() {
   // Display control states
   const [showStands, setShowStands] = useState(true)
   const [showCameras, setShowCameras] = useState(true)
-  const [showFoodPlots, setShowFoodPlots] = useState(true)
-  const [showTrails, setShowTrails] = useState(true)
+  // showFoodPlots / showTrails reserved for future filter UI
   const [showIconReference, setShowIconReference] = useState(false)
   const [currentLayer, setCurrentLayer] = useState<'esri' | 'google' | 'street' | 'terrain' | 'bing'>('esri')
   
@@ -475,7 +474,7 @@ export default function ComprehensiveMapTestPage() {
     try {
       await loadStands()
       await loadBoundaries()
-    } catch (error) {
+    } catch {
       // Errors already logged in individual functions
     }
     

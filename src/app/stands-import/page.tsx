@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Upload, MapPin, CheckCircle, AlertCircle, Eye, Download, Plus } from 'lucide-react'
+import { Upload, MapPin, CheckCircle, AlertCircle, Eye, Plus } from 'lucide-react'
 
 interface GPXWaypoint {
   name: string

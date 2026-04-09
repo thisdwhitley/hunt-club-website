@@ -10,9 +10,6 @@ import type { CardMode } from '@/components/shared/cards/types'
 import { createClient } from '@/lib/supabase/client'
 import { huntService } from '@/lib/hunt-logging/hunt-service'
 import { getIcon } from '@/lib/shared/icons'
-import { getStandIcon } from '@/lib/utils/standUtils'
-import { formatHuntDate, getHuntTypeBadge } from '@/lib/utils/date'
-import type { IconName } from '@/lib/shared/icons/types'
 
 
 // Extracted shared components

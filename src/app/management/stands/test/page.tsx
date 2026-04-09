@@ -4,11 +4,10 @@
 // Enhanced test page for stand management system - includes StandCard mode testing
 
 import React, { useState, useEffect } from 'react'
-import { CheckCircle, XCircle, AlertTriangle, Database, Wifi, Eye, Plus, Palette, Monitor } from 'lucide-react'
+import { CheckCircle, XCircle, AlertTriangle, Database, Palette } from 'lucide-react'
 import { StandService } from '@/lib/database/stands'
 import { createClient } from '@/lib/supabase/client'
 import StandCard from '@/components/stands/StandCard'
-import { getStandStatistics } from '@/lib/utils/stands'
 import type { Stand } from '@/lib/database/stands'
 
 interface TestResult {
@@ -22,8 +21,6 @@ export default function StandsTestPage() {
   const [testResults, setTestResults] = useState<TestResult[]>([])
   const [stands, setStands] = useState<Stand[]>([])
   const [isRunningTests, setIsRunningTests] = useState(false)
-  const [showSampleData, setShowSampleData] = useState(false)
-  
   // StandCard testing states
   const [selectedMode, setSelectedMode] = useState<'full' | 'compact' | 'popup'>('full')
   const [popupWidth, setPopupWidth] = useState(320)

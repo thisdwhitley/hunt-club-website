@@ -194,7 +194,7 @@ export async function getDatabaseStatus() {
     }
 
     // Test connection
-    const { data: connectionTest } = await supabase.auth.getSession()
+    await supabase.auth.getSession()
     status.connection = true
 
     // Check stands table

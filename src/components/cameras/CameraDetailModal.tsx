@@ -4,7 +4,7 @@
 'use client'
 
 import React from 'react'
-import { X, Camera, MapPin, Calendar, Settings, Battery, Signal, HardDrive, Zap, Images, AlertTriangle, Navigation, Edit3 } from 'lucide-react'
+import { X, Camera, MapPin, Settings, Battery, Signal, HardDrive, Images, AlertTriangle, Navigation, Edit3 } from 'lucide-react'
 import { formatDate } from '@/lib/utils/date'
 import type { CameraWithStatus } from '@/lib/cameras/types'
 

@@ -10,7 +10,6 @@ import {
   Eye, 
   Clock, 
   Users, 
-  MoreHorizontal,
   Edit3,
   Trash2,
   Navigation,
@@ -26,8 +25,6 @@ import {
   HandPlatter as FeederIcon,
   Camera as CameraIcon,
   Target as HuntsIcon,
-  Award as HarvestsIcon,
-  Calendar as SeasonIcon,
   Footprints as WalkingIcon,
   Ruler as HeightIcon,
   BowArrow as ArcheryIcon
@@ -131,10 +128,6 @@ function formatHeight(feet: number | null): string {
   return `${feet} ft`
 }
 
-function formatCapacity(capacity: number | null): string {
-  if (!capacity) return '1 hunter'
-  return capacity === 1 ? '1 hunter' : `${capacity} hunters`
-}
 
 function formatWalkingTime(minutes: number | null): string {
   if (!minutes) return 'Unknown'
@@ -216,6 +209,7 @@ export default function StandCardSimple({
     if (onClick) onClick(stand)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const renderActions = () => {
     if (!showActions || mode === 'compact') return null
 
@@ -254,6 +248,7 @@ export default function StandCardSimple({
     )
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const renderPerformanceBadge = () => {
     if (!showStats || mode === 'compact') return null
     if ((stand.total_hunts || 0) === 0) return null

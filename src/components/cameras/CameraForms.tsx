@@ -4,12 +4,10 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, Save, AlertCircle, MapPin, Camera, Settings } from 'lucide-react'
+import { X, Save, MapPin, Camera, Settings } from 'lucide-react'
 import { useStands } from '@/hooks/useStands' // Import your stands hook
 import { BATTERY_TYPES } from '@/lib/cameras/types'
 import type {
-  CameraHardware,
-  CameraDeployment,
   CameraWithStatus,
   CameraHardwareFormData,
   CameraDeploymentFormData

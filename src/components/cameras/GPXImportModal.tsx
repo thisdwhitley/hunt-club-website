@@ -5,7 +5,6 @@
 
 import React, { useState, useRef } from 'react'
 import { X, Upload, FileText, MapPin, AlertTriangle, CheckCircle, Loader } from 'lucide-react'
-import type { CameraHardwareFormData, CameraDeploymentFormData } from '@/lib/cameras/types'
 
 // Interface for parsed GPX waypoint data
 interface GPXWaypoint {
@@ -48,7 +47,7 @@ interface GPXImportModalProps {
 
 export function GPXImportModal({ onClose, onImport, isImporting = false }: GPXImportModalProps) {
   const [dragActive, setDragActive] = useState(false)
-  const [waypoints, setWaypoints] = useState<GPXWaypoint[]>([])
+  const [, setWaypoints] = useState<GPXWaypoint[]>([])
   const [cameraData, setCameraData] = useState<CameraImportData[]>([])
   const [step, setStep] = useState<'upload' | 'preview' | 'configure'>('upload')
   const [error, setError] = useState<string | null>(null)

@@ -2,14 +2,14 @@
 
 import React, { useState, useMemo } from 'react'
 import { Camera, Search, Filter, Plus, MapPin, AlertCircle, X, Upload, LayoutGrid, List, Grid3X3 } from 'lucide-react'
-import { useCameras, useCameraAlerts, useCameraStats, useCameraHardware } from '@/lib/cameras/hooks'
+import { useCameras, useCameraAlerts, useCameraHardware } from '@/lib/cameras/hooks'
 import CameraCardV2 from '@/components/cameras/CameraCardV2'
 import { CameraForm } from '@/components/cameras/CameraForms'
 import { CameraDetailModal } from '@/components/cameras/CameraDetailModal'
 import { GPXImportModal } from '@/components/cameras/GPXImportModal'
 import { DeploymentImportModal } from '@/components/cameras/DeploymentImportModal'
-import { updateCameraDeployment, deactivateCameraDeployment, createCameraDeployment, hardDeleteCameraHardware, createCameraHardware, updateCameraHardware, deactivateAllActiveDeployments } from '@/lib/cameras/database'
-import type { CameraWithStatus, CameraHardware, CameraFilters, CameraHardwareFormData, CameraDeploymentFormData } from '@/lib/cameras/types'
+import { updateCameraDeployment, createCameraDeployment, hardDeleteCameraHardware, createCameraHardware, deactivateAllActiveDeployments } from '@/lib/cameras/database'
+import type { CameraWithStatus, CameraFilters, CameraHardwareFormData, CameraDeploymentFormData } from '@/lib/cameras/types'
 
 // Define the same filters interface pattern as stands
 export interface CameraManagementFilters {
@@ -247,9 +247,8 @@ export default function CameraManagementPage() {
   }, [filters])
 
   const { cameras, loading, error, refresh: refreshCameras } = useCameras(cameraFilters)
-  const { alerts, loading: alertsLoading } = useCameraAlerts()
-  const { stats, loading: statsLoading } = useCameraStats()
-  const { hardware: allHardware, createHardware, updateHardware, deleteHardware } = useCameraHardware()
+  const { alerts } = useCameraAlerts()
+  const { createHardware, updateHardware } = useCameraHardware()
 
   // Filter cameras based on coordinate availability and apply sorting
   const filteredCameras = useMemo(() => {

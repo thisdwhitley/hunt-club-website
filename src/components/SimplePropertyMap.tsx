@@ -3,18 +3,16 @@
 // src/components/SimplePropertyMap.tsx - No external dependencies, works with any React version
 import React, { useState } from 'react'
 import { 
-  MapPin, 
-  Camera, 
-  Wheat, 
-  Route, 
+  MapPin,
+  Camera,
+  Wheat,
+  Route,
   Map,
   Target,
   Settings,
   X,
-  Plus,
   Edit3,
-  Save,
-  Zap
+  Save
 } from 'lucide-react'
 
 interface PropertyMapProps {

@@ -98,7 +98,6 @@ export default function StandFormModal({ stand, onClose, onSubmit }: StandFormMo
     handleSubmit,
     formState: { errors },
     setValue,
-    watch,
     reset
   } = useForm<StandFormData>({
     resolver: zodResolver(StandFormSchema),

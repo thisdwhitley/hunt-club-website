@@ -282,7 +282,7 @@ export default function StandsPreviewPage() {
                       // Get last hunt data for this stand
                       const lastHunt = lastHunts[stand.id]
                       // Get calculated history stats for this stand
-                      const stats = historyStats[stand.id]
+                      void historyStats[stand.id] // unused but kept for future
 
                       return (
                         <StandCardV2

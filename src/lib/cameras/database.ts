@@ -14,9 +14,7 @@ import type {
   CameraDeploymentFormData,
   CameraStatusReportFormData,
   CameraFilters,
-  CameraSortOptions,
   CameraAPIResponse,
-  CameraPaginatedResponse,
   BatteryType
 } from './types';
 
@@ -675,7 +673,6 @@ export async function getCameraStats(): Promise<CameraAPIResponse<CameraStats>> 
 
     // Calculate basic counts
     const totalHardware = hardware?.length || 0;
-    const activeHardware = hardware?.filter(h => h.active).length || 0;
     const activeDeployments = deployments?.filter(d => d.active).length || 0;
     const missingCameras = deployments?.filter(d => d.is_missing).length || 0;
 
@@ -1047,7 +1044,7 @@ export async function importDeployments(
       }
 
       results.push({ device_id: row.device_id, success: true });
-    } catch (err) {
+    } catch {
       results.push({ device_id: row.device_id, success: false, error: 'Unknown error occurred' });
     }
   }

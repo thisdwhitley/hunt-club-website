@@ -363,6 +363,20 @@ Hunt dates, camera deployment dates, and maintenance dates will all display inco
 - Unfinished features use "Coming Soon" pattern
 - Authentication-aware UI (public vs member views)
 
+### ESLint — Intentionally Unused Parameters
+The `eslint.config.mjs` is configured to ignore `_`-prefixed names for `no-unused-vars`. Use this for parameters that are part of a public API or callback contract but not yet used internally:
+
+```typescript
+// ✅ OK — prop exists on the interface, callers can pass it, body doesn't use it yet
+function StandCard({ onNavigate: _onNavigate, ...rest }: StandCardProps) { ... }
+
+// ✅ OK — hook parameter is part of the public signature but not yet implemented
+export function useStands(_initialFilters?: StandFilters) { ... }
+
+// ❌ Wrong — don't use _ to silence warnings on genuinely dead local variables; delete those instead
+const _unusedResult = someFunction()
+```
+
 ## Common Patterns
 
 ### Creating a New Page

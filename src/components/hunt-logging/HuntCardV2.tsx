@@ -5,7 +5,7 @@
 'use client'
 
 import React from 'react'
-import { BaseCard, CardHeader } from '@/components/shared/cards'
+import { BaseCard } from '@/components/shared/cards'
 import { formatHuntDate, getHuntTypeBadge, parseDBDate } from '@/lib/utils/date'
 import { getIcon } from '@/lib/shared/icons'
 import type { IconName } from '@/lib/shared/icons'
@@ -70,29 +70,6 @@ const getMoonPhaseDisplay = (phase: number | null) => {
   return phaseNames[index]
 }
 
-// Helper function to calculate legal shooting times
-const getLegalShootingTimes = (hunt: HuntWithDetails) => {
-  if (!hunt.sunrise_time && !hunt.sunset_time) return null
-
-  const addMinutes = (timeStr: string, minutes: number): string => {
-    const [hours, mins] = timeStr.split(':').map(Number)
-    const date = new Date()
-    date.setHours(hours, mins + minutes, 0)
-    return date.toTimeString().slice(0, 5)
-  }
-
-  if (hunt.hunt_type === 'AM' && hunt.sunrise_time) {
-    const legalStart = addMinutes(hunt.sunrise_time, -30)
-    return `Legal: ${legalStart} (30 min before sunrise)`
-  }
-
-  if (hunt.hunt_type === 'PM' && hunt.sunset_time) {
-    const legalEnd = addMinutes(hunt.sunset_time, 30)
-    return `Legal until: ${legalEnd} (30 min after sunset)`
-  }
-
-  return null
-}
 
 export default function HuntCardV2({
   hunt,

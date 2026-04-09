@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { Upload, MapPin, Download, CheckCircle, AlertCircle, FileText } from 'lucide-react'
+import { Upload, MapPin, CheckCircle, AlertCircle, FileText } from 'lucide-react'
 
 // Property center coordinates for Caswell County Yacht Club
 const PROPERTY_CENTER: [number, number] = [36.42723576739513, -79.51088069325365]

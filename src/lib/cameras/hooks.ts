@@ -4,8 +4,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { useState, useEffect, useCallback } from 'react';
 import type {
   CameraHardware,
   CameraDeployment,
@@ -14,7 +13,6 @@ import type {
   MissingCameraAlert,
   CameraStats,
   CameraHardwareFormData,
-  CameraDeploymentFormData,
   CameraStatusReportFormData,
   CameraFilters,
   CameraSortOptions
@@ -24,13 +22,9 @@ import {
   getCameraHardwareById,
   createCameraHardware,
   updateCameraHardware,
-  softDeleteCameraHardware,  // ← Changed to softDeleteCameraHardware
-  hardDeleteCameraHardware,  // ← Added hardDeleteCameraHardware
+  softDeleteCameraHardware,
   getCameraDeployments,
   getCameraDeploymentById,
-  createCameraDeployment,
-  updateCameraDeployment,
-  deactivateCameraDeployment,
   addStatusReport,
   getStatusReports,
   getCameraAlerts,
@@ -720,8 +714,8 @@ export function useCameraFilters() {
  */
 export function useCameraDashboard() {
   const { cameras, loading: camerasLoading, error: camerasError } = useCameras({ active: true });
-  const { alerts, loading: alertsLoading, error: alertsError } = useCameraAlerts();
-  const { missing, loading: missingLoading, error: missingError } = useMissingCameras();
+  const { alerts, error: alertsError } = useCameraAlerts();
+  const { missing, error: missingError } = useMissingCameras();
   const { stats, loading: statsLoading, error: statsError } = useCameraStats();
 
   const loading = camerasLoading || statsLoading;

@@ -4,7 +4,7 @@
 // Comprehensive test page for hunt logging form with mobile preview and cleanup
 
 import React, { useState, useEffect } from 'react'
-import { Trash2, Smartphone, Monitor, RefreshCw, Database, TestTube, AlertTriangle, CheckCircle, Calendar, MapPin } from 'lucide-react'
+import { Trash2, Smartphone, Monitor, RefreshCw, Database, TestTube, AlertTriangle, CheckCircle, Calendar } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import HuntEntryForm from '@/components/hunt-logging/HuntEntryForm'

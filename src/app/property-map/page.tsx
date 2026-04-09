@@ -4,8 +4,7 @@
 // Standalone Property Map Page using the reusable PropertyMap component
 
 import React, { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { MapPin, Target, AlertCircle, Crosshair } from 'lucide-react'
+import { Target, AlertCircle, Crosshair } from 'lucide-react'
 import PropertyMap from '@/components/map/PropertyMap'
 // Optional: import enhanced popup styles
 // import '@/styles/popup-styles.css'
@@ -38,7 +37,6 @@ interface Stand {
 export default function PropertyMapPage() {
   const [error, setError] = useState<string | null>(null)
   const [mapReady, setMapReady] = useState(false)
-  const router = useRouter()
 
   // Handle stand clicks - can navigate to stand details page or show modal
   const handleStandClick = (stand: Stand) => {

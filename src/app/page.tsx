@@ -14,10 +14,6 @@ import {
   Bell,
   Menu,
   X,
-  ChevronRight,
-  Clock,
-  AlertTriangle,
-  CheckCircle,
   User,
   LogOut,
   ChevronDown,
@@ -30,7 +26,6 @@ import {
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { CalendarView } from "@/components/CalendarView";
-import Link from "next/link";
 import PropertyMap from '@/components/map/PropertyMap';
 import { useModal } from '@/components/modals/ModalSystem'
 import { createClient } from '@/lib/supabase/client'
@@ -49,7 +44,6 @@ export default function MainPage() {
   const [stands, setStands] = useState([]);
   const [hunts, setHunts] = useState([]);
   const [sightings, setSightings] = useState([]);
-  const [harvests, setHarvests] = useState([]);
 
   const supabase = createClient()
 

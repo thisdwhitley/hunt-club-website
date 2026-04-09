@@ -8,7 +8,7 @@ import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Calendar, Check, Clock, MapPin, Target, Plus, ArrowLeft, ChevronDown, Eye, AlertCircle, Settings } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { HuntFormSchema, type HuntFormData, type SightingData } from '@/lib/hunt-logging/hunt-validation'
+import { HuntFormSchema, type HuntFormData } from '@/lib/hunt-logging/hunt-validation'
 import { createClient } from '@/lib/supabase/client'
 
 // ===========================================
@@ -48,7 +48,6 @@ const getGenderOptions = (animalType: string) => {
   }
 }
 
-type HuntStep = 'basic' | 'harvest' | 'sightings' | 'success'  // Remove 'review', add 'success'
 
 // ===========================================
 // MAIN COMPONENT
@@ -77,7 +76,6 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
     register,
     handleSubmit,
     formState: { errors },
-    setValue,
     watch,
     control,
     trigger,
@@ -172,49 +170,6 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
       time_observed: '',
       notes: ''
     })
-  }
-
-  // Navigation handlers
-  const handleBasicNext = () => {
-    const isValid = trigger(['hunt_date', 'stand_id'])
-    if (isValid) {
-      if (watchedHadHarvest) {
-        setCurrentStep('harvest')
-      } else {
-        // No harvest - can submit directly or add sightings
-        // Navigation happens via button clicks, not automatic
-      }
-    }
-  }
-
-  const handleHarvestNext = () => {
-    // Auto-add a sighting if going to sightings and none exist
-    if (sightingFields.length === 0) {
-      handleAddSighting()
-    }
-    setCurrentStep('sightings')
-  }
-
-  const handleHarvestSubmit = async () => {
-    // Skip sightings and go straight to submit
-    const isValid = await trigger(['hunt_date', 'stand_id'])
-    if (isValid) {
-      const formData = {
-        ...getValues(),
-        season: String(new Date().getFullYear())
-      }
-      await onSubmit(formData)
-    }
-  }
-
-  const handleHarvestComplete = () => {
-    // From harvest, user chooses submit or add sightings via buttons
-    // Navigation happens via button clicks
-  }
-
-  const handleSightingsComplete = () => {
-    // From sightings, submit directly (no review step)
-    handleSubmitHunt()
   }
 
   const handleSubmitHunt = async () => {

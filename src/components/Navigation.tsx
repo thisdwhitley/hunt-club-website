@@ -34,7 +34,7 @@ export default function Navigation() {
   const menuRef = useRef<HTMLDivElement>(null)
   const hamburgerRef = useRef<HTMLButtonElement>(null)
   const pathname = usePathname()
-  const { user, signOut, loading } = useAuth()
+  const { user, signOut } = useAuth()
   const { showModal } = useModal()
 
   // Get icon components from registry

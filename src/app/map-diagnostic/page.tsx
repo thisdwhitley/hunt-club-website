@@ -7,7 +7,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { createRoot } from 'react-dom/client'
 import StandCard from '@/components/stands/StandCard'
-import { AlertCircle, CheckCircle, Database, MapPin, Eye, Wifi, Clock, TestTube, Bug } from 'lucide-react'
+import { AlertCircle, CheckCircle, Database, MapPin, Eye, Wifi, Clock, Bug } from 'lucide-react'
 
 // Property center coordinates
 const PROPERTY_CENTER: [number, number] = [36.42712517693617, -79.51073582842501]
@@ -177,7 +177,7 @@ export default function EnhancedMapDiagnosticPage() {
       const supabase = createClient()
       
       // First test basic connectivity with count
-      const { data: countData, error: countError, count } = await supabase
+      const { error: countError, count } = await supabase
         .from('stands')
         .select('*', { count: 'exact', head: true })
       
@@ -397,10 +397,10 @@ useEffect(() => {
     // Test Database Connection
     try {
       const supabase = createClient()
-      const { data, error } = await supabase.from('stands').select('count').limit(1)
-      
-      if (error) {
-        addDiagnostic('Database', 'error', `Connection failed: ${error.message}`, error)
+      const { error: dbError } = await supabase.from('stands').select('count').limit(1)
+
+      if (dbError) {
+        addDiagnostic('Database', 'error', `Connection failed: ${dbError.message}`, dbError)
       } else {
         addDiagnostic('Database', 'success', 'Connection successful')
       }

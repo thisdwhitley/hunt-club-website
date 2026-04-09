@@ -44,19 +44,10 @@ export async function updateSession(request: NextRequest) {
     '/profile'
   ]
 
-  // Define public routes that don't need authentication
-  const publicRoutes = [
-    '/',
-    '/calendar',
-    '/about',
-    '/auth'
-  ]
-
   const pathname = request.nextUrl.pathname
 
   // Check if the current path requires authentication
   const requiresAuth = protectedRoutes.some(route => pathname.startsWith(route))
-  const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith('/auth'))
 
   // If user is not authenticated and trying to access a protected route
   if (!user && requiresAuth) {
