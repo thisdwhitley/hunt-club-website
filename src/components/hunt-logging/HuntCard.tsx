@@ -64,10 +64,12 @@ const HuntCard: React.FC<HuntCardProps> = ({
     }
   }
 
-  const getMoonPhaseDisplay = (phase: number | null) => {
+  const getMoonPhaseDisplay = (phase: number | string | null) => {
     if (phase === null) return null
+    const numPhase = typeof phase === 'string' ? parseFloat(phase) : phase
+    if (isNaN(numPhase)) return phase
     const phaseNames = ['New', 'Waxing Crescent', 'First Quarter', 'Waxing Gibbous', 'Full', 'Waning Gibbous', 'Last Quarter', 'Waning Crescent']
-    const index = Math.round(phase * 8) % 8
+    const index = Math.round(numPhase * 8) % 8
     return phaseNames[index]
   }
 
@@ -83,7 +85,7 @@ const HuntCard: React.FC<HuntCardProps> = ({
   // Compact mode for lists - Option D: Colored MM/DD badge with 2-line layout
   if (mode === 'compact') {
     // Helper to get date parts - IMPORTANT: Use parseDBDate to avoid timezone issues
-    const date = parseDBDate(hunt.hunt_date)
+    const date = parseDBDate(hunt.hunt_date)!
     const monthNumber = String(date.getMonth() + 1).padStart(2, '0')
     const dayNumberPadded = String(date.getDate()).padStart(2, '0')
     const fullDate = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
@@ -268,16 +270,16 @@ const HuntCard: React.FC<HuntCardProps> = ({
                 <span className="font-medium text-forest-shadow">{tempContext.fullDisplay}</span>
               </span>
             )}
-            {hunt.windspeed !== null && (
+            {hunt.wind_speed !== null && (
               <span className="flex items-center gap-1 whitespace-nowrap">
                 <Wind className="w-3 h-3 text-dark-teal" />
-                <span className="text-forest-shadow">{hunt.windspeed} mph</span>
+                <span className="text-forest-shadow">{hunt.wind_speed} mph</span>
               </span>
             )}
-            {hunt.moonphase !== null && (
+            {hunt.moon_phase !== null && (
               <span className="flex items-center gap-1 whitespace-nowrap">
                 <Moon className="w-3 h-3 text-muted-gold" />
-                <span className="text-forest-shadow">{getMoonPhaseDisplay(hunt.moonphase)}</span>
+                <span className="text-forest-shadow">{getMoonPhaseDisplay(hunt.moon_phase)}</span>
               </span>
             )}
           </div>
@@ -412,7 +414,7 @@ const HuntCard: React.FC<HuntCardProps> = ({
         </div>
 
         {/* UPDATED: Weather Info with contextual temperature */}
-        {(tempContext.temperature !== null || hunt.windspeed !== null || hunt.humidity !== null || hunt.moonphase !== null) && (
+        {(tempContext.temperature !== null || hunt.wind_speed !== null || hunt.moon_phase !== null) && (
           <div className="bg-morning-mist rounded-lg p-3">
             <div className="mb-2">
               <h4 className="text-sm font-medium text-forest-shadow flex items-center">
@@ -428,22 +430,16 @@ const HuntCard: React.FC<HuntCardProps> = ({
                   <span className="text-burnt-orange">{tempContext.fullDisplay}</span>
                 </div>
               )}
-              {hunt.windspeed !== null && (
+              {hunt.wind_speed !== null && (
                 <div className="flex items-center">
                   <Wind className="w-3 h-3 mr-1 text-dark-teal" />
-                  <span className="text-forest-shadow">{hunt.windspeed} mph</span>
+                  <span className="text-forest-shadow">{hunt.wind_speed} mph</span>
                 </div>
               )}
-              {hunt.humidity !== null && (
-                <div className="flex items-center">
-                  <Droplets className="w-3 h-3 mr-1 text-dark-teal" />
-                  <span className="text-forest-shadow">{hunt.humidity}% humidity</span>
-                </div>
-              )}
-              {hunt.moonphase !== null && (
+              {hunt.moon_phase !== null && (
                 <div className="flex items-center">
                   <Moon className="w-3 h-3 mr-1 text-muted-gold" />
-                  <span className="text-forest-shadow">{getMoonPhaseDisplay(hunt.moonphase)}</span>
+                  <span className="text-forest-shadow">{getMoonPhaseDisplay(hunt.moon_phase)}</span>
                 </div>
               )}
             </div>

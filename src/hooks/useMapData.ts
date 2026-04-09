@@ -7,7 +7,12 @@ type Stand = Database['public']['Tables']['stands']['Row']
 type TrailCamera = Database['public']['Tables']['trail_cameras']['Row']
 type FoodPlot = Database['public']['Tables']['food_plots']['Row']
 type Trail = Database['public']['Tables']['trails']['Row']
-type PropertyBoundary = Database['public']['Tables']['property_boundaries']['Row']
+interface PropertyBoundary {
+  id: string
+  name?: string | null
+  coordinates?: unknown
+  created_at?: string | null
+}
 
 export interface MapData {
   stands: Stand[]

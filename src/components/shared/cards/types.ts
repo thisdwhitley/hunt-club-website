@@ -36,7 +36,7 @@ export interface Badge {
 }
 
 export interface Stat {
-  icon?: React.ComponentType<{ size?: number; className?: string }>
+  icon?: React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>
   iconColor?: string
   label: string
   value: string | number

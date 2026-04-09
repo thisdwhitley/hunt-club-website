@@ -139,7 +139,7 @@ export default function HuntLoggingTestPage() {
       const testHunts: TestHuntLog[] = hunts?.map(hunt => ({
         id: hunt.id,
         hunt_date: hunt.hunt_date,
-        stand_name: hunt.stands?.name || 'Unknown Stand',
+        stand_name: (Array.isArray(hunt.stands) ? hunt.stands[0] : hunt.stands)?.name || 'Unknown Stand',
         harvest_count: hunt.harvest_count || 0,
         notes: hunt.notes,
         created_at: hunt.created_at,

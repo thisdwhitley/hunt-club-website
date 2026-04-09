@@ -7,21 +7,11 @@ import { createClient } from '@/lib/supabase/client'
 import { Target, AlertCircle, Clock, Crosshair, TreePine, Compass } from 'lucide-react'
 import { createRoot } from 'react-dom/client'
 import StandCard from '@/components/stands/StandCard'
+import type { Stand } from '@/lib/database/stands'
 
 // Property coordinates for Caswell County Yacht Club clubhouse
 const PROPERTY_CENTER: [number, number] = [36.42712517693617, -79.51073582842501]
 
-interface Stand {
-  id: string
-  name: string
-  description: string | null
-  latitude: number | null
-  longitude: number | null
-  type: string
-  active: boolean
-  created_at: string
-  updated_at: string
-}
 
 interface PropertyBoundary {
   id: string
@@ -893,7 +883,7 @@ export default function MapTest2Page() {
         console.error('Error loading stands:', standsError)
         setError('Could not load hunting stands from club database')
       } else {
-        setStands(standsData || [])
+        setStands((standsData || []) as Stand[])
         addDebugInfo(`✅ Loaded ${standsData?.length || 0} hunting stands from club database`)
         
         // Log each stand's coordinates for field testing

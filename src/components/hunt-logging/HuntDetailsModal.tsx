@@ -164,12 +164,12 @@ export function HuntDetailsModal({ huntId, isOpen, onClose }: HuntDetailsModalPr
                     <div>
                       <p className="text-sm text-weathered-wood">Hunt Time</p>
                       <p className="font-medium text-forest-shadow">
-                        {formatTime(hunt.start_time)}
+                        {formatTime(hunt.start_time ?? undefined)}
                         {hunt.end_time && ` - ${formatTime(hunt.end_time)}`}
                       </p>
-                      {hunt.start_time && hunt.end_time && (
+                      {hunt.hunt_duration_minutes && (
                         <p className="text-sm text-weathered-wood">
-                          Duration: {huntService.formatHuntDuration(hunt.start_time, hunt.end_time)}
+                          Duration: {Math.floor(hunt.hunt_duration_minutes / 60)}h {hunt.hunt_duration_minutes % 60}m
                         </p>
                       )}
                     </div>
@@ -234,7 +234,7 @@ export function HuntDetailsModal({ huntId, isOpen, onClose }: HuntDetailsModalPr
                     )}
                   </div>
 
-                  {hunt.precipitation !== undefined && hunt.precipitation > 0 && (
+                  {hunt.precipitation !== null && hunt.precipitation > 0 && (
                     <div className="mt-2 text-sm text-weathered-wood">
                       Precipitation: {hunt.precipitation}%
                     </div>

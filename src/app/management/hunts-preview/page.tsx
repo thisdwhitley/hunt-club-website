@@ -706,13 +706,13 @@ export default function HuntsPreviewPage() {
                       <div>
                         <span className="text-weathered-wood">Created:</span>
                         <span className="ml-2 font-medium text-forest-shadow">
-                          {formatHuntDate(viewingHunt.created_at, { style: 'full' })}
+                          {formatHuntDate(viewingHunt.created_at)}
                         </span>
                       </div>
                       <div>
                         <span className="text-weathered-wood">Last Updated:</span>
                         <span className="ml-2 font-medium text-forest-shadow">
-                          {formatHuntDate(viewingHunt.updated_at, { style: 'full' })}
+                          {formatHuntDate(viewingHunt.updated_at)}
                         </span>
                       </div>
                     </div>

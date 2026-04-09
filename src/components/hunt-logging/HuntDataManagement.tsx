@@ -34,7 +34,8 @@ import {
   Trophy,
   CloudSun,
   AlertCircle,
-  Info
+  Info,
+  Calendar
 } from 'lucide-react'
 
 interface HuntDataManagementProps {
@@ -63,10 +64,12 @@ const HuntDetailsModal: React.FC<{
     return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
   }
 
-  const getMoonPhaseDisplay = (phase: number | null) => {
+  const getMoonPhaseDisplay = (phase: number | string | null) => {
     if (phase === null) return 'Unknown'
+    const numPhase = typeof phase === 'string' ? parseFloat(phase) : phase
+    if (isNaN(numPhase)) return String(phase)
     const phaseNames = ['New', 'Waxing Crescent', 'First Quarter', 'Waxing Gibbous', 'Full', 'Waning Gibbous', 'Last Quarter', 'Waning Crescent']
-    const index = Math.round(phase * 8) % 8
+    const index = Math.round(numPhase * 8) % 8
     return phaseNames[index]
   }
 
@@ -269,49 +272,42 @@ const HuntDetailsModal: React.FC<{
 
                   {/* Other Weather Data */}
                   <div className="border-t border-weathered-wood/20 pt-3 space-y-2">
-                    {hunt.windspeed !== null && (
+                    {hunt.wind_speed !== null && (
                       <div className="flex items-center justify-between">
                         <span className="flex items-center text-forest-shadow">
                           <Wind className="w-4 h-4 mr-2 text-dark-teal" />
                           Wind:
                         </span>
                         <span className="font-medium text-weathered-wood">
-                          {hunt.windspeed} mph {hunt.winddir ? `${hunt.winddir}°` : ''}
+                          {hunt.wind_speed} mph {hunt.wind_direction ? `${hunt.wind_direction}` : ''}
                         </span>
                       </div>
                     )}
 
-                    {hunt.humidity !== null && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-forest-shadow">Humidity:</span>
-                        <span className="font-medium text-weathered-wood">{hunt.humidity}%</span>
-                      </div>
-                    )}
-
-                    {hunt.precip !== null && (
+                    {hunt.precipitation !== null && (
                       <div className="flex items-center justify-between">
                         <span className="text-forest-shadow">Precipitation:</span>
-                        <span className="font-medium text-weathered-wood">{hunt.precip}&quot;</span>
+                        <span className="font-medium text-weathered-wood">{hunt.precipitation}&quot;</span>
                       </div>
                     )}
 
-                    {hunt.moonphase !== null && (
+                    {hunt.moon_phase !== null && (
                       <div className="flex items-center justify-between">
                         <span className="flex items-center text-forest-shadow">
                           <Moon className="w-4 h-4 mr-2 text-muted-gold" />
                           Moon Phase:
                         </span>
                         <span className="font-medium text-weathered-wood">
-                          {getMoonPhaseDisplay(hunt.moonphase)}
+                          {getMoonPhaseDisplay(hunt.moon_phase)}
                         </span>
                       </div>
                     )}
 
-                    {hunt.sunrise && hunt.sunset && (
+                    {hunt.sunrise_time && hunt.sunset_time && (
                       <div className="flex items-center justify-between">
                         <span className="text-forest-shadow">Sun Times:</span>
                         <span className="font-medium text-weathered-wood">
-                          {hunt.sunrise} - {hunt.sunset}
+                          {hunt.sunrise_time} - {hunt.sunset_time}
                         </span>
                       </div>
                     )}
@@ -321,19 +317,6 @@ const HuntDetailsModal: React.FC<{
                         <span className="text-forest-shadow">Legal Hunting:</span>
                         <span className="font-medium text-weathered-wood">
                           {hunt.legal_hunting_start} - {hunt.legal_hunting_end}
-                        </span>
-                      </div>
-                    )}
-
-                    {hunt.data_quality_score !== null && (
-                      <div className="flex items-center justify-between border-t border-weathered-wood/20 pt-2">
-                        <span className="text-forest-shadow">Data Quality:</span>
-                        <span className={`font-medium ${
-                          hunt.data_quality_score >= 90 ? 'text-bright-orange' :
-                          hunt.data_quality_score >= 75 ? 'text-olive-green' :
-                          hunt.data_quality_score >= 50 ? 'text-muted-gold' : 'text-clay-earth'
-                        }`}>
-                          {hunt.data_quality_score}%
                         </span>
                       </div>
                     )}
@@ -490,14 +473,14 @@ const HuntDetailsModal: React.FC<{
                 <span className="text-weathered-wood">Created:</span>
                 <span className="ml-2 font-medium text-forest-shadow">
                   {/* {new Date(hunt.created_at).toLocaleString()} */}
-                  {formatHuntDate(hunt.created_at, { style: 'full' })}
+                  {formatHuntDate(hunt.created_at)}
                 </span>
               </div>
               <div>
                 <span className="text-weathered-wood">Last Updated:</span>
                 <span className="ml-2 font-medium text-forest-shadow">
                   {/* {new Date(hunt.updated_at).toLocaleString()} */}
-                  {formatHuntDate(hunt.updated_at, { style: 'full' })}
+                  {formatHuntDate(hunt.updated_at)}
                 </span>
               </div>
             </div>
@@ -518,7 +501,7 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
   const [selectedIds, setSelectedIds] = useState(new Set<string>())
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table')
   const [isMobile, setIsMobile] = useState(false)
-  const [sortField, setSortField] = useState<keyof HuntWithDetails>('hunt_date')
+  const [sortField, setSortField] = useState<keyof HuntWithDetails | 'temperature'>('hunt_date')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [filterHarvest, setFilterHarvest] = useState<'all' | 'harvest' | 'no-harvest'>('all')
   const [searchTerm, setSearchTerm] = useState('')
@@ -604,8 +587,8 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
 
       default:
         // Direct field access for other fields
-        aVal = a[sortField]
-        bVal = b[sortField]
+        aVal = a[sortField as keyof HuntWithDetails]
+        bVal = b[sortField as keyof HuntWithDetails]
     }
 
     // Handle null/undefined values
@@ -905,7 +888,7 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
                 <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Sort by:</label>
                 <select
                   value={sortField}
-                  onChange={(e) => setSortField(e.target.value as keyof HuntWithDetails)}
+                  onChange={(e) => setSortField(e.target.value as keyof HuntWithDetails | 'temperature')}
                   className="text-sm border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green text-forest-shadow"
                 >
                   <option value="hunt_date">Hunt Date</option>

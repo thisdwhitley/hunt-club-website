@@ -4,7 +4,7 @@
 // Ultra-fast hunt entry form with proper design system alignment
 
 import React, { useEffect, useState } from 'react'
-import { useForm, useFieldArray } from 'react-hook-form'
+import { useForm, useFieldArray, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Calendar, Check, Clock, MapPin, Target, Plus, ArrowLeft, ChevronDown, Eye, AlertCircle, Settings } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -14,6 +14,8 @@ import { createClient } from '@/lib/supabase/client'
 // ===========================================
 // TYPES & UTILS
 // ===========================================
+
+type FormStep = 'basic' | 'harvest' | 'sightings' | 'success'
 
 interface Stand {
   id: string
@@ -75,13 +77,14 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
     watch,
     control,
     trigger,
     getValues
   } = useForm<HuntFormData>({
-    resolver: zodResolver(HuntFormSchema),
+    resolver: zodResolver(HuntFormSchema) as Resolver<HuntFormData>,
     defaultValues: mode === 'edit' && hunt ? {
       hunt_date: hunt.hunt_date || new Date().toISOString().split('T')[0],
       stand_id: hunt.stand_id || '',

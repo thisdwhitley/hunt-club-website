@@ -390,7 +390,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
         sightings_count: sightingsCounts[hunt.id] || 0
       })) || []
 
-      setHunts(enrichedHunts)
+      setHunts(enrichedHunts as unknown as HuntLog[])
       console.log('Hunts loaded successfully')
     } catch (err) {
       const errorMessage = extractErrorMessage(err)
@@ -442,8 +442,8 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
         gender: sighting.gender,
         behavior: sighting.behavior,
         time_observed: sighting.time_observed,
-        hunt_date: sighting.hunt_logs.hunt_date,
-        stand_name: sighting.hunt_logs.stands?.name || 'Unknown'
+        hunt_date: (Array.isArray(sighting.hunt_logs) ? sighting.hunt_logs[0] : sighting.hunt_logs)?.hunt_date,
+        stand_name: (Array.isArray(sighting.hunt_logs) ? sighting.hunt_logs[0] : sighting.hunt_logs)?.stands?.[0]?.name || 'Unknown'
       })) || []
 
       // Sort by hunt_date in JavaScript since we can't do it in the SQL query
@@ -494,8 +494,9 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       console.log(`Loaded ${data?.length || 0} harvests`)
 
       // Sort by hunt_date in JavaScript since we can't do it in the SQL query
-      const sortedHarvests = (data || []).sort((a, b) => 
-        new Date(b.hunt_logs.hunt_date).getTime() - new Date(a.hunt_logs.hunt_date).getTime()
+      const sortedHarvests = (data || []).sort((a, b) =>
+        new Date((Array.isArray(b.hunt_logs) ? b.hunt_logs[0] : b.hunt_logs)?.hunt_date || '').getTime() -
+        new Date((Array.isArray(a.hunt_logs) ? a.hunt_logs[0] : a.hunt_logs)?.hunt_date || '').getTime()
       )
 
       setHarvests(sortedHarvests)
@@ -526,7 +527,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
   const handleHuntSubmit = async (formData: HuntFormData) => {
     console.log('🎯 ModalSystem received formData:', formData)
     console.log('🎯 formData.member_id:', formData.member_id)
-    console.log('🎯 user.id fallback:', user.id)
+    console.log('🎯 user.id fallback:', user?.id)
 
     if (!user) {
       setError('User not authenticated')
@@ -545,7 +546,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
         hunt_date: formData.hunt_date,
         start_time: formData.start_time || null,
         end_time: formData.end_time || null,
-        harvest_count: formData.had_harvest ? (formData.harvest_count || 1) : 0,
+        harvest_count: formData.had_harvest ? 1 : 0,
         hunt_type: formData.hunt_type || 'AM',
         notes: formData.notes || null,
         had_harvest: formData.had_harvest || false
@@ -607,22 +608,8 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       //   if (sightingsError) throw sightingsError
       // }
 
-      // Insert harvest if any
-      if (formData.had_harvest && formData.harvest) {
-        const harvestData = {
-          hunt_log_id: huntLog.id,
-          animal_type: formData.harvest.animal_type,
-          gender: formData.harvest.gender || null,
-          estimated_weight: formData.harvest.estimated_weight || null,
-          shot_distance_yards: formData.harvest.shot_distance_yards || null
-        }
-
-        const { error: harvestError } = await supabase
-          .from('hunt_harvests')
-          .insert(harvestData)
-
-        if (harvestError) throw harvestError
-      }
+      // Note: detailed harvest records (hunt_harvests table) are not collected via this form.
+      // The `had_harvest` flag and `harvest_count` on the hunt log are sufficient here.
 
       setShowHuntSuccess(true)
       setHuntSuccessData({

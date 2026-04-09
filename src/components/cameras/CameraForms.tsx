@@ -112,20 +112,21 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
       }
 
       // Initialize deployment data if it exists
-      if (camera.deployment) {
+      const dep = camera.deployment
+      if (dep) {
         setDeploymentData(prev => ({
           ...prev,
-          hardware_id: camera.deployment?.hardware_id || camera.hardware?.id || '',
-          location_name: camera.deployment.location_name,
-          latitude: camera.deployment.latitude,
-          longitude: camera.deployment.longitude,
-          season_year: camera.deployment.season_year || new Date().getFullYear(),
-          stand_id: camera.deployment.stand_id || undefined,
-          facing_direction: camera.deployment.facing_direction || undefined,
-          has_solar_panel: camera.deployment.has_solar_panel,
-          solar_panel_id: camera.deployment.solar_panel_id || undefined,
-          active: camera.deployment.active,
-          notes: camera.deployment.notes || ''
+          hardware_id: dep.hardware_id || camera.hardware?.id || '',
+          location_name: dep.location_name,
+          latitude: dep.latitude,
+          longitude: dep.longitude,
+          season_year: dep.season_year || new Date().getFullYear(),
+          stand_id: dep.stand_id || undefined,
+          facing_direction: dep.facing_direction || undefined,
+          has_solar_panel: dep.has_solar_panel,
+          solar_panel_id: dep.solar_panel_id || undefined,
+          active: dep.active,
+          notes: dep.notes || ''
         }))
         setIncludeDeployment(true)
       } else if (mode === 'edit' && camera.hardware) {
@@ -165,12 +166,12 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
     const cleanHardwareData = {
       ...hardwareData,
       device_id: hardwareData.device_id.trim(),
-      brand: hardwareData.brand.trim() || '',
-      model: hardwareData.model.trim() || '',
-      serial_number: hardwareData.serial_number.trim() || '',
-      purchase_date: hardwareData.purchase_date.trim() || null,
-      fw_version: hardwareData.fw_version.trim() || '',
-      cl_version: hardwareData.cl_version.trim() || '',
+      brand: hardwareData.brand?.trim() || '',
+      model: hardwareData.model?.trim() || '',
+      serial_number: hardwareData.serial_number?.trim() || '',
+      purchase_date: hardwareData.purchase_date?.trim() || undefined,
+      fw_version: hardwareData.fw_version?.trim() || '',
+      cl_version: hardwareData.cl_version?.trim() || '',
       notes: hardwareData.notes?.trim() || ''
     }
 

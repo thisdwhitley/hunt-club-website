@@ -7,36 +7,12 @@ import React, { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { createRoot } from 'react-dom/client'
 import StandCard from '@/components/stands/StandCard'
+import type { Stand } from '@/lib/database/stands'
 import { AlertCircle, CheckCircle, Database, MapPin, Eye, Wifi, Clock, Bug } from 'lucide-react'
 
 // Property center coordinates
 const PROPERTY_CENTER: [number, number] = [36.42712517693617, -79.51073582842501]
 
-// Types based on current database schema
-interface Stand {
-  id: string
-  name: string
-  description: string | null
-  latitude: number | null
-  longitude: number | null
-  type: string
-  active: boolean
-  height_feet: number | null
-  capacity: number | null
-  walking_time_minutes: number | null
-  view_distance_yards: number | null
-  total_harvests: number | null
-  total_hunts: number | null
-  season_hunts: number | null
-  last_used_date: string | null
-  time_of_day: string | null
-  archery_season: boolean | null
-  nearby_water_source: boolean | null
-  food_source: string | null
-  trail_camera_name: string | null
-  created_at: string
-  updated_at: string
-}
 
 interface PropertyBoundary {
   id: string
@@ -101,10 +77,10 @@ export default function EnhancedMapDiagnosticPage() {
       addDiagnostic('Supabase Client', 'warning', 'Testing client initialization...')
       
       // Test if client has proper config
-      const clientUrl = supabase.supabaseUrl
-      const clientKey = supabase.supabaseKey ? 'Present' : 'Missing'
-      
-      addDiagnostic('Supabase Config', clientUrl && clientKey === 'Present' ? 'success' : 'error', 
+      const clientUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const clientKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Present' : 'Missing'
+
+      addDiagnostic('Supabase Config', clientUrl && clientKey === 'Present' ? 'success' : 'error',
         `URL: ${clientUrl?.slice(0, 30)}... | Key: ${clientKey}`,
         { fullUrl: clientUrl }
       )
@@ -203,7 +179,7 @@ export default function EnhancedMapDiagnosticPage() {
       if (error) {
         addDiagnostic('Load Stands', 'error', `Full query failed: ${error.message}`, error)
       } else {
-        setStands(allStands || [])
+        setStands((allStands || []) as Stand[])
         const activeCount = allStands?.filter(s => s.active).length || 0
         const mappedCount = allStands?.filter(s => s.latitude && s.longitude).length || 0
         

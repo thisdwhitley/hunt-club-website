@@ -7,36 +7,12 @@ import React, { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { createRoot } from 'react-dom/client'
 import StandCard from '@/components/stands/StandCard'
+import type { Stand } from '@/lib/database/stands'
 import { AlertCircle, CheckCircle, Database, MapPin, Eye, Wifi, Clock } from 'lucide-react'
 
 // Property center coordinates
 const PROPERTY_CENTER: [number, number] = [36.42712517693617, -79.51073582842501]
 
-// Types based on current database schema
-interface Stand {
-  id: string
-  name: string
-  description: string | null
-  latitude: number | null
-  longitude: number | null
-  type: string
-  active: boolean
-  height_feet: number | null
-  capacity: number | null
-  walking_time_minutes: number | null
-  view_distance_yards: number | null
-  total_harvests: number | null
-  total_hunts: number | null
-  season_hunts: number | null
-  last_used_date: string | null
-  time_of_day: string | null
-  archery_season: boolean | null
-  nearby_water_source: boolean | null
-  food_source: string | null
-  trail_camera_name: string | null
-  created_at: string
-  updated_at: string
-}
 
 interface PropertyBoundary {
   id: string
@@ -243,7 +219,7 @@ export default function MapDiagnosticPage() {
       if (error) {
         addDiagnostic('Load Stands', 'error', `Failed to load: ${error.message}`)
       } else {
-        setStands(allStands || [])
+        setStands((allStands || []) as Stand[])
         const activeStands = allStands?.filter(s => s.active) || []
         const mappedStands = allStands?.filter(s => s.latitude && s.longitude) || []
         addDiagnostic('Load Stands', 'success', `Loaded ${allStands?.length || 0} stands (${activeStands.length} active, ${mappedStands.length} mapped)`, { 

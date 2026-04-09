@@ -202,7 +202,7 @@ export default function CameraCard({
         <div className="flex items-center gap-1 justify-end">
           {mode === 'full' && (
               <button
-                onClick={(e) => { e.stopPropagation(); onEdit(camera) }}
+                onClick={(e) => { e.stopPropagation(); onEdit?.(camera) }}
                 className={`min-h-[28px] px-3 rounded-md flex items-center justify-center text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200`}
                 title="Edit camera"
               >
@@ -212,7 +212,7 @@ export default function CameraCard({
           {/* Delete button - second in the row */}
           {mode === 'full' && (
             <button
-              onClick={(e) => { e.stopPropagation(); onDelete(camera) }}
+              onClick={(e) => { e.stopPropagation(); onDelete?.(camera) }}
               className="min-h-[28px] px-3 rounded-md flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors duration-200"
               title="Delete camera"
             >

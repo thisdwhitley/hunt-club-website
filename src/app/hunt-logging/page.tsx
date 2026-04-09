@@ -153,7 +153,7 @@ export default function HuntLoggingPage() {
         sightings_count: sightingsCounts[hunt.id] || 0
       })) || []
 
-      setRecentHunts(enrichedHunts)
+      setRecentHunts(enrichedHunts as unknown as HuntLog[])
     } catch (err) {
       console.error('Error loading recent hunts:', err)
       setError('Failed to load recent hunts')

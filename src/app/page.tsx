@@ -30,6 +30,31 @@ import PropertyMap from '@/components/map/PropertyMap';
 import { useModal } from '@/components/modals/ModalSystem'
 import { createClient } from '@/lib/supabase/client'
 
+interface PageHunt {
+  id: string
+  hunt_date: string
+  hunt_type?: string | null
+  harvest_count?: number | null
+  stands?: { name?: string | null; type?: string | null }[] | null
+}
+
+interface PageSighting {
+  id: string
+  animal_type?: string | null
+  count?: number | null
+  gender?: string | null
+  behavior?: string | null
+  time_observed?: string | null
+  hunt_date: string
+  stand_name: string
+}
+
+interface PageStand {
+  id: string
+  name?: string | null
+  active?: boolean | null
+}
+
 export default function MainPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -41,9 +66,10 @@ export default function MainPage() {
   const { showModal } = useModal();
 
   // Data state for real stats
-  const [stands, setStands] = useState([]);
-  const [hunts, setHunts] = useState([]);
-  const [sightings, setSightings] = useState([]);
+  const [stands, setStands] = useState<PageStand[]>([]);
+  const [hunts, setHunts] = useState<PageHunt[]>([]);
+  const [sightings, setSightings] = useState<PageSighting[]>([]);
+  const [, setHarvests] = useState<Record<string, unknown>[]>([]);
 
   const supabase = createClient()
 
@@ -124,10 +150,10 @@ export default function MainPage() {
           created_at,
           stands (name, type)
         `)
-        .eq('member_id', user.id)
+        .eq('member_id', user!.id)
         .order('hunt_date', { ascending: false })
         .limit(50)
-      setHunts(huntsData || [])
+      setHunts((huntsData || []) as PageHunt[])
 
       // Load sightings
       const { data: sightingsData } = await supabase
@@ -145,7 +171,7 @@ export default function MainPage() {
             stands (name)
           )
         `)
-        .eq('hunt_logs.member_id', user.id)
+        .eq('hunt_logs.member_id', user!.id)
         .order('created_at', { ascending: false })  // <- Fixed: Order by sightings table field
         .limit(100)
       
@@ -156,8 +182,8 @@ export default function MainPage() {
         gender: sighting.gender,
         behavior: sighting.behavior,
         time_observed: sighting.time_observed,
-        hunt_date: sighting.hunt_logs.hunt_date,
-        stand_name: sighting.hunt_logs.stands?.name || 'Unknown'
+        hunt_date: (Array.isArray(sighting.hunt_logs) ? sighting.hunt_logs[0] : sighting.hunt_logs)?.hunt_date,
+        stand_name: (Array.isArray(sighting.hunt_logs) ? sighting.hunt_logs[0] : sighting.hunt_logs)?.stands?.[0]?.name || 'Unknown'
       })) || []
       // ADDED: Sort by hunt_date in JavaScript since we can't do it in SQL
       formattedSightings.sort((a, b) => new Date(b.hunt_date).getTime() - new Date(a.hunt_date).getTime())
@@ -241,7 +267,7 @@ export default function MainPage() {
 const renderDashboard = () => {
   // Calculate real stats from data
   const totalHunts = hunts?.length || 0
-  const totalHarvests = hunts?.reduce((sum, hunt) => sum + hunt.harvest_count, 0) || 0
+  const totalHarvests = hunts?.reduce((sum, hunt) => sum + (hunt.harvest_count ?? 0), 0) || 0
   const totalSightings = sightings?.length || 0
   const activeStands = stands?.filter(s => s.active).length || 0
   const successRate = totalHunts > 0 ? Math.round((totalHarvests / totalHunts) * 100) : 0
@@ -406,7 +432,7 @@ const renderDashboard = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-forest-shadow truncate">
-                          {hunt.stands?.name || 'Unknown Stand'}
+                          {hunt.stands?.[0]?.name || 'Unknown Stand'}
                         </p>
                         <p className="text-sm text-weathered-wood">
                           {new Date(hunt.hunt_date).toLocaleDateString()} • {hunt.hunt_type || 'AM'}
@@ -414,9 +440,9 @@ const renderDashboard = () => {
                       </div>
                       <div className="text-xs text-weathered-wood">
                         <div className={`px-2 py-1 rounded ${
-                          hunt.harvest_count > 0 ? 'bg-burnt-orange/10 text-burnt-orange' : 'bg-morning-mist text-weathered-wood'
+                          (hunt.harvest_count ?? 0) > 0 ? 'bg-burnt-orange/10 text-burnt-orange' : 'bg-morning-mist text-weathered-wood'
                         }`}>
-                          {hunt.harvest_count > 0 ? 'Successful' : 'No harvest'}
+                          {(hunt.harvest_count ?? 0) > 0 ? 'Successful' : 'No harvest'}
                         </div>
                       </div>
                     </div>
@@ -544,7 +570,7 @@ const renderDashboard = () => {
 const renderHunts = () => {
   // Calculate real stats
   const totalHunts = hunts?.length || 0
-  const totalHarvests = hunts?.reduce((sum, hunt) => sum + hunt.harvest_count, 0) || 0
+  const totalHarvests = hunts?.reduce((sum, hunt) => sum + (hunt.harvest_count ?? 0), 0) || 0
   const totalSightings = sightings?.length || 0
   const activeStands = stands?.filter(s => s.active).length || 0
 

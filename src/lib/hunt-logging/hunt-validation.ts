@@ -190,7 +190,7 @@ export const transformFormToDatabase = (formData: HuntFormData, memberId: string
     ...formData,
     member_id: memberId,
     hunt_type: formData.hunt_type || getCurrentTimePeriod(),
-    hunt_duration_minutes: calculateHuntDuration(formData.start_time, formData.end_time),
+    hunt_duration_minutes: calculateHuntDuration(formData.start_time, formData.end_time) ?? undefined,
     harvest_count: formData.had_harvest ? 1 : 0, // Convert boolean to count for database
   }
 }

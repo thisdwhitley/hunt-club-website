@@ -59,6 +59,7 @@ const mockCameraData: CameraWithStatus[] = [
       needs_attention: false,
       alert_reason: null,
       report_processing_date: '2025-07-07T08:15:00Z',
+      cuddeback_report_timestamp: null,
       created_at: '2025-07-07T08:15:00Z'
     },
     days_since_last_report: 1
@@ -115,6 +116,7 @@ const mockCameraData: CameraWithStatus[] = [
       needs_attention: true,
       alert_reason: 'Low battery level requires replacement',
       report_processing_date: '2025-07-06T06:30:00Z',
+      cuddeback_report_timestamp: null,
       created_at: '2025-07-06T06:30:00Z'
     },
     days_since_last_report: 2
@@ -171,6 +173,7 @@ const mockCameraData: CameraWithStatus[] = [
       needs_attention: true,
       alert_reason: 'Camera missing for 6 consecutive days',
       report_processing_date: '2025-07-01T07:45:00Z',
+      cuddeback_report_timestamp: null,
       created_at: '2025-07-01T07:45:00Z'
     },
     days_since_last_report: 7
@@ -227,6 +230,7 @@ const mockCameraData: CameraWithStatus[] = [
       needs_attention: true,
       alert_reason: 'Critical battery level - immediate replacement required',
       report_processing_date: '2025-07-07T05:20:00Z',
+      cuddeback_report_timestamp: null,
       created_at: '2025-07-07T05:20:00Z'
     },
     days_since_last_report: 1

@@ -106,13 +106,13 @@ interface ProcessedWeatherData {
   moonphase: number;
   sunrise: string;
   sunset: string;
-  pressure: number;
-  dew: number;
-  visibility: number;
-  conditions: string;
-  description: string;
-  icon: string;
-  solarradiation: number;
+  pressure?: number;
+  dew?: number;
+  visibility?: number;
+  conditions?: string;
+  description?: string;
+  icon?: string;
+  solarradiation?: number;
 }
 
 interface WeatherCollectionResult {

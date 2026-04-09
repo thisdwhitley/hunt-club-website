@@ -81,6 +81,7 @@ export default function CamerasTestPage() {
       needs_attention: false,
       alert_reason: null,
       report_processing_date: '2025-01-06T08:30:00Z',
+      cuddeback_report_timestamp: null,
       created_at: '2025-01-06T08:30:00Z'
     },
     days_since_last_report: 1

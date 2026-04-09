@@ -146,16 +146,16 @@ export default function HuntsComparePage() {
                                 <Thermometer className="w-3 h-3 mr-1 text-burnt-orange" />
                                 <span className="font-medium">{tempContext.fullDisplay}</span>
                               </div>
-                              {hunt.windspeed !== null && (
+                              {hunt.wind_speed !== null && (
                                 <div className="flex items-center">
                                   <Wind className="w-3 h-3 mr-1 text-dark-teal" />
-                                  {hunt.windspeed} mph
+                                  {hunt.wind_speed} mph
                                 </div>
                               )}
-                              {hunt.moonphase !== null && (
+                              {hunt.moon_phase !== null && (
                                 <div className="flex items-center">
                                   <Moon className="w-3 h-3 mr-1 text-muted-gold" />
-                                  {Math.round((hunt.moonphase || 0) * 100)}%
+                                  {Math.round((parseFloat(hunt.moon_phase || '0') || 0) * 100)}%
                                 </div>
                               )}
                             </div>

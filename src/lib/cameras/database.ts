@@ -22,9 +22,7 @@ import type {
 // SUPABASE CLIENT SETUP
 // ============================================================================
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient();
 
 // ============================================================================
 // CAMERA HARDWARE OPERATIONS
@@ -588,8 +586,8 @@ export async function getMissingCameras(): Promise<CameraAPIResponse<MissingCame
     // Transform data to match MissingCameraAlert interface
     const transformedData: MissingCameraAlert[] = (deployments || []).map(deployment => ({
       deployment_id: deployment.id,
-      hardware_id: deployment.camera_hardware.id,
-      device_id: deployment.camera_hardware.device_id,
+      hardware_id: deployment.camera_hardware[0]?.id,
+      device_id: deployment.camera_hardware[0]?.device_id,
       location_name: deployment.location_name,
       last_seen_date: deployment.last_seen_date,
       missing_since_date: deployment.missing_since_date,

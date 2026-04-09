@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Target } from 'lucide-react'
 import { createRoot } from 'react-dom/client'
 import StandCard from '@/components/stands/StandCard'
+import type { Stand } from '@/lib/database/stands'
 import type { CameraWithStatus } from '@/lib/cameras/types'
 import { getCameraDeployments } from '@/lib/cameras/database'
 import CameraCard from '@/components/cameras/CameraCard'
@@ -15,30 +16,6 @@ import CameraCard from '@/components/cameras/CameraCard'
 // Property coordinates for Caswell County Yacht Club clubhouse
 const PROPERTY_CENTER: [number, number] = [36.42712517693617, -79.51073582842501]
 
-interface Stand {
-  id: string
-  name: string
-  description: string | null
-  latitude: number | null
-  longitude: number | null
-  type: string
-  active: boolean
-  height_feet: number | null
-  capacity: number | null
-  walking_time_minutes: number | null
-  view_distance_yards: number | null
-  total_harvests: number | null
-  total_hunts: number | null
-  season_hunts: number | null
-  last_used_date: string | null
-  time_of_day: string | null
-  archery_season: boolean | null
-  nearby_water_source: boolean | null
-  food_source: string | null
-  trail_camera_name: string | null
-  created_at: string
-  updated_at: string
-}
 
 interface PropertyBoundary {
   id: string
@@ -136,7 +113,7 @@ export default function PropertyMap({
         .order('name')
 
       if (supabaseError) throw supabaseError
-      setStands(data || [])
+      setStands((data || []) as Stand[])
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to load stands'
       setError(errorMsg)
@@ -434,7 +411,7 @@ export default function PropertyMap({
 const displayPropertyBoundaries = () => {
   if (!mapReady || !leafletMapRef.current || !L) return
 
-  const boundaryBounds = []
+  const boundaryBounds: [number, number][] = []
 
   propertyBoundaries.forEach(boundary => {
     if (boundary.boundary_data && Array.isArray(boundary.boundary_data) && boundary.boundary_data.length > 0) {

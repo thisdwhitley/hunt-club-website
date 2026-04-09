@@ -162,6 +162,7 @@ export default function Phase1PreviewPage() {
   const handleExport = () => {
     // Transform hunts for export
     const exportableHunts = filteredAndSortedHunts.map(hunt => ({
+      id: hunt.id,
       hunt_date: hunt.hunt_date,
       hunt_type: hunt.hunt_type,
       member: hunt.member?.display_name || 'Unknown',

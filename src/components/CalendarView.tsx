@@ -67,7 +67,7 @@ export function CalendarView() {
           title: event.title,
           date: event.event_date,
           type: 'event' as const,
-          member: event.members?.full_name || 'Unknown',
+          member: (Array.isArray(event.members) ? event.members[0] : event.members)?.full_name || 'Unknown',
           isPublic: true,
           source: 'supabase' as const
         })))
@@ -93,12 +93,12 @@ export function CalendarView() {
         if (hunts) {
           allEvents.push(...hunts.map(hunt => ({
             id: `hunt-${hunt.id}`,
-            title: `${hunt.species || 'Hunt'} - ${hunt.members?.full_name || 'Unknown'}`,
+            title: `${hunt.species || 'Hunt'} - ${(Array.isArray(hunt.members) ? hunt.members[0] : hunt.members)?.full_name || 'Unknown'}`,
             date: hunt.hunt_date,
             type: 'hunt' as const,
             status: hunt.success ? 'successful' : 'unsuccessful',
-            member: hunt.members?.full_name || 'Unknown',
-            location: hunt.stands?.name || undefined,
+            member: (Array.isArray(hunt.members) ? hunt.members[0] : hunt.members)?.full_name || 'Unknown',
+            location: (Array.isArray(hunt.stands) ? hunt.stands[0] : hunt.stands)?.name || undefined,
             isPublic: false,
             source: 'supabase' as const
           })))
@@ -126,7 +126,7 @@ export function CalendarView() {
             date: task.due_date,
             type: 'maintenance' as const,
             status: task.status,
-            member: task.members?.full_name || 'Unassigned',
+            member: (Array.isArray(task.members) ? task.members[0] : task.members)?.full_name || 'Unassigned',
             priority: task.priority,
             isPublic: false,
             source: 'supabase' as const
@@ -155,7 +155,7 @@ export function CalendarView() {
             title: event.title,
             date: event.event_date,
             type: 'event' as const,
-            member: event.members?.full_name || 'Unknown',
+            member: (Array.isArray(event.members) ? event.members[0] : event.members)?.full_name || 'Unknown',
             isPublic: false,
             source: 'supabase' as const
           })))

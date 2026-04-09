@@ -6,7 +6,7 @@
 import { useState } from 'react'
 import { HuntDetailsModal } from '@/components/hunt-logging/HuntDetailsModal'
 import { HuntListModal } from '@/components/hunt-logging/HuntListModal'
-import type { HuntFilters } from '@/lib/hunt-logging/hunt-service'
+import type { HuntFilters, HuntStats } from '@/lib/hunt-logging/hunt-service'
 
 interface HuntModalState {
   showList: boolean
@@ -137,7 +137,7 @@ export function useHuntModals() {
 
 // Custom hook for hunt statistics with modal integration
 export function useHuntStats() {
-  const [stats, setStats] = useState(null)
+  const [stats, setStats] = useState<HuntStats | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
