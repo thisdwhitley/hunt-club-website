@@ -78,7 +78,7 @@ export function useCameraHardware(filters?: Partial<CameraFilters>) {
       
       // Refresh the list
       await loadHardware();
-      return result.data;
+      return result.data ?? null;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create camera hardware';
       setError(errorMessage);
@@ -98,7 +98,7 @@ export function useCameraHardware(filters?: Partial<CameraFilters>) {
       
       // Update the hardware in state
       setHardware(prev => prev.map(hw => hw.id === id ? result.data! : hw));
-      return result.data;
+      return result.data ?? null;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update camera hardware';
       setError(errorMessage);
@@ -171,7 +171,7 @@ export function useCameraHardwareById(id: string | null) {
         throw new Error(result.error || 'Failed to fetch camera hardware');
       }
       
-      setHardware(result.data);
+      setHardware(result.data ?? null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load camera hardware';
       setError(errorMessage);
@@ -309,7 +309,7 @@ export function useCameraById(id: string | null) {
         throw new Error(result.error || 'Failed to fetch camera deployment');
       }
       
-      setCamera(result.data);
+      setCamera(result.data ?? null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load camera';
       setError(errorMessage);
@@ -380,7 +380,7 @@ export function useStatusReports(deploymentId: string | null, limit?: number) {
       
       // Add to beginning of reports list
       setReports(prev => [result.data!, ...prev]);
-      return result.data;
+      return result.data ?? null;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to add status report';
       setError(errorMessage);
@@ -533,7 +533,7 @@ export function useCameraStats() {
         throw new Error(result.error || 'Failed to fetch camera statistics');
       }
       
-      setStats(result.data);
+      setStats(result.data ?? null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load camera statistics';
       setError(errorMessage);
@@ -647,9 +647,10 @@ export function useCameraFilters() {
 
     // Battery status filter
     if (filters.battery_status?.length) {
-      filtered = filtered.filter(camera => 
-        filters.battery_status!.includes(camera.latest_report?.battery_status || '')
-      );
+      filtered = filtered.filter(camera => {
+        const bs = camera.latest_report?.battery_status;
+        return bs != null && filters.battery_status!.includes(bs);
+      });
     }
 
     // Alerts filter
