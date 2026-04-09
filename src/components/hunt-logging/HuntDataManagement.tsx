@@ -291,7 +291,7 @@ const HuntDetailsModal: React.FC<{
                     {hunt.precip !== null && (
                       <div className="flex items-center justify-between">
                         <span className="text-forest-shadow">Precipitation:</span>
-                        <span className="font-medium text-weathered-wood">{hunt.precip}"</span>
+                        <span className="font-medium text-weathered-wood">{hunt.precip}&quot;</span>
                       </div>
                     )}
 
@@ -460,7 +460,7 @@ const HuntDetailsModal: React.FC<{
                       {sighting.notes && (
                         <div className="mt-2">
                           <span className="text-weathered-wood">Notes:</span>
-                          <p className="text-forest-shadow italic mt-1">"{sighting.notes}"</p>
+                          <p className="text-forest-shadow italic mt-1">&quot;{sighting.notes}&quot;</p>
                         </div>
                       )}
                     </div>
@@ -477,7 +477,7 @@ const HuntDetailsModal: React.FC<{
                 Hunt Notes
               </h3>
               <div className="bg-morning-mist rounded-lg p-4">
-                <p className="text-forest-shadow italic">"{hunt.notes}"</p>
+                <p className="text-forest-shadow italic">&quot;{hunt.notes}&quot;</p>
               </div>
             </div>
           )}

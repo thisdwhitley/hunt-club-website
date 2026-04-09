@@ -770,7 +770,7 @@ useEffect(() => {
         <div className="p-6">
           {diagnostics.length === 0 ? (
             <div className="text-center text-gray-500 py-8">
-              No diagnostics run yet. Click "Run All Diagnostics" to start testing.
+              No diagnostics run yet. Click &quot;Run All Diagnostics&quot; to start testing.
             </div>
           ) : (
             <div className="space-y-3">

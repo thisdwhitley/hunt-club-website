@@ -473,7 +473,7 @@ const HuntCard: React.FC<HuntCardProps> = ({
         {/* Notes */}
         {hunt.notes && (
           <div className="text-sm text-weathered-wood italic border-l-2 border-olive-green/20 pl-3">
-            "{hunt.notes}"
+            &quot;{hunt.notes}&quot;
           </div>
         )}
         

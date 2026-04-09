@@ -269,7 +269,7 @@ export default function HuntLoggingPage() {
         <div className="text-center py-8 text-weathered-wood">
           <Target className="w-12 h-12 mx-auto mb-3 opacity-50" />
           <p className="text-lg font-medium">No hunts logged yet</p>
-          <p className="text-sm">Click "Log New Hunt" to get started</p>
+          <p className="text-sm">Click &quot;Log New Hunt&quot; to get started</p>
         </div>
       ) : (
         recentHunts.map((hunt) => (
@@ -307,7 +307,7 @@ export default function HuntLoggingPage() {
                   
                   {hunt.notes && (
                     <p className="text-sm text-weathered-wood mb-2 italic">
-                      "{hunt.notes}"
+                      &quot;{hunt.notes}&quot;
                     </p>
                   )}
                   

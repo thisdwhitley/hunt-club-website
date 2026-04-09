@@ -577,7 +577,7 @@ export default function HuntCardV2({
             {hunt.precipitation !== null && hunt.precipitation > 0 && (
               <div className="flex items-center">
                 {React.createElement(getIcon('rain'), { size: 14, className: 'text-dark-teal mr-1' })}
-                <span className="text-forest-shadow">{hunt.precipitation}" rain</span>
+                <span className="text-forest-shadow">{hunt.precipitation}&quot; rain</span>
               </div>
             )}
 
@@ -605,7 +605,7 @@ export default function HuntCardV2({
             {React.createElement(getIcon('fileText'), { size: 12, style: { color: '#566E3D' } })}
             <span style={{ color: '#566E3D', fontWeight: 'bold' }}>NOTES</span>
           </div>
-          <p className="text-xs italic">"{hunt.notes}"</p>
+          <p className="text-xs italic">&quot;{hunt.notes}&quot;</p>
         </div>
       )}
     </BaseCard>

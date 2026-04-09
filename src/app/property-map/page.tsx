@@ -164,7 +164,7 @@ export default function PropertyMapPage() {
               📋 Reference Guide
             </h3>
             <p className="text-sm text-gray-600">
-              Use "Show Icons" to display the reference guide for all icons used in stand popup cards. Helpful for understanding stand types and information.
+              Use &quot;Show Icons&quot; to display the reference guide for all icons used in stand popup cards. Helpful for understanding stand types and information.
             </p>
           </div>
         </div>

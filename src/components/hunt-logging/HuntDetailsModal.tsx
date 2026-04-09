@@ -120,7 +120,7 @@ export function HuntDetailsModal({ huntId, isOpen, onClose }: HuntDetailsModalPr
               {/* Hunt Notes at top if exists */}
               {hunt.notes && (
                 <div className="bg-morning-mist rounded-lg p-4">
-                  <p className="text-forest-shadow italic">"{hunt.notes}"</p>
+                  <p className="text-forest-shadow italic">&quot;{hunt.notes}&quot;</p>
                 </div>
               )}
 
@@ -301,7 +301,7 @@ export function HuntDetailsModal({ huntId, isOpen, onClose }: HuntDetailsModalPr
                           {harvest.recovery_notes && (
                             <div className="mt-2 pt-2 border-t border-weathered-wood/20">
                               <span className="text-weathered-wood block mb-1">Recovery Notes:</span>
-                              <span className="text-forest-shadow italic">"{harvest.recovery_notes}"</span>
+                              <span className="text-forest-shadow italic">&quot;{harvest.recovery_notes}&quot;</span>
                             </div>
                           )}
                         </div>
@@ -335,7 +335,7 @@ export function HuntDetailsModal({ huntId, isOpen, onClose }: HuntDetailsModalPr
                         {sighting.notes && (
                           <div className="mt-2">
                             <span className="text-weathered-wood">Notes:</span>
-                            <p className="text-forest-shadow italic mt-1">"{sighting.notes}"</p>
+                            <p className="text-forest-shadow italic mt-1">&quot;{sighting.notes}&quot;</p>
                           </div>
                         )}
                       </div>

@@ -339,7 +339,7 @@ export default function Phase1PreviewPage() {
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
           <h3 className="text-amber-900 font-medium mb-2">⚠️ Testing Reminder</h3>
           <p className="text-amber-800 text-sm">
-            When testing edit functionality, consider adding a test entry first so you don't modify real hunt logs.
+            When testing edit functionality, consider adding a test entry first so you don&apos;t modify real hunt logs.
             The delete and edit buttons are currently placeholders (alerts) - full CRUD implementation comes in Phase 2.
           </p>
         </div>

@@ -911,7 +911,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-forest-shadow">Check Your Email</h2>
               <p className="text-weathered-wood mt-2">
-                We've sent password reset instructions to {resetEmail}
+                We&apos;ve sent password reset instructions to {resetEmail}
               </p>
             </div>
             <button

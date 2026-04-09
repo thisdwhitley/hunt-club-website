@@ -317,7 +317,7 @@ export function CalendarView() {
             <Eye className="w-5 h-5 text-burnt-orange mr-2" />
             <div>
               <p className="text-sm text-clay-earth">
-                <strong>Public View:</strong> You're seeing public events only.{' '}
+                <strong>Public View:</strong> You&apos;re seeing public events only.{' '}
                 <Link href="/login" className="ml-1 underline hover:text-forest-shadow">
                   Sign in
                 </Link> to view all club activities.

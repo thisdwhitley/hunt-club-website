@@ -346,7 +346,7 @@ export default function HuntLoggingTestPage() {
                     {hunt.hunt_date} • {new Date(hunt.created_at).toLocaleTimeString()}
                   </div>
                   {hunt.notes && (
-                    <div className="text-sm text-weathered-wood mt-1 italic">"{hunt.notes}"</div>
+                    <div className="text-sm text-weathered-wood mt-1 italic">&quot;{hunt.notes}&quot;</div>
                   )}
                 </div>
                 <div className="text-right text-sm">
@@ -502,8 +502,8 @@ export default function HuntLoggingTestPage() {
                 <h3 className="text-sm font-medium text-forest-shadow mb-2">Database Info</h3>
                 <div className="text-xs text-weathered-wood space-y-1">
                   <div>• {stands.length} stands loaded ({stands.filter(s => s.active).length} active)</div>
-                  <div>• Test data from today's session only</div>
-                  <div>• Cleanup removes ALL today's hunt logs for your user</div>
+                  <div>• Test data from today&apos;s session only</div>
+                  <div>• Cleanup removes ALL today&apos;s hunt logs for your user</div>
                   <div>• Sightings and harvests cascade delete automatically</div>
                 </div>
               </div>
@@ -524,7 +524,7 @@ export default function HuntLoggingTestPage() {
               {!showForm ? (
                 <div className="text-center py-12 text-weathered-wood">
                   <Database className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>Click "Start New Hunt Log Test" to begin</p>
+                  <p>Click &quot;Start New Hunt Log Test&quot; to begin</p>
                   <p className="text-sm mt-1">Form will appear here for testing</p>
                 </div>
               ) : (
