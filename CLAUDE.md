@@ -297,6 +297,23 @@ git checkout main
 
 ## Important Notes
 
+### Zero-Error Policy (ESLint + TypeScript)
+
+**Goal:** Keep `npm run lint` and `npm run type-check` at zero errors at all times. Vercel is configured to enforce both — any error will fail the build.
+
+**Before pushing any commit:**
+```bash
+npm run build:safe   # lint + type-check + build — all must pass
+```
+
+**Rules:**
+- Do not introduce new `any` types — use proper interfaces or `unknown` + type guard
+- Do not leave unused imports or variables — delete them (or prefix with `_` only for intentional API-contract params per the ESLint convention below)
+- Do not add `// eslint-disable` comments to silence errors — fix the underlying issue
+- If a type error seems hard to fix cleanly, ask rather than suppressing it
+
+**Vercel strictness:** Once the lint/type cleanup plan (phases 1–8) is complete, the Vercel bypasses ("Ignore ESLint errors", "Ignore TypeScript errors") will be removed. After that point, a failing lint or type check will block deployment. This is intentional — keep the build clean.
+
 ### Date and Timezone Handling
 
 **🚨 CRITICAL: Database date timezone issue**
