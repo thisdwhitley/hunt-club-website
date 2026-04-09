@@ -383,7 +383,7 @@ export class HuntService {
           harvests: thisSeasonHarvests,
           sightings: totalSightings
         },
-        topStands
+        topStands: topStands as Array<Stand & { hunt_count: number }>
       }
     } catch (error) {
       console.error('Error getting hunt stats:', error)
@@ -568,16 +568,16 @@ export class HuntService {
           hunt.temp_dusk || '',
           hunt.daily_high || '',
           hunt.daily_low || '',
-          hunt.windspeed || '',
-          hunt.winddir || '',
-          hunt.humidity || '',
-          hunt.precip || '',
-          hunt.moonphase || '',
-          hunt.sunrise || '',
-          hunt.sunset || '',
+          hunt.wind_speed || '',
+          hunt.wind_direction || '',
+          '', // humidity not in schema
+          hunt.precipitation || '',
+          hunt.moon_phase || '',
+          hunt.sunrise_time || '',
+          hunt.sunset_time || '',
           hunt.legal_hunting_start || '',
           hunt.legal_hunting_end || '',
-          hunt.data_quality_score || '',
+          '', // data_quality_score not in schema
           hunt.hunting_season || '',
           hunt.property_sector || '',
           hunt.sightings?.length || 0,
