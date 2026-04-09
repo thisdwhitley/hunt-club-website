@@ -247,7 +247,7 @@ export default function CameraManagementPage() {
   }, [filters])
 
   const { cameras, loading, error, refresh: refreshCameras } = useCameras(cameraFilters)
-  const { alerts } = useCameraAlerts()
+  const { alerts, loading: alertsLoading } = useCameraAlerts()
   const { createHardware, updateHardware } = useCameraHardware()
 
   // Filter cameras based on coordinate availability and apply sorting
