@@ -423,3 +423,5 @@ export interface Database {
     }
   }
 }
+
+export type StandInsert = Database['public']['Tables']['stands']['Insert']

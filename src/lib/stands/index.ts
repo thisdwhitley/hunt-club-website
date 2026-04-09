@@ -84,7 +84,6 @@ import {
   formatWalkingTime,
   formatHeight,
   formatCapacity,
-  formatDate,
   filterStands,
   sortStands,
   searchStands,
@@ -94,6 +93,8 @@ import {
   getStandsNeedingMaintenance,
   generateStandSummary
 } from './utils'
+
+import { formatDate } from '@/lib/utils/date'
 
 // Export utility functions
 export {

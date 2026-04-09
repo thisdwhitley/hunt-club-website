@@ -15,7 +15,7 @@ export interface Stand {
   id: string
   name: string
   description: string | null
-  type: 'ladder_stand' | 'bale_blind' | 'box_stand' | 'tripod'
+  type: 'ladder_stand' | 'bale_blind' | 'box_stand' | 'tripod' | 'ground_blind'
   active: boolean
   latitude: number | null
   longitude: number | null
@@ -42,7 +42,7 @@ export interface Stand {
 const StandFormSchema = z.object({
   name: z.string().min(1, 'Stand name is required').max(100, 'Name too long'),
   description: z.string().max(500, 'Description too long').optional(),
-  type: z.enum(['ladder_stand', 'bale_blind', 'box_stand', 'tripod']),
+  type: z.enum(['ladder_stand', 'bale_blind', 'box_stand', 'tripod', 'ground_blind']),
   active: z.boolean(),
   latitude: z.number().min(-90).max(90).nullable(),
   longitude: z.number().min(-180).max(180).nullable(),

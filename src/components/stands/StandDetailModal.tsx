@@ -42,7 +42,7 @@ export function StandDetailModal({
   const isPriorSeason = (dateString: string): boolean => {
     const huntDate = parseDBDate(dateString)
     const currentYear = new Date().getFullYear()
-    return huntDate.getFullYear() < currentYear
+    return huntDate ? huntDate.getFullYear() < currentYear : false
   }
 
   // Default history stats if not provided

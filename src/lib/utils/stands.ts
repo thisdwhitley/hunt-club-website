@@ -150,6 +150,12 @@ export function getStandTypeInfo(type: Stand['type']) {
       description: 'Tripod stand with elevated platform',
       icon: '📐',
       color: '#FA7921'
+    },
+    ground_blind: {
+      label: 'Ground Blind',
+      description: 'Ground-level concealment blind',
+      icon: '🌿',
+      color: '#FA7921'
     }
   }
   
@@ -331,7 +337,8 @@ export function getStandStatistics(stands: Stand[]) {
       ladder_stand: stands.filter(s => s.type === 'ladder_stand').length,
       bale_blind: stands.filter(s => s.type === 'bale_blind').length,
       box_stand: stands.filter(s => s.type === 'box_stand').length,
-      tripod: stands.filter(s => s.type === 'tripod').length
+      tripod: stands.filter(s => s.type === 'tripod').length,
+      ground_blind: stands.filter(s => s.type === 'ground_blind').length
     },
     byTimeOfDay: {
       AM: stands.filter(s => s.time_of_day === 'AM').length,

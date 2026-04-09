@@ -55,6 +55,12 @@ export const STAND_TYPES: Record<StandType, {
     icon: TripodIcon,
     description: 'Tripod stand with platform',
     color: '#A0653A' // Wood brown
+  },
+  ground_blind: {
+    label: 'Ground Blind',
+    icon: BoxIcon,
+    description: 'Ground-level concealment blind',
+    color: '#566E3D' // Forest green
   }
 }
 

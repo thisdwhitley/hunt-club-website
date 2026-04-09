@@ -195,7 +195,7 @@ export default function StandsTestPage() {
         hasSampleData: !!sampleStand
       }
     } catch (error) {
-      throw new Error(`Schema inspection failed: ${error.message}`)
+      throw new Error(`Schema inspection failed: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 

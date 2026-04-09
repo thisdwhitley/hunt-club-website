@@ -181,7 +181,7 @@ export default function StandCard({
       <div className="flex items-center gap-1 justify-end">
         {mode === 'full' && (
           <button
-            onClick={(e) => { e.stopPropagation(); onEdit(stand) }}
+            onClick={(e) => { e.stopPropagation(); onEdit?.(stand) }}
             className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200"
             // style={{
             //   background: HUNTING_COLORS.forestGreen,
@@ -195,7 +195,7 @@ export default function StandCard({
         )}
                 {mode === 'full' && (
           <button
-            onClick={(e) => { e.stopPropagation(); onDelete(stand) }}
+            onClick={(e) => { e.stopPropagation(); onDelete?.(stand) }}
             className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors duration-200"
             // style={{
             //   background: HUNTING_COLORS.forestGreen,

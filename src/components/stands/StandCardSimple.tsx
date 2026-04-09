@@ -47,7 +47,7 @@ try {
 }
 
 // Simplified types (no zod)
-export type StandType = 'ladder_stand' | 'bale_blind' | 'box_stand' | 'tripod'
+export type StandType = 'ladder_stand' | 'bale_blind' | 'box_stand' | 'tripod' | 'ground_blind'
 export type TimeOfDay = 'AM' | 'PM' | 'ALL'
 export type FoodSourceType = 'field' | 'feeder'
 
@@ -98,7 +98,8 @@ const STAND_TYPES = {
 // I want all the stand icons to be orange to match the map icon for stands
   bale_blind: { label: 'Bale Blind', icon: BaleIcon, color: '#FA7921' },
   box_stand: { label: 'Box Stand', icon: BoxIcon, color: '#FA7921' },
-  tripod: { label: 'Tripod', icon: TripodIcon, color: '#FA7921' }
+  tripod: { label: 'Tripod', icon: TripodIcon, color: '#FA7921' },
+  ground_blind: { label: 'Ground Blind', icon: BoxIcon, color: '#FA7921' }
 //   bale_blind: { label: 'Bale Blind', icon: BaleIcon, color: '#B9A44C' },
 //   box_stand: { label: 'Box Stand', icon: BoxIcon, color: '#A0653A' },
 //   tripod: { label: 'Tripod', icon: TripodIcon, color: '#566E3D' }
@@ -470,7 +471,7 @@ export default function StandCardSimple({
       features.push(
         <div key="archery" className="flex items-center gap-2" title="Good for archery season">
           <ArcheryIcon size={14} style={{ color: '#FA7921' }} />
-          <span style={{color: '#2D3E1F'}}><strong>Good for archery season</strong> {stand.archery}</span>
+          <span style={{color: '#2D3E1F'}}><strong>Good for archery season</strong> {stand.archery_season}</span>
         </div>
       )
     }

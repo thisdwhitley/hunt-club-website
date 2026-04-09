@@ -1,7 +1,7 @@
 // src/lib/stands/types.ts
 // TypeScript types for the cleaned 23-field stands schema
 
-export type StandType = 'ladder_stand' | 'bale_blind' | 'box_stand' | 'tripod'
+export type StandType = 'ladder_stand' | 'bale_blind' | 'box_stand' | 'tripod' | 'ground_blind'
 export type TimeOfDay = 'AM' | 'PM' | 'ALL'
 export type FoodSourceType = 'field' | 'feeder'
 
@@ -125,6 +125,8 @@ export interface StandSortOptions {
   field: keyof Stand
   direction: 'asc' | 'desc'
 }
+
+export type StandSort = StandSortOptions
 
 // Statistics interface
 export interface StandStats {
