@@ -377,6 +377,9 @@ export function useStands(_initialFilters?: StandFilters) { ... }
 const _unusedResult = someFunction()
 ```
 
+**⚠️ Cleanup risk — always verify JSX before removing destructured variables:**
+When removing a variable from a hook destructuring (e.g. `const { alerts } = useAlerts()` instead of `const { alerts, loading } = useAlerts()`), search for the removed name in JSX before saving. TypeScript and ESLint will not catch this — it only fails at runtime during static page generation on Vercel.
+
 ## Common Patterns
 
 ### Creating a New Page
