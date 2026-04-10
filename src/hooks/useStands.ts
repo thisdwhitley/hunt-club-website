@@ -146,7 +146,7 @@ export function useStands(_initialFilters?: StandFilters): UseStandsReturn {
       }
 
       // Prepare update data (only include non-undefined fields)
-      const updateData: Record<string, any> = {}
+      const updateData: Record<string, unknown> = {}
       
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== undefined) {
@@ -367,7 +367,7 @@ export function useStand(id: string): UseStandReturn {
         throw new Error(`Invalid update data: ${validation.error.issues[0]?.message}`)
       }
 
-      const updateData: Record<string, any> = {}
+      const updateData: Record<string, unknown> = {}
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== undefined) {
           updateData[key] = value

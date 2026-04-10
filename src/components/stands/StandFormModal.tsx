@@ -249,7 +249,7 @@ export default function StandFormModal({ stand, onClose, onSubmit }: StandFormMo
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id as 'basic' | 'location' | 'features' | 'stats')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                     activeTab === tab.id
                       ? 'border-olive-green text-olive-green'

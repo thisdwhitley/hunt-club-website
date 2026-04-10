@@ -9,9 +9,9 @@ import type { CameraWithStatus, CameraFilters } from '@/lib/cameras/types'
 
 interface FilterDebugProps {
   cameras: CameraWithStatus[]
-  filters: any // Your management filters
+  filters: Record<string, unknown>
   cameraFilters: Partial<CameraFilters>
-  stats: any
+  stats: Record<string, unknown>
 }
 
 export function FilterDebug({ cameras, filters, cameraFilters, stats }: FilterDebugProps) {
@@ -45,7 +45,7 @@ export function FilterDebug({ cameras, filters, cameraFilters, stats }: FilterDe
             <div>Active: {cameras.filter(c => c.deployment?.active).length}</div>
             <div>Brands: {Array.from(new Set(cameras.map(c => c.hardware?.brand).filter(Boolean))).join(', ')}</div>
             {stats && (
-              <div>Stats loaded: ✓ ({stats.total_hardware} total)</div>
+              <div>Stats loaded: ✓ ({String(stats.total_hardware)} total)</div>
             )}
           </div>
         </div>

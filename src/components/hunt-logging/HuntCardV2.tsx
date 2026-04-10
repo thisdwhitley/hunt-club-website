@@ -62,11 +62,13 @@ const DateIcon = ({ hunt }: { hunt: HuntWithDetails }) => {
   )
 }
 
-// Helper function to convert moon phase decimal to phase name
-const getMoonPhaseDisplay = (phase: number | null) => {
-  if (phase === null) return null
+// Helper function to convert moon phase to phase name
+const getMoonPhaseDisplay = (phase: number | string | null) => {
+  if (phase === null || phase === undefined) return null
+  const numPhase = typeof phase === 'string' ? parseFloat(phase) : phase
+  if (isNaN(numPhase)) return null
   const phaseNames = ['New', 'Waxing Crescent', 'First Quarter', 'Waxing Gibbous', 'Full', 'Waning Gibbous', 'Last Quarter', 'Waning Crescent']
-  const index = Math.round(phase * 8) % 8
+  const index = Math.round(numPhase * 8) % 8
   return phaseNames[index]
 }
 
@@ -91,9 +93,16 @@ export default function HuntCardV2({
     return time.slice(0, 5)
   }
 
+  interface HuntBadge {
+    label: string
+    className: string
+    icon?: ReturnType<typeof getIcon>
+    title?: string
+  }
+
   // Get badges
   const getBadges = () => {
-    const badges = []
+    const badges: HuntBadge[] = []
 
     // Hunt type badge (AM/PM/All Day)
     badges.push({
@@ -227,16 +236,16 @@ export default function HuntCardV2({
                 {tempContext.temperature}° {tempContext.displayText}
               </span>
             )}
-            {(hunt as any).windspeed && (
-              <span className="flex items-center gap-0.5" title={`Wind: ${(hunt as any).windspeed}mph ${(hunt as any).winddir ? `${(hunt as any).winddir}°` : ''}`}>
+            {hunt.wind_speed !== null && (
+              <span className="flex items-center gap-0.5" title={`Wind: ${hunt.wind_speed}mph${hunt.wind_direction ? ` ${hunt.wind_direction}` : ''}`}>
                 {React.createElement(getIcon('wind'), { size: 10, className: 'text-dark-teal' })}
-                {(hunt as any).windspeed} mph
+                {hunt.wind_speed} mph
               </span>
             )}
-            {(hunt as any).moonphase !== null && (
-              <span className="flex items-center gap-0.5" title={getMoonPhaseDisplay((hunt as any).moonphase) || undefined}>
+            {hunt.moon_phase !== null && (
+              <span className="flex items-center gap-0.5" title={getMoonPhaseDisplay(hunt.moon_phase) || undefined}>
                 {React.createElement(getIcon('moon'), { size: 10, className: 'text-muted-gold' })}
-                {getMoonPhaseDisplay((hunt as any).moonphase)}
+                {getMoonPhaseDisplay(hunt.moon_phase)}
               </span>
             )}
           </div>
@@ -392,7 +401,7 @@ export default function HuntCardV2({
                   <span
                     key={index}
                     className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold ${badge.className}`}
-                    title={(badge as any).title} // Hover tooltip for sightings
+                    title={badge.title} // Hover tooltip for sightings
                   >
                     {BadgeIcon && <BadgeIcon size={12} className="mr-1" />}
                     {badge.label}
@@ -542,7 +551,7 @@ export default function HuntCardV2({
       </div>
 
       {/* Weather Conditions Section */}
-      {(tempContext.temperature !== null || (hunt as any).windspeed || (hunt as any).moonphase !== null || hunt.precipitation !== null) && (
+      {(tempContext.temperature !== null || hunt.wind_speed !== null || hunt.moon_phase !== null || hunt.precipitation !== null) && (
         <div className="mb-3 p-2 rounded-md border border-weathered-wood/20 bg-morning-mist">
           <div className="flex items-center gap-1 mb-2 text-xs font-medium">
             {React.createElement(getIcon('cloudSun'), { size: 12, style: { color: '#566E3D' } })}
@@ -558,10 +567,10 @@ export default function HuntCardV2({
             )}
 
             {/* Wind */}
-            {(hunt as any).windspeed !== null && (
+            {hunt.wind_speed !== null && (
               <div className="flex items-center">
                 {React.createElement(getIcon('wind'), { size: 14, className: 'text-dark-teal mr-1' })}
-                <span className="text-forest-shadow">{(hunt as any).windspeed} mph</span>
+                <span className="text-forest-shadow">{hunt.wind_speed} mph</span>
               </div>
             )}
 
@@ -582,10 +591,10 @@ export default function HuntCardV2({
             )}
 
             {/* Moon Phase - Show phase name instead of percentage */}
-            {(hunt as any).moonphase !== null && getMoonPhaseDisplay((hunt as any).moonphase) && (
+            {hunt.moon_phase !== null && getMoonPhaseDisplay(hunt.moon_phase) && (
               <div className="flex items-center">
                 {React.createElement(getIcon('moon'), { size: 14, className: 'text-muted-gold mr-1' })}
-                <span className="text-forest-shadow">{getMoonPhaseDisplay((hunt as any).moonphase)}</span>
+                <span className="text-forest-shadow">{getMoonPhaseDisplay(hunt.moon_phase)}</span>
               </div>
             )}
           </div>

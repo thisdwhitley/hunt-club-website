@@ -4,6 +4,7 @@
 // Comprehensive test page combining best features from map-test, map-diagnostic, and stands/test
 
 import React, { useState, useEffect, useRef } from 'react'
+import type * as LeafletLib from 'leaflet'
 import { createClient } from '@/lib/supabase/client'
 import { 
   MapPin, Target, AlertCircle, CheckCircle, Clock,
@@ -31,11 +32,11 @@ interface DiagnosticResult {
   test: string
   status: 'success' | 'error' | 'warning'
   message: string
-  data?: any
+  data?: unknown
 }
 
-// Global Leaflet reference
-let L: any = null
+// Global Leaflet reference (initialized via CDN load before use)
+let L!: typeof LeafletLib
 
 // Updated Stand type icon mapping to match current StandCard component
 const getStandTypeIcon = (standType: string) => {
@@ -75,7 +76,7 @@ const createLucideIcon = (iconName: string, color = '#FA7921', size = 16) => {
 
 export default function ComprehensiveMapTestPage() {
   const mapRef = useRef<HTMLDivElement>(null)
-  const leafletMapRef = useRef<any>(null)
+  const leafletMapRef = useRef<LeafletLib.Map | null>(null)
   
   // Data states
   const [stands, setStands] = useState<Stand[]>([])
@@ -101,7 +102,7 @@ export default function ComprehensiveMapTestPage() {
   const [tilesLoaded, setTilesLoaded] = useState(0)
 
   // Add diagnostic result
-  const addDiagnostic = (test: string, status: 'success' | 'error' | 'warning', message: string, data?: any) => {
+  const addDiagnostic = (test: string, status: 'success' | 'error' | 'warning', message: string, data?: unknown) => {
     const result: DiagnosticResult = { test, status, message, data }
     setDiagnostics(prev => [...prev, result])
     console.log(`[${status.toUpperCase()}] ${test}: ${message}`, data || '')
@@ -153,7 +154,7 @@ export default function ComprehensiveMapTestPage() {
       const script = document.createElement('script')
       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js'
       script.onload = () => {
-        L = (window as any).L
+        L = (window as Window & { L?: typeof LeafletLib }).L!
         setLeafletReady(true)
         addDebugInfo('Leaflet loaded successfully')
         addDiagnostic('Leaflet Load', 'success', 'Library loaded and ready')
@@ -221,10 +222,10 @@ export default function ComprehensiveMapTestPage() {
   }
 
   // Add tile layer
-  const addTileLayer = (map: any, layerType: string) => {
+  const addTileLayer = (map: LeafletLib.Map, layerType: string) => {
     // Remove existing tile layers
-    map.eachLayer((layer: any) => {
-      if (layer._url) {
+    map.eachLayer((layer: LeafletLib.Layer) => {
+      if ('_url' in layer) {
         map.removeLayer(layer)
       }
     })
@@ -274,7 +275,7 @@ export default function ComprehensiveMapTestPage() {
   }
 
   // Add property boundaries
-  const addPropertyBoundaries = (map: any) => {
+  const addPropertyBoundaries = (map: LeafletLib.Map) => {
     propertyBoundaries.forEach(boundary => {
       if (boundary.boundary_data && boundary.boundary_data.length > 0) {
         const polygon = L.polygon(boundary.boundary_data, {
@@ -302,7 +303,7 @@ export default function ComprehensiveMapTestPage() {
   }
 
   // Add stand markers
-  const addStandMarkers = (map: any) => {
+  const addStandMarkers = (map: LeafletLib.Map) => {
     stands.forEach(stand => {
       if (stand.latitude && stand.longitude && stand.active) {
         // Create custom marker
@@ -464,7 +465,7 @@ export default function ComprehensiveMapTestPage() {
 
   // Switch tile layer
   const switchTileLayer = (layerType: string) => {
-    setCurrentLayer(layerType as any)
+    setCurrentLayer(layerType as 'esri' | 'google' | 'street' | 'terrain' | 'bing')
     if (leafletMapRef.current) {
       addTileLayer(leafletMapRef.current, layerType)
     }
@@ -808,7 +809,7 @@ export default function ComprehensiveMapTestPage() {
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mt-1">{diagnostic.message}</p>
-                      {diagnostic.data && (
+                      {diagnostic.data !== undefined && (
                         <details className="mt-2">
                           <summary className="text-xs text-gray-500 cursor-pointer">Show Details</summary>
                           <pre className="text-xs text-gray-600 mt-1 bg-gray-50 p-2 rounded overflow-auto">

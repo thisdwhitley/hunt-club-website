@@ -27,7 +27,7 @@ interface MapItem {
   x: number // Percentage position on map (0-100)
   y: number // Percentage position on map (0-100)
   description?: string
-  details?: Record<string, any>
+  details?: Record<string, unknown>
 }
 
 export default function SimplePropertyMap({ className = '', height = '500px' }: PropertyMapProps) {
@@ -373,7 +373,7 @@ export default function SimplePropertyMap({ className = '', height = '500px' }: 
                 {Object.entries(selectedItem.details).map(([key, value]) => (
                   <div key={key} className="flex justify-between text-sm">
                     <span className="text-gray-600 capitalize">{key}:</span>
-                    <span className="font-medium">{value}</span>
+                    <span className="font-medium">{String(value)}</span>
                   </div>
                 ))}
               </div>

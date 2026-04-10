@@ -8,6 +8,7 @@ import { huntService, type HuntWithDetails } from '@/lib/hunt-logging/hunt-servi
 import { getTemperatureContext, getPrimaryTemperatureExplanation } from '@/lib/hunt-logging/temperature-utils'
 import { getStandIcon } from '@/lib/utils/standUtils'
 import { getIcon } from '@/lib/shared/icons'
+import type { IconName } from '@/lib/shared/icons'
 import HuntCard from './HuntCard'
 import HuntEntryForm from './HuntEntryForm'
 import { useStands } from '@/hooks/useStands'
@@ -78,7 +79,7 @@ const HuntDetailsModal: React.FC<{
   const primaryTemp = getPrimaryTemperatureExplanation(hunt)
 
   // Get stand-specific icon
-  const StandIcon = getIcon(getStandIcon(hunt.stand?.type) as any)
+  const StandIcon = getIcon(getStandIcon(hunt.stand?.type) as IconName)
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -556,8 +557,8 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
 
   // Sorting logic with special handling for nested/computed fields
   const sortedHunts = [...filteredHunts].sort((a, b) => {
-    let aVal: any
-    let bVal: any
+    let aVal: string | number | null | undefined
+    let bVal: string | number | null | undefined
 
     // Handle different field types
     switch (sortField) {
@@ -587,8 +588,8 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
 
       default:
         // Direct field access for other fields
-        aVal = a[sortField as keyof HuntWithDetails]
-        bVal = b[sortField as keyof HuntWithDetails]
+        aVal = a[sortField as keyof HuntWithDetails] as string | number | null | undefined
+        bVal = b[sortField as keyof HuntWithDetails] as string | number | null | undefined
     }
 
     // Handle null/undefined values
@@ -1067,7 +1068,7 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
 
             <HuntEntryForm
               stands={stands}
-              hunt={editingHunt}
+              hunt={editingHunt as unknown as Partial<HuntFormData> | undefined}
               mode="edit"
               onSubmit={handleFormSubmit}
               onCancel={() => {

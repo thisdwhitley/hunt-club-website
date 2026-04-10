@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 export interface DatabaseSetupResult {
   success: boolean
   message: string
-  details?: any
+  details?: Record<string, unknown> | unknown
 }
 
 // Check if the stands table exists and has the required columns

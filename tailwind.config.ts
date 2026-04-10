@@ -223,7 +223,7 @@ const config: Config = {
   ],
   
   // Enable dark mode if needed
-  darkMode: ['class'],
+  darkMode: 'class',
 };
 
 export default config;

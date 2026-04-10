@@ -371,7 +371,7 @@ export class StandService {
   /**
    * Test database connection and permissions
    */
-  async testConnection(): Promise<{ success: boolean; error?: any; message?: string }> {
+  async testConnection(): Promise<{ success: boolean; error?: unknown; message?: string }> {
     console.log('🔍 StandService.testConnection called')
     
     try {

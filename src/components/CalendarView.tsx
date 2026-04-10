@@ -357,7 +357,7 @@ export function CalendarView() {
                 <Filter size={16} className="text-weathered-wood" />
                 <select
                   value={filter}
-                  onChange={(e) => setFilter(e.target.value as any)}
+                  onChange={(e) => setFilter(e.target.value as 'all' | 'hunt' | 'maintenance' | 'event')}
                   className="px-3 py-1 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-olive-green"
                 >
                   <option value="all">All Events</option>

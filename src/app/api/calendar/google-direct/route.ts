@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
         if (response.ok) {
           console.log(`✅ Success! Found ${data.items?.length || 0} events`);
           
-          const events = (data.items || []).map((event: any) => ({
+          const events = (data.items || []).map((event: { id?: string; summary?: string; description?: string; location?: string; visibility?: string; start?: { dateTime?: string; date?: string }; end?: { dateTime?: string; date?: string } }) => ({
             id: event.id,
             title: event.summary || 'Untitled Event',
             start: event.start?.dateTime || event.start?.date || '',
@@ -69,8 +69,8 @@ export async function GET(request: NextRequest) {
         } else {
           console.log(`❌ Failed: ${data.error?.message || 'Unknown error'}`);
         }
-      } catch (fetchError: any) {
-        console.log(`❌ Fetch error: ${fetchError.message}`);
+      } catch (fetchError: unknown) {
+        console.log(`❌ Fetch error: ${fetchError instanceof Error ? fetchError.message : fetchError}`);
       }
     }
 
@@ -79,11 +79,11 @@ export async function GET(request: NextRequest) {
       tested: calendarFormats
     }, { status: 500 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Direct fetch test error:', error);
     return NextResponse.json({
       error: 'Direct fetch test failed',
-      message: error.message
+      message: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 }

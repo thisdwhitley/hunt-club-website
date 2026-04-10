@@ -8,6 +8,7 @@ import { HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
 import { getTemperatureContext } from '@/lib/hunt-logging/temperature-utils' // NEW IMPORT
 import { getStandIcon } from '@/lib/utils/standUtils'
 import { getIcon } from '@/lib/shared/icons'
+import type { IconName } from '@/lib/shared/icons'
 import { formatHuntDate, getHuntTypeBadge, parseDBDate } from '@/lib/utils/date'
 import {
   Clock,
@@ -20,7 +21,6 @@ import {
   Edit,
   Trash2,
   Timer,
-  Droplets,
   CloudSun
 } from 'lucide-react'
 
@@ -77,7 +77,7 @@ const HuntCard: React.FC<HuntCardProps> = ({
   const tempContext = getTemperatureContext(hunt)
 
   // Get stand-specific icon
-  const StandIcon = getIcon(getStandIcon(hunt.stand?.type) as any)
+  const StandIcon = getIcon(getStandIcon(hunt.stand?.type) as IconName)
 
   // Get hunt type badge
   const huntTypeBadge = getHuntTypeBadge(hunt.hunt_type)

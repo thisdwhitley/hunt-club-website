@@ -592,7 +592,7 @@ export function useCameraFilters() {
     direction: 'asc'
   });
 
-  const updateFilter = useCallback((key: keyof CameraFilters, value: any) => {
+  const updateFilter = useCallback((key: keyof CameraFilters, value: CameraFilters[keyof CameraFilters]) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   }, []);
 
@@ -662,7 +662,7 @@ export function useCameraFilters() {
 
     // Apply sorting
     filtered.sort((a, b) => {
-      let aValue: any, bValue: any;
+      let aValue: string | number | null | undefined, bValue: string | number | null | undefined;
 
       switch (sortOptions.field) {
         case 'device_id':

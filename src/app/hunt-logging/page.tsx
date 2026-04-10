@@ -7,6 +7,7 @@
 // Main hunt logging page with form entry and recent hunts
 
 import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { 
   Target,
   Plus,
@@ -386,12 +387,12 @@ export default function HuntLoggingPage() {
                 Track your hunts, sightings, and success rates
               </p>
             </div>
-            <a 
+            <Link
               href="/"
               className="p-2 hover:bg-white/10 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
-            </a>
+            </Link>
           </div>
         </div>
       </div>

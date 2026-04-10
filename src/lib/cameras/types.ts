@@ -207,7 +207,7 @@ export interface CameraStatusReportFormData {
 /**
  * Response from camera management API endpoints
  */
-export interface CameraAPIResponse<T = any> {
+export interface CameraAPIResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;

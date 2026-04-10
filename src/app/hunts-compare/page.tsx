@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { huntService, type HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
 import { formatHuntDate, getHuntTypeBadge } from '@/lib/utils/date'
 import { getStandIcon } from '@/lib/utils/standUtils'
-import { getIcon } from '@/lib/shared/icons'
+import { getIcon, type IconName } from '@/lib/shared/icons'
 import { getTemperatureContext } from '@/lib/hunt-logging/temperature-utils'
 import {
   Clock,
@@ -94,7 +94,7 @@ export default function HuntsComparePage() {
             <div className="p-4 space-y-3">
               {hunts.map((hunt) => {
                 const tempContext = getTemperatureContext(hunt)
-                const StandIcon = getIcon(getStandIcon(hunt.stand?.type) as any)
+                const StandIcon = getIcon(getStandIcon(hunt.stand?.type) as IconName)
                 const huntTypeBadge = getHuntTypeBadge(hunt.hunt_type)
 
                 return (

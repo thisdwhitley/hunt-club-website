@@ -87,7 +87,7 @@ interface ProcessedWeatherData {
   property_center_lng: number;
   collection_timestamp: string;
   api_source: string;
-  raw_weather_data: any;
+  raw_weather_data: VisualCrossingResponse;
   tempmax: number;
   tempmin: number;
   temp: number;
@@ -133,7 +133,7 @@ interface CollectionLogEntry {
   completed_at?: string;        // Fixed: matches actual database column
   processing_duration_ms?: number;
   data_completeness_score?: number;
-  error_details?: any;
+  error_details?: Record<string, unknown>;
   processing_summary?: string;  // Fixed: matches actual database column
 }
 
@@ -543,7 +543,7 @@ export class WeatherCollectionService {
    * Get weather data for a specific date (for testing)
    * Includes mapping of useful fields from raw_weather_data
    */
-  async getWeatherData(date: string): Promise<any> {
+  async getWeatherData(date: string): Promise<Record<string, unknown>> {
     const { data, error } = await this.supabase
       .from('daily_weather_snapshots')
       .select('*')
@@ -576,12 +576,13 @@ export class WeatherCollectionService {
   /**
    * Helper function to extract display-friendly data from stored weather record
    */
-  static extractDisplayData(weatherRecord: any): any {
+  static extractDisplayData(weatherRecord: Record<string, unknown>): Record<string, unknown> {
     const displayData = { ...weatherRecord };
     
     // Extract useful fields from raw_weather_data for display
-    if (weatherRecord.raw_weather_data) {
-      const rawDay = weatherRecord.raw_weather_data.days?.[0];
+    const rawWeatherData = weatherRecord.raw_weather_data as VisualCrossingResponse | undefined
+    if (rawWeatherData) {
+      const rawDay = rawWeatherData.days?.[0];
       if (rawDay) {
         displayData.conditions = rawDay.conditions || 'Unknown';
         displayData.description = rawDay.description || '';

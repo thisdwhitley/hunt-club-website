@@ -42,6 +42,22 @@ interface HuntLog {
   sightings_count?: number
 }
 
+interface HarvestHuntLog {
+  hunt_date?: string | null
+  member_id?: string | null
+  stands?: { name?: string | null }[]
+}
+
+interface Harvest {
+  id: string
+  animal_type?: string | null
+  gender?: string | null
+  estimated_weight?: number | null
+  shot_distance_yards?: number | null
+  created_at: string
+  hunt_logs?: HarvestHuntLog[]
+}
+
 interface Sighting {
   id: string
   animal_type: string
@@ -78,32 +94,20 @@ const modalSizes: Record<ModalSize, string> = {
 // ===========================================
 
 // Helper function to extract meaningful error messages from various error types
-const extractErrorMessage = (error: any): string => {
+const extractErrorMessage = (error: unknown): string => {
   if (typeof error === 'string') {
     return error
   }
-  
-  if (error?.message) {
-    return error.message
+
+  if (error !== null && typeof error === 'object') {
+    const e = error as Record<string, unknown>
+    if (typeof e.message === 'string') return e.message
+    if (typeof e.details === 'string') return e.details
+    if (typeof e.hint === 'string') return e.hint
+    if (e.code) return `Database error (${e.code}): ${e.message ?? 'Unknown error'}`
+    if (e.error) return extractErrorMessage(e.error)
   }
-  
-  if (error?.details) {
-    return error.details
-  }
-  
-  if (error?.hint) {
-    return error.hint
-  }
-  
-  if (error?.code) {
-    return `Database error (${error.code}): ${error.message || 'Unknown error'}`
-  }
-  
-  // For Supabase errors that might have nested properties
-  if (error?.error) {
-    return extractErrorMessage(error.error)
-  }
-  
+
   // If we still can't extract a message, stringify the error
   try {
     return JSON.stringify(error, null, 2)
@@ -135,7 +139,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
   const [stands, setStands] = useState<Stand[]>([])
   const [hunts, setHunts] = useState<HuntLog[]>([])
   const [sightings, setSightings] = useState<Sighting[]>([])
-  const [harvests, setHarvests] = useState<any[]>([])
+  const [harvests, setHarvests] = useState<Harvest[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -144,7 +148,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
 
   const [showHuntSuccess, setShowHuntSuccess] = useState(false)
-  const [huntSuccessData, setHuntSuccessData] = useState<any>(null)
+  const [huntSuccessData, setHuntSuccessData] = useState<{ hunt_date?: string; stand_name?: string; had_harvest?: boolean; sightings_count?: number } | null>(null)
 
   // Load all data when user changes
   useEffect(() => {
@@ -200,7 +204,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentModal])
 
-  const HuntSuccessScreen = ({ data, onClose, onLogAnother }: any) => (
+  const HuntSuccessScreen = ({ data, onClose, onLogAnother }: { data: typeof huntSuccessData; onClose: () => void; onLogAnother: () => void }) => (
     <div className="max-w-md mx-auto text-center space-y-4 p-4">
       <div className="w-16 h-16 bg-bright-orange/10 rounded-full flex items-center justify-center mx-auto">
         <Check className="w-8 h-8 text-bright-orange" />
@@ -217,8 +221,8 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       <div className="bg-morning-mist/50 p-3 rounded-lg text-left">
         <div className="text-xs text-weathered-wood space-y-1">
           <div>Harvest: {data?.had_harvest ? 'Yes' : 'No'}</div>
-          {data?.sightings_count > 0 && (
-            <div>Sightings: {data.sightings_count}</div>
+          {(data?.sightings_count ?? 0) > 0 && (
+            <div>Sightings: {data?.sightings_count}</div>
           )}
         </div>
       </div>
@@ -495,8 +499,8 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
 
       // Sort by hunt_date in JavaScript since we can't do it in the SQL query
       const sortedHarvests = (data || []).sort((a, b) =>
-        new Date((Array.isArray(b.hunt_logs) ? b.hunt_logs[0] : b.hunt_logs)?.hunt_date || '').getTime() -
-        new Date((Array.isArray(a.hunt_logs) ? a.hunt_logs[0] : a.hunt_logs)?.hunt_date || '').getTime()
+        new Date(b.hunt_logs?.[0]?.hunt_date || '').getTime() -
+        new Date(a.hunt_logs?.[0]?.hunt_date || '').getTime()
       )
 
       setHarvests(sortedHarvests)
@@ -809,8 +813,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
                     </h4>
                   </div>
                   <div className="text-sm text-weathered-wood mb-1">
-                    {harvest.hunt_logs?.stands?.name || 'Unknown Stand'} • {formatDate(harvest.hunt_logs?.hunt_date || harvest.created_at)}
-                    {/* {harvest.hunt_logs?.stands?.name || 'Unknown Stand'} • {new Date(harvest.hunt_logs?.hunt_date || harvest.created_at).toLocaleDateString()} */}
+                    {harvest.hunt_logs?.[0]?.stands?.[0]?.name || 'Unknown Stand'} • {formatDate(harvest.hunt_logs?.[0]?.hunt_date || harvest.created_at)}
                   </div>
                   <div className="flex items-center space-x-4 text-sm text-weathered-wood">
                     {harvest.estimated_weight && (

@@ -4,6 +4,7 @@
 // Reusable Property Map Component for Caswell County Yacht Club
 
 import React, { useState, useEffect, useRef } from 'react'
+import type * as LeafletLib from 'leaflet'
 import { createClient } from '@/lib/supabase/client'
 import { Target } from 'lucide-react'
 import { createRoot } from 'react-dom/client'
@@ -46,8 +47,8 @@ interface PropertyMapProps {
   defaultShowTrails?: boolean
 }
 
-// Global reference to loaded Leaflet library
-let L: any = null
+// Global reference to loaded Leaflet library (initialized via CDN load before use)
+let L!: typeof LeafletLib
 
 // Note: Icons are handled by StandCard component using lucide-react
 // No need to recreate them here
@@ -68,7 +69,7 @@ export default function PropertyMap({
   defaultShowTrails = true
 }: PropertyMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
-  const leafletMapRef = useRef<any>(null)
+  const leafletMapRef = useRef<LeafletLib.Map | null>(null)
   
   // Data states
   const [stands, setStands] = useState<Stand[]>([])
@@ -199,7 +200,7 @@ export default function PropertyMap({
         const script = document.createElement('script')
         script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js'
         script.onload = () => {
-          L = (window as any).L
+          L = (window as Window & { L?: typeof LeafletLib }).L!
           setLeafletLoaded(true)
         }
         document.head.appendChild(script)
@@ -253,7 +254,7 @@ export default function PropertyMap({
         })
 
         L.marker(PROPERTY_CENTER, { icon: clubhouseIcon })
-          .addTo(leafletMapRef.current)
+          .addTo(leafletMapRef.current!)
           .bindPopup(`
             <div style="min-width: 220px; font-family: sans-serif;">
               <h3 style="color: #566E3D; font-weight: 700; margin: 0 0 12px 0; display: flex; align-items: center; font-size: 16px;">
@@ -308,9 +309,9 @@ export default function PropertyMap({
     if (!leafletMapRef.current || !L) return
 
     // Remove existing tile layers
-    leafletMapRef.current.eachLayer((layer: any) => {
-      if (layer._url) {
-        leafletMapRef.current.removeLayer(layer)
+    leafletMapRef.current!.eachLayer((layer: LeafletLib.Layer) => {
+      if ('_url' in layer) {
+        leafletMapRef.current!.removeLayer(layer)
       }
     })
 
@@ -347,8 +348,8 @@ export default function PropertyMap({
         })
     }
 
-    tileLayer.addTo(leafletMapRef.current)
-    setCurrentLayer(layerKey as any)
+    tileLayer.addTo(leafletMapRef.current!)
+    setCurrentLayer(layerKey as 'esri' | 'google' | 'street' | 'terrain' | 'bing')
   }
 
   // Create StandCard popup content with proper centering
@@ -432,7 +433,7 @@ const displayPropertyBoundaries = () => {
           weight: 2,
           opacity: 0.8,
           dashArray: '5,5'
-        }).addTo(leafletMapRef.current)
+        }).addTo(leafletMapRef.current!)
       
         polyline.bindPopup(`
           <div style="min-width: 200px; font-family: sans-serif;">
@@ -451,7 +452,7 @@ const displayPropertyBoundaries = () => {
   // Center map on boundary bounds if boundaries exist
   if (boundaryBounds.length > 0) {
     const bounds = L.latLngBounds(boundaryBounds)
-    leafletMapRef.current.fitBounds(bounds, { padding: [10, 10] })
+    leafletMapRef.current!.fitBounds(bounds, { padding: [10, 10] })
   }
 }
 
@@ -460,13 +461,13 @@ const displayPropertyBoundaries = () => {
     if (!mapReady || !leafletMapRef.current || !L) return
 
     // Clear existing stand markers (keep clubhouse marker)
-    leafletMapRef.current.eachLayer((layer: any) => {
-      if (layer instanceof L.Marker && layer.getLatLng().lat !== PROPERTY_CENTER[0]) {
-        leafletMapRef.current.removeLayer(layer)
+    leafletMapRef.current!.eachLayer((layer: LeafletLib.Layer) => {
+      if (L && layer instanceof L.Marker && layer.getLatLng().lat !== PROPERTY_CENTER[0]) {
+        leafletMapRef.current!.removeLayer(layer)
       }
       // Also clear any existing polylines (boundaries)
       if (layer instanceof L.Polyline) {
-        leafletMapRef.current.removeLayer(layer)
+        leafletMapRef.current!.removeLayer(layer)
       }
     })
 
@@ -498,7 +499,7 @@ const displayPropertyBoundaries = () => {
         const { deployment } = camera
         if (deployment?.latitude && deployment?.longitude && deployment?.active) {
           const marker = L.marker([deployment.latitude, deployment.longitude], { icon: cameraIcon })
-            .addTo(leafletMapRef.current)
+            .addTo(leafletMapRef.current!)
           
           // Bind popup with CameraCard and proper styling
           marker.bindPopup(() => createCameraPopupContent(camera), {
@@ -537,7 +538,7 @@ const displayPropertyBoundaries = () => {
     stands.forEach((stand) => {
       if (stand.latitude && stand.longitude && stand.active) {
         const marker = L.marker([stand.latitude, stand.longitude], { icon: huntingStandIcon })
-          .addTo(leafletMapRef.current)
+          .addTo(leafletMapRef.current!)
         
         // Bind popup with StandCard and proper styling
         marker.bindPopup(() => createStandPopupContent(stand), {
@@ -590,7 +591,7 @@ const displayPropertyBoundaries = () => {
           ].map((layer) => (
             <button
               key={layer.key}
-              onClick={() => switchLayer(layer.key as any)}
+              onClick={() => switchLayer(layer.key)}
               style={{
                 background: currentLayer === layer.key ? layer.color : 'white',
                 color: currentLayer === layer.key ? 'white' : '#2D3E1F',

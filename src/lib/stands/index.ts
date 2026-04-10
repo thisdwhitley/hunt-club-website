@@ -220,7 +220,7 @@ export const QuickValidation = {
     return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180
   },
   
-  hasRequiredFields: (data: Partial<any>): boolean => {
+  hasRequiredFields: (data: Partial<Record<string, unknown>>): boolean => {
     return Boolean(data.name && data.type)
   }
 } as const

@@ -3,6 +3,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import type * as LeafletLib from 'leaflet'
 import { createClient } from '@/lib/supabase/client'
 import { Target, AlertCircle, Clock, Crosshair, TreePine, Compass } from 'lucide-react'
 import { createRoot } from 'react-dom/client'
@@ -21,8 +22,8 @@ interface PropertyBoundary {
   description: string | null
 }
 
-// Global reference to loaded Leaflet library
-let L: any = null
+// Global reference to loaded Leaflet library (initialized via CDN load before use)
+let L!: typeof LeafletLib
 
 // Stand type icon mapping
 const getStandTypeIcon = (standType: string) => {
@@ -381,7 +382,7 @@ const createStandPopupContent = (stand: Stand) => {
 
 export default function MapTest2Page() {
   const mapRef = useRef<HTMLDivElement>(null)
-  const leafletMapRef = useRef<any>(null)
+  const leafletMapRef = useRef<LeafletLib.Map | null>(null)
   const [stands, setStands] = useState<Stand[]>([])
   const [propertyBoundaries, setPropertyBoundaries] = useState<PropertyBoundary[]>([])
   const [loading, setLoading] = useState(true)
@@ -402,7 +403,7 @@ export default function MapTest2Page() {
   const [jsLoaded, setJsLoaded] = useState(false)
   const [tilesLoaded, setTilesLoaded] = useState(0)
   const [, setTilesErrored] = useState(0)
-  const [currentTileLayer, setCurrentTileLayer] = useState<any>(null)
+  const [currentTileLayer, setCurrentTileLayer] = useState<LeafletLib.TileLayer | null>(null)
 
   const addDebugInfo = (message: string) => {
     console.log(`[HuntingMapDebug] ${message}`)
@@ -421,8 +422,9 @@ export default function MapTest2Page() {
 
       try {
         // Check if Leaflet is already loaded
-        if ((window as any).L) {
-          L = (window as any).L
+        const win = window as Window & { L?: typeof LeafletLib }
+        if (win.L) {
+          L = win.L!
           setLeafletLoaded(true)
           setCssLoaded(true)
           setJsLoaded(true)
@@ -461,8 +463,8 @@ export default function MapTest2Page() {
           setJsLoaded(true)
           addDebugInfo('✅ Hunting club map engine loaded successfully')
           
-          L = (window as any).L
-          
+          L = (window as Window & { L?: typeof LeafletLib }).L!
+
           if (!L) {
             addDebugInfo('❌ Leaflet not found in window after script load')
             setError('Hunting club map engine failed to initialize')
@@ -473,7 +475,7 @@ export default function MapTest2Page() {
           
           // Fix for default markers
           try {
-            delete (L.Icon.Default.prototype as any)._getIconUrl
+            delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl
             L.Icon.Default.mergeOptions({
               iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
               iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
@@ -559,7 +561,7 @@ export default function MapTest2Page() {
       })
 
       L.marker(PROPERTY_CENTER, { icon: clubhouseIcon })
-        .addTo(leafletMapRef.current)
+        .addTo(leafletMapRef.current!)
         .bindPopup(`
           <div style="min-width: 220px; font-family: sans-serif;">
             <h3 style="color: #566E3D; font-weight: 700; margin: 0 0 12px 0; display: flex; align-items: center; font-size: 16px;">
@@ -605,9 +607,9 @@ export default function MapTest2Page() {
     addDebugInfo(`🔄 Updating ${stands.length} hunting stands on map (visibility: ${showStands})`)
 
     // Clear existing stand markers (keep headquarters marker)
-    leafletMapRef.current.eachLayer((layer: any) => {
-      if (layer instanceof L.Marker && layer.getLatLng().lat !== PROPERTY_CENTER[0]) {
-        leafletMapRef.current.removeLayer(layer)
+    leafletMapRef.current!.eachLayer((layer: LeafletLib.Layer) => {
+      if (L && layer instanceof L.Marker && layer.getLatLng().lat !== PROPERTY_CENTER[0]) {
+        leafletMapRef.current!.removeLayer(layer)
       }
     })
 
@@ -643,7 +645,7 @@ export default function MapTest2Page() {
         
         // Make toggle function globally available for this specific stand
         if (typeof window !== 'undefined') {
-          (window as any).toggleStandDetails = (standId: string) => {
+          (window as Window & { toggleStandDetails?: (standId: string) => void }).toggleStandDetails = (standId: string) => {
             const details = document.getElementById('stand-details-' + standId);
             const button = document.querySelector(`[onclick*="${standId}"]`) as HTMLButtonElement;
             if (details && button) {
@@ -659,7 +661,7 @@ export default function MapTest2Page() {
         }
 
         L.marker([stand.latitude, stand.longitude], { icon: huntingStandIcon })
-          .addTo(leafletMapRef.current)
+          .addTo(leafletMapRef.current!)
           .bindPopup(`
             <div style="min-width: 280px; max-width: 320px; font-family: system-ui, sans-serif;">
               <!-- Header Section -->
@@ -940,7 +942,7 @@ export default function MapTest2Page() {
           weight: 2,
           opacity: 0.8,
           dashArray: '2,3'
-        }).addTo(leafletMapRef.current)
+        }).addTo(leafletMapRef.current!)
         
         // Add popup
         polyline.bindPopup(`
@@ -953,7 +955,7 @@ export default function MapTest2Page() {
         
         // Center map on boundary
         const boundaryBounds = L.latLngBounds(boundary.boundary_data)
-        leafletMapRef.current.fitBounds(boundaryBounds, { padding: [20, 20] })
+        leafletMapRef.current!.fitBounds(boundaryBounds, { padding: [20, 20] })
         
         addDebugInfo(`🗺️ Added boundary: ${boundary.name}`)
       }
@@ -967,7 +969,7 @@ export default function MapTest2Page() {
 
     // Remove current layer
     if (currentTileLayer) {
-      leafletMapRef.current.removeLayer(currentTileLayer)
+      leafletMapRef.current!.removeLayer(currentTileLayer)
     }
 
     let tileUrl = ''
@@ -1005,7 +1007,7 @@ export default function MapTest2Page() {
       setTilesLoaded(prev => prev + 1)
     })
 
-    newLayer.on('tileerror', (e: any) => {
+    newLayer.on('tileerror', (e: LeafletLib.TileErrorEvent) => {
       setTilesErrored(prev => prev + 1)
       addDebugInfo(`❌ Tile error on hunting club map: ${e.tile?.src || 'unknown'}`)
     })
@@ -1018,9 +1020,9 @@ export default function MapTest2Page() {
       addDebugInfo(`✅ ${layerType} tiles loaded for hunting club property`)
     })
 
-    newLayer.addTo(leafletMapRef.current)
+    newLayer.addTo(leafletMapRef.current!)
     setCurrentTileLayer(newLayer)
-    setCurrentLayer(layerType as any)
+    setCurrentLayer(layerType)
   }
 
   const addTestStand = async () => {
@@ -1093,13 +1095,13 @@ export default function MapTest2Page() {
 
   const zoomToProperty = () => {
     if (!leafletMapRef.current) return
-    leafletMapRef.current.setView(PROPERTY_CENTER, 18)
+    leafletMapRef.current!.setView(PROPERTY_CENTER, 18)
     addDebugInfo('📍 Zoomed to clubhouse (level 18)')
   }
 
   const zoomOut = () => {
     if (!leafletMapRef.current) return
-    leafletMapRef.current.setView(PROPERTY_CENTER, 14)
+    leafletMapRef.current!.setView(PROPERTY_CENTER, 14)
     addDebugInfo('🔍 Zoomed out for broader property view (level 14)')
   }
 
@@ -1126,7 +1128,7 @@ export default function MapTest2Page() {
     const avgLat = validStands.reduce((sum, s) => sum + s.latitude!, 0) / validStands.length
     const avgLng = validStands.reduce((sum, s) => sum + s.longitude!, 0) / validStands.length
     
-    leafletMapRef.current.setView([avgLat, avgLng], 16)
+    leafletMapRef.current!.setView([avgLat, avgLng], 16)
     addDebugInfo(`📍 Zoomed to hunting stands center: ${avgLat.toFixed(6)}, ${avgLng.toFixed(6)}`)
   }
 
@@ -1202,7 +1204,7 @@ export default function MapTest2Page() {
                 ].map((layer) => (
                   <button
                     key={layer.key}
-                    onClick={() => switchLayer(layer.key as any)}
+                    onClick={() => switchLayer(layer.key as 'esri' | 'google' | 'street' | 'terrain' | 'bing')}
                     style={{
                       background: currentLayer === layer.key ? '#566E3D' : '#B9A44C',
                       color: currentLayer === layer.key ? 'white' : '#2D3E1F',
@@ -1441,7 +1443,7 @@ export default function MapTest2Page() {
               ].map((layer) => (
                 <button
                   key={layer.key}
-                  onClick={() => switchLayer(layer.key as any)}
+                  onClick={() => switchLayer(layer.key as 'esri' | 'google' | 'street' | 'terrain' | 'bing')}
                   style={{
                     background: currentLayer === layer.key ? layer.color : 'white',
                     color: currentLayer === layer.key ? 'white' : '#2D3E1F',

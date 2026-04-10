@@ -1,23 +1,31 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import type * as LeafletLib from 'leaflet'
 import { Upload, MapPin, CheckCircle, AlertCircle, FileText } from 'lucide-react'
 
 // Property center coordinates for Caswell County Yacht Club
 const PROPERTY_CENTER: [number, number] = [36.42723576739513, -79.51088069325365]
 
-// Global reference to loaded Leaflet library
-let L: any = null
+interface GpxData {
+  fileName: string
+  tracks: number
+  waypoints: number
+  coordinates: [number, number][]
+}
+
+// Global reference to loaded Leaflet library (initialized via CDN load before use)
+let L!: typeof LeafletLib
 
 export default function GPXBoundaryTestPage() {
   const mapRef = useRef<HTMLDivElement>(null)
-  const leafletMapRef = useRef<any>(null)
+  const leafletMapRef = useRef<LeafletLib.Map | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
+
   const [leafletLoaded, setLeafletLoaded] = useState(false)
   const [mapReady, setMapReady] = useState(false)
-  const [gpxData, setGpxData] = useState<any>(null)
-  const [boundaryLayer, setBoundaryLayer] = useState<any>(null)
+  const [gpxData, setGpxData] = useState<GpxData | null>(null)
+  const [boundaryLayer, setBoundaryLayer] = useState<LeafletLib.Layer | null>(null)
   const [debugInfo, setDebugInfo] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -48,10 +56,10 @@ export default function GPXBoundaryTestPage() {
         
         leafletScript.onload = () => {
           addDebugInfo('✅ Leaflet loaded')
-          L = (window as any).L
-          
+          L = (window as Window & { L?: typeof LeafletLib }).L!
+
           // Fix default markers
-          delete (L.Icon.Default.prototype as any)._getIconUrl
+          delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl
           L.Icon.Default.mergeOptions({
             iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
             iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
@@ -214,8 +222,9 @@ export default function GPXBoundaryTestPage() {
         addDebugInfo('🗑️ Removed previous boundary')
       }
 
-      // Create GPX layer
-      const gpxLayer = new (L as any).GPX(gpxContent, {
+      // Create GPX layer (leaflet-gpx plugin, not in @types/leaflet)
+      type LeafletGPXCtor = new (content: string, options: Record<string, unknown>) => LeafletLib.Layer & LeafletLib.Evented
+      const gpxLayer = new (L as unknown as { GPX: LeafletGPXCtor }).GPX(gpxContent, {
         async: true,
         marker_options: {
           startIconUrl: null,
@@ -234,11 +243,11 @@ export default function GPXBoundaryTestPage() {
         }
       })
 
-      gpxLayer.on('loaded', (e: any) => {
+      gpxLayer.on('loaded', (e: LeafletLib.LeafletEvent) => {
         const gpx = e.target
         
         // Fit map to GPX bounds
-        leafletMapRef.current.fitBounds(gpx.getBounds())
+        leafletMapRef.current!.fitBounds(gpx.getBounds())
         
         // Extract coordinates from GPX layers
         const coordinates: [number, number][] = []
@@ -246,30 +255,30 @@ export default function GPXBoundaryTestPage() {
         let waypointCount = 0
         
         // Get coordinates from all layers in the GPX
-        gpx.eachLayer((layer: any) => {
-          if (layer.getLatLngs) {
+        gpx.eachLayer((layer: LeafletLib.Layer) => {
+          if ('getLatLngs' in layer) {
             trackCount++
-            const latlngs = layer.getLatLngs()
-            
+            const latlngs = (layer as LeafletLib.Polyline).getLatLngs()
+
             // Handle different coordinate structures
-            const processLatLngs = (coords: any) => {
+            const processLatLngs = (coords: unknown) => {
               if (Array.isArray(coords)) {
-                coords.forEach((coord: any) => {
-                  if (coord.lat !== undefined && coord.lng !== undefined) {
-                    coordinates.push([coord.lat, coord.lng])
+                coords.forEach((coord: unknown) => {
+                  if (coord !== null && typeof coord === 'object' && 'lat' in coord && 'lng' in coord) {
+                    coordinates.push([(coord as LeafletLib.LatLng).lat, (coord as LeafletLib.LatLng).lng])
                   } else if (Array.isArray(coord)) {
                     processLatLngs(coord)
                   }
                 })
-              } else if (coords.lat !== undefined && coords.lng !== undefined) {
-                coordinates.push([coords.lat, coords.lng])
+              } else if (coords !== null && typeof coords === 'object' && 'lat' in coords && 'lng' in coords) {
+                coordinates.push([(coords as LeafletLib.LatLng).lat, (coords as LeafletLib.LatLng).lng])
               }
             }
             
             processLatLngs(latlngs)
-          } else if (layer.getLatLng) {
+          } else if ('getLatLng' in layer) {
             waypointCount++
-            const latlng = layer.getLatLng()
+            const latlng = (layer as LeafletLib.Marker).getLatLng()
             coordinates.push([latlng.lat, latlng.lng])
           }
         })
@@ -281,11 +290,9 @@ export default function GPXBoundaryTestPage() {
         // Store GPX data for export
         setGpxData({
           fileName,
-          content: gpxContent,
           tracks: trackCount,
           waypoints: waypointCount,
           coordinates: coordinates,
-          bounds: gpx.getBounds()
         })
 
         // Add popup with GPX info
@@ -306,7 +313,7 @@ export default function GPXBoundaryTestPage() {
         addDebugInfo('🎉 Property boundary loaded successfully!')
       })
 
-      gpxLayer.on('error', (e: any) => {
+      gpxLayer.on('error', (e: LeafletLib.LeafletEvent) => {
         addDebugInfo('❌ GPX parsing failed')
         console.error('GPX parsing error:', e)
         setError('Failed to parse GPX file')

@@ -93,8 +93,8 @@ export interface WeatherSnapshotRow {
   property_center_lng: number;
   collection_timestamp: string;
   api_source: string;
-  raw_weather_data: any;
-  
+  raw_weather_data: Record<string, unknown>;
+
   // Temperature data
   tempmax: number;
   tempmin: number;
@@ -151,7 +151,7 @@ export interface CollectionLogRow {
   end_time?: string;
   api_response_time?: number;
   data_quality_score?: number;
-  error_details?: any;
+  error_details?: Record<string, unknown>;
   retry_count: number;
   notes?: string;
   created_at: string;
@@ -165,8 +165,8 @@ export interface ProcessedWeatherData {
   property_center_lng: number;
   collection_timestamp: string;
   api_source: string;
-  raw_weather_data: any;
-  
+  raw_weather_data: Record<string, unknown>;
+
   // Weather fields that actually exist in database
   tempmax: number;
   tempmin: number;
@@ -205,7 +205,7 @@ export interface WeatherCollectionResult {
 export interface WeatherCollectionError {
   type: 'api_error' | 'network_error' | 'data_processing_error' | 'database_error';
   message: string;
-  details?: any;
+  details?: Record<string, unknown>;
   retryable: boolean;
 }
 
@@ -288,29 +288,29 @@ export interface RateLimitInfo {
 export * from './weather-service';
 
 // Type guards
-export function isValidWeatherResponse(data: any): data is VisualCrossingResponse {
+export function isValidWeatherResponse(data: unknown): data is VisualCrossingResponse {
+  if (!data || typeof data !== 'object') return false
+  const d = data as Record<string, unknown>
+  if (!Array.isArray(d.days) || d.days.length === 0) return false
+  const day0 = d.days[0] as Record<string, unknown>
   return (
-    data &&
-    typeof data === 'object' &&
-    Array.isArray(data.days) &&
-    data.days.length > 0 &&
-    typeof data.days[0].datetime === 'string' &&
-    typeof data.days[0].tempmax === 'number' &&
-    typeof data.days[0].tempmin === 'number'
-  );
+    typeof day0.datetime === 'string' &&
+    typeof day0.tempmax === 'number' &&
+    typeof day0.tempmin === 'number'
+  )
 }
 
-export function isValidDayData(day: any): day is VisualCrossingDay {
+export function isValidDayData(day: unknown): day is VisualCrossingDay {
+  if (!day || typeof day !== 'object') return false
+  const d = day as Record<string, unknown>
   return (
-    day &&
-    typeof day === 'object' &&
-    typeof day.datetime === 'string' &&
-    typeof day.tempmax === 'number' &&
-    typeof day.tempmin === 'number' &&
-    typeof day.temp === 'number' &&
-    typeof day.humidity === 'number' &&
-    typeof day.pressure === 'number'
-  );
+    typeof d.datetime === 'string' &&
+    typeof d.tempmax === 'number' &&
+    typeof d.tempmin === 'number' &&
+    typeof d.temp === 'number' &&
+    typeof d.humidity === 'number' &&
+    typeof d.pressure === 'number'
+  )
 }
 
 // Constants

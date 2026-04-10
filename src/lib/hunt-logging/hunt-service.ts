@@ -644,7 +644,7 @@ export class HuntService {
 
       const memberCounts: Record<string, { name: string, count: number }> = {}
       memberStatsResult.data?.forEach(record => {
-        const member = record.members as any
+        const member = record.members as { display_name?: string | null; full_name?: string | null } | null
         const name = member?.display_name || member?.full_name || 'Unknown'
         const key = record.member_id
         

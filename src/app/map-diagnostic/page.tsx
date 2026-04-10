@@ -4,6 +4,7 @@
 // Enhanced diagnostic page to debug intermittent database connectivity issues
 
 import React, { useState, useEffect, useRef } from 'react'
+import type * as LeafletLib from 'leaflet'
 import { createClient } from '@/lib/supabase/client'
 import { createRoot } from 'react-dom/client'
 import StandCard from '@/components/stands/StandCard'
@@ -27,15 +28,15 @@ interface DiagnosticResult {
   test: string
   status: 'success' | 'error' | 'warning'
   message: string
-  data?: any
+  data?: unknown
 }
 
-// Global Leaflet reference
-let L: any = null
+// Global Leaflet reference (initialized via CDN load before use)
+let L!: typeof LeafletLib
 
 export default function EnhancedMapDiagnosticPage() {
   const mapRef = useRef<HTMLDivElement>(null)
-  const leafletMapRef = useRef<any>(null)
+  const leafletMapRef = useRef<LeafletLib.Map | null>(null)
   
   // Data states
   const [stands, setStands] = useState<Stand[]>([])
@@ -48,7 +49,7 @@ export default function EnhancedMapDiagnosticPage() {
   const [testing, setTesting] = useState(false)
 
   // Add diagnostic result
-  const addDiagnostic = (test: string, status: 'success' | 'error' | 'warning', message: string, data?: any) => {
+  const addDiagnostic = (test: string, status: 'success' | 'error' | 'warning', message: string, data?: unknown) => {
     const result: DiagnosticResult = { test, status, message, data }
     setDiagnostics(prev => [...prev, result])
     console.log(`[${status.toUpperCase()}] ${test}: ${message}`, data || '')
@@ -214,8 +215,9 @@ export default function EnhancedMapDiagnosticPage() {
       
       try {
         // Check if already loaded
-        if ((window as any).L) {
-          L = (window as any).L
+        const win = window as Window & { L?: typeof LeafletLib }
+        if (win.L) {
+          L = win.L!
           setLeafletReady(true)
           addDiagnostic('Leaflet Load', 'success', 'Leaflet already available')
           return
@@ -233,10 +235,10 @@ export default function EnhancedMapDiagnosticPage() {
         const script = document.createElement('script')
         script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
         script.onload = () => {
-          L = (window as any).L
+          L = (window as Window & { L?: typeof LeafletLib }).L!
           if (L) {
             // Fix default markers
-            delete (L.Icon.Default.prototype as any)._getIconUrl
+            delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl
             L.Icon.Default.mergeOptions({
               iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
               iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
@@ -280,7 +282,7 @@ useEffect(() => {
     // Add satellite layer
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       attribution: '&copy; Esri'
-    }).addTo(leafletMapRef.current)
+    }).addTo(leafletMapRef.current!)
 
     // Add clubhouse marker
     const clubhouseIcon = L.divIcon({
@@ -290,7 +292,7 @@ useEffect(() => {
     })
 
     L.marker(PROPERTY_CENTER, { icon: clubhouseIcon })
-      .addTo(leafletMapRef.current)
+      .addTo(leafletMapRef.current!)
       .bindPopup('<h3>🏠 Clubhouse</h3><p>Property Center</p>')
 
     // Add centering styles for popups
@@ -335,7 +337,7 @@ useEffect(() => {
 //       // Add satellite layer
 //       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
 //         attribution: '&copy; Esri'
-//       }).addTo(leafletMapRef.current)
+//       }).addTo(leafletMapRef.current!)
 
 //       // Add clubhouse marker
 //       const clubhouseIcon = L.divIcon({
@@ -345,7 +347,7 @@ useEffect(() => {
 //       })
 
 //       L.marker(PROPERTY_CENTER, { icon: clubhouseIcon })
-//         .addTo(leafletMapRef.current)
+//         .addTo(leafletMapRef.current!)
 //         .bindPopup('<h3>🏠 Clubhouse</h3><p>Property Center</p>')
 
 //       setMapReady(true)
@@ -513,9 +515,9 @@ useEffect(() => {
     addDiagnostic('Map Stands', 'warning', 'Adding stands to map...')
 
     // Clear existing stand markers (keep clubhouse)
-    leafletMapRef.current.eachLayer((layer: any) => {
-      if (layer instanceof L.Marker && layer.getLatLng().lat !== PROPERTY_CENTER[0]) {
-        leafletMapRef.current.removeLayer(layer)
+    leafletMapRef.current!.eachLayer((layer: LeafletLib.Layer) => {
+      if (L && layer instanceof L.Marker && layer.getLatLng().lat !== PROPERTY_CENTER[0]) {
+        leafletMapRef.current!.removeLayer(layer)
       }
     })
 
@@ -557,7 +559,7 @@ useEffect(() => {
     stands.forEach((stand) => {
       if (stand.latitude && stand.longitude && stand.active) {
         L.marker([stand.latitude, stand.longitude], { icon: standIcon })
-          .addTo(leafletMapRef.current)
+          .addTo(leafletMapRef.current!)
           .bindPopup(createStandPopupContent(stand), {
   maxWidth: 330,
   minWidth: 320,
@@ -574,7 +576,7 @@ useEffect(() => {
     if (addedCount > 0) {
       const mappedStands = stands.filter(s => s.latitude && s.longitude && s.active)
       const bounds = L.latLngBounds(mappedStands.map(s => [s.latitude!, s.longitude!]))
-      leafletMapRef.current.fitBounds(bounds, { padding: [20, 20] })
+      leafletMapRef.current!.fitBounds(bounds, { padding: [20, 20] })
     }
   }
 
@@ -591,7 +593,7 @@ useEffect(() => {
           weight: 2,
           opacity: 0.8,
           dashArray: '5,5'
-        }).addTo(leafletMapRef.current)
+        }).addTo(leafletMapRef.current!)
         
         polyline.bindPopup(`
           <h3>🗺️ ${boundary.name}</h3>
@@ -765,7 +767,7 @@ useEffect(() => {
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 mt-1">{diagnostic.message}</p>
-                    {diagnostic.data && (
+                    {diagnostic.data !== undefined && (
                       <details className="mt-2">
                         <summary className="text-xs text-blue-600 cursor-pointer hover:text-blue-800">
                           Show detailed data

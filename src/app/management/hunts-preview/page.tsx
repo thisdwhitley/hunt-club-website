@@ -9,7 +9,7 @@ import Link from 'next/link'
 import HuntCard from '@/components/hunt-logging/HuntCard'
 import HuntCardV2 from '@/components/hunt-logging/HuntCardV2'
 import { HuntService, HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
-import { getIcon } from '@/lib/shared/icons'
+import { getIcon, type IconName } from '@/lib/shared/icons'
 import { getStandIcon } from '@/lib/utils/standUtils'
 import { getTemperatureContext, getPrimaryTemperatureExplanation } from '@/lib/hunt-logging/temperature-utils'
 import { formatHuntDate } from '@/lib/utils/date'
@@ -333,7 +333,7 @@ export default function HuntsPreviewPage() {
       {showModal && viewingHunt && (() => {
         const tempContext = getTemperatureContext(viewingHunt)
         const primaryTemp = getPrimaryTemperatureExplanation(viewingHunt)
-        const StandIcon = getIcon(getStandIcon(viewingHunt.stand?.type) as any)
+        const StandIcon = getIcon(getStandIcon(viewingHunt.stand?.type) as IconName)
         const huntTypeBadge = viewingHunt.hunt_type === 'AM' ? 'Morning Hunt' : viewingHunt.hunt_type === 'PM' ? 'Evening Hunt' : 'All Day Hunt'
 
         return (

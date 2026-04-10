@@ -60,7 +60,7 @@ interface HuntEntryFormProps {
   onSubmit: (data: HuntFormData) => Promise<void>
   onCancel: () => void
   isSubmitting?: boolean
-  hunt?: any  // Existing hunt data for edit mode
+  hunt?: Partial<HuntFormData>  // Existing hunt data for edit mode
   mode?: 'create' | 'edit'  // Form mode
 }
 
@@ -71,8 +71,8 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
 
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [selectedHunter, setSelectedHunter] = useState(user?.id || '')
-  const [members, setMembers] = useState<any[]>([])
-  const [submittedHuntData, setSubmittedHuntData] = useState<any>(null)
+  const [members, setMembers] = useState<{ id: string; display_name?: string | null; full_name?: string | null; email?: string | null }[]>([])
+  const [submittedHuntData, setSubmittedHuntData] = useState<(HuntFormData & { hunter_name?: string; stand_name?: string }) | null>(null)
 
   const {
     register,
@@ -840,8 +840,8 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
         <div className="text-xs text-weathered-wood space-y-1">
           <div>Hunter: {submittedHuntData?.hunter_name}</div>
           <div>Harvest: {submittedHuntData?.had_harvest ? 'Yes' : 'No'}</div>
-          {submittedHuntData?.sightings?.length > 0 && (
-            <div>Sightings: {submittedHuntData.sightings.length}</div>
+          {(submittedHuntData?.sightings?.length ?? 0) > 0 && (
+            <div>Sightings: {submittedHuntData!.sightings!.length}</div>
           )}
         </div>
       </div>

@@ -10,7 +10,10 @@ import { BATTERY_TYPES } from '@/lib/cameras/types'
 import type {
   CameraWithStatus,
   CameraHardwareFormData,
-  CameraDeploymentFormData
+  CameraDeploymentFormData,
+  CameraCondition,
+  BatteryType,
+  FacingDirection
 } from '@/lib/cameras/types'
 
 // Combined Camera Form (Hardware + Deployment) - Simplified Modes
@@ -311,7 +314,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                 </label>
                 <select
                   value={hardwareData.condition}
-                  onChange={(e) => setHardwareData({ ...hardwareData, condition: e.target.value as any })}
+                  onChange={(e) => setHardwareData({ ...hardwareData, condition: e.target.value as CameraCondition })}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                 >
                   <option value="excellent">Excellent</option>
@@ -329,7 +332,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                 </label>
                 <select
                   value={hardwareData.battery_type ?? ''}
-                  onChange={(e) => setHardwareData({ ...hardwareData, battery_type: e.target.value as any || undefined })}
+                  onChange={(e) => setHardwareData({ ...hardwareData, battery_type: (e.target.value as BatteryType) || undefined })}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                 >
                   <option value="">Not specified</option>
@@ -549,7 +552,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                     </label>
                     <select
                       value={deploymentData.facing_direction || ''}
-                      onChange={(e) => setDeploymentData({ ...deploymentData, facing_direction: e.target.value as any || undefined })}
+                      onChange={(e) => setDeploymentData({ ...deploymentData, facing_direction: (e.target.value as FacingDirection) || undefined })}
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                     >
                       <option value="">Not specified</option>

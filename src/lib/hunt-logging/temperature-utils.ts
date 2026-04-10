@@ -1,5 +1,6 @@
 // src/lib/hunt-logging/temperature-utils.ts
 // NEW FILE - Temperature display utilities for hunt logging
+import type { HuntWithTemperature } from '@/types/database'
 
 
 export interface TemperatureContext {
@@ -14,7 +15,7 @@ export interface TemperatureContext {
  * Get contextual temperature display for a hunt
  * Uses the smart temperature from hunt_logs_with_temperature view
  */
-export function getTemperatureContext(hunt: any): TemperatureContext {
+export function getTemperatureContext(hunt: HuntWithTemperature): TemperatureContext {
   // If we have the smart hunt_temperature from the view, use it
   if (hunt.hunt_temperature !== null && hunt.hunt_temperature !== undefined) {
     let context: TemperatureContext['context'] = 'fallback'
@@ -68,7 +69,7 @@ export function getTemperatureContext(hunt: any): TemperatureContext {
  * Get the primary temperature for this hunt with explanation
  * Used in details view to highlight the most relevant temperature
  */
-export function getPrimaryTemperatureExplanation(hunt: any): {
+export function getPrimaryTemperatureExplanation(hunt: HuntWithTemperature): {
   temperature: number | null
   source: string
   explanation: string
@@ -144,7 +145,7 @@ export function getPrimaryTemperatureExplanation(hunt: any): {
 /**
  * Get temperature range display for context
  */
-export function getTemperatureRange(hunt: any): string {
+export function getTemperatureRange(hunt: HuntWithTemperature): string {
   if (hunt.daily_low !== null && hunt.daily_high !== null) {
     return `${hunt.daily_low}°F - ${hunt.daily_high}°F daily range`
   }
@@ -159,7 +160,7 @@ export function getTemperatureRange(hunt: any): string {
 /**
  * Get weather quality assessment
  */
-export function getWeatherQuality(hunt: any): {
+export function getWeatherQuality(hunt: HuntWithTemperature): {
   score: 'excellent' | 'good' | 'fair' | 'poor' | null
   explanation: string
 } {

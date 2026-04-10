@@ -12,7 +12,7 @@ interface GPXWaypoint {
   longitude: number
   elevation?: number
   time?: string
-  extensions?: Record<string, any>
+  extensions?: Record<string, unknown>
 }
 
 interface StandMapping {
@@ -28,7 +28,7 @@ interface ImportPreview {
   waypoint: GPXWaypoint
   mapping: StandMapping
   action: 'insert' | 'update' | 'skip'
-  existingStand?: any
+  existingStand?: { id: string; name: string; type?: string }
 }
 
 const STAND_TYPES = [
@@ -43,7 +43,7 @@ const STAND_TYPES = [
 
 export default function StandsImport() {
   const [gpxWaypoints, setGpxWaypoints] = useState<GPXWaypoint[]>([])
-  const [existingStands, setExistingStands] = useState<any[]>([])
+  const [existingStands, setExistingStands] = useState<{ id: string; name: string; type?: string }[]>([])
   const [importPreview, setImportPreview] = useState<ImportPreview[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -413,7 +413,7 @@ export default function StandsImport() {
                           <label className="block text-xs font-medium text-stone-600">Action:</label>
                           <select
                             value={item.action}
-                            onChange={(e) => updatePreviewItem(index, { action: e.target.value as any })}
+                            onChange={(e) => updatePreviewItem(index, { action: e.target.value as 'insert' | 'update' | 'skip' })}
                             className="w-full px-2 py-1 text-sm border border-stone-300 rounded"
                           >
                             <option value="insert">Insert New</option>

@@ -273,7 +273,7 @@ export default function CameraManagementPage() {
         if (aActive !== bActive) return aActive ? -1 : 1
       }
 
-      let aValue: any, bValue: any
+      let aValue: string | number, bValue: string | number
 
       switch (sortBy) {
         case 'device_id':
@@ -697,7 +697,7 @@ Type "${deviceId}" to confirm deletion:`
                 <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Sort by:</label>
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
+                  onChange={(e) => setSortBy(e.target.value as 'location_name' | 'device_id' | 'last_seen' | 'battery_status' | 'brand')}
                   className="text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
                 >
                   <option value="location_name">Location Name</option>

@@ -62,8 +62,8 @@ class GoogleCalendarService {
         source: 'google',
         calendarName: calendarName,
       }));
-    } catch (error: any) {
-      console.error(`Error fetching Google Calendar events from ${calendarId}:`, error.message);
+    } catch (error: unknown) {
+      console.error(`Error fetching Google Calendar events from ${calendarId}:`, error instanceof Error ? error.message : error);
       return [];
     }
   }

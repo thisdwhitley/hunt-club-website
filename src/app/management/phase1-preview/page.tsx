@@ -8,7 +8,7 @@ import { Target, Download, Plus } from 'lucide-react'
 import HuntCardV2 from '@/components/hunt-logging/HuntCardV2'
 import type { CardMode } from '@/components/shared/cards/types'
 import { createClient } from '@/lib/supabase/client'
-import { huntService } from '@/lib/hunt-logging/hunt-service'
+import { huntService, type HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
 import { getIcon } from '@/lib/shared/icons'
 
 
@@ -26,8 +26,8 @@ import { HuntDetailsModal } from '@/components/hunt-logging/HuntDetailsModal'
 
 export default function Phase1PreviewPage() {
   // Data State
-  const [hunts, setHunts] = useState<any[]>([])
-  const [members, setMembers] = useState<any[]>([])
+  const [hunts, setHunts] = useState<HuntWithDetails[]>([])
+  const [members, setMembers] = useState<{ id: string; display_name?: string | null; full_name?: string | null }[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { stands } = useStands({ active: true })
@@ -37,7 +37,7 @@ export default function Phase1PreviewPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [viewingHuntId, setViewingHuntId] = useState<string | null>(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
-  const [editingHunt, setEditingHunt] = useState<any | null>(null)
+  const [editingHunt, setEditingHunt] = useState<HuntWithDetails | null>(null)
   const [showEditForm, setShowEditForm] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -215,7 +215,7 @@ export default function Phase1PreviewPage() {
       value: filters.member,
       options: [
         { value: 'all', label: 'All Hunters' },
-        ...members.map(m => ({ value: m.id, label: m.display_name }))
+        ...members.map(m => ({ value: m.id, label: m.display_name ?? '' }))
       ]
     },
     {
@@ -247,12 +247,12 @@ export default function Phase1PreviewPage() {
   }
 
   // CRUD Handlers
-  const handleViewHunt = (hunt: any) => {
+  const handleViewHunt = (hunt: HuntWithDetails) => {
     setViewingHuntId(hunt.id)
     setShowDetailsModal(true)
   }
 
-  const handleEditHunt = (hunt: any) => {
+  const handleEditHunt = (hunt: HuntWithDetails) => {
     setEditingHunt(hunt)
     setShowEditForm(true)
   }
@@ -512,7 +512,7 @@ export default function Phase1PreviewPage() {
 
               <HuntEntryForm
                 stands={stands}
-                hunt={editingHunt}
+                hunt={editingHunt as unknown as Partial<HuntFormData> | undefined}
                 mode="edit"
                 onSubmit={handleFormSubmit}
                 onCancel={() => {
