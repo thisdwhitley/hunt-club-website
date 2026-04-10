@@ -7,7 +7,7 @@
  * for the Caswell County Yacht Club hunting property.
  */
 
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 // Environment variables - ensure these are set
 const VISUAL_CROSSING_API_KEY = process.env.WEATHER_API_KEY;
@@ -507,7 +507,7 @@ async function collectYesterdayWeather() {
   return await service.collectDailyWeather(yesterday);
 }
 
-export {
+module.exports = {
   WeatherCollectionService,
   collectYesterdayWeather
 };
