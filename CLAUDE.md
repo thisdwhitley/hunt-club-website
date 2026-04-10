@@ -312,7 +312,14 @@ npm run build:safe   # lint + type-check + build — all must pass
 - Do not add `// eslint-disable` comments to silence errors — fix the underlying issue
 - If a type error seems hard to fix cleanly, ask rather than suppressing it
 
-**Vercel strictness:** Once the lint/type cleanup plan (phases 1–8) is complete, the Vercel bypasses ("Ignore ESLint errors", "Ignore TypeScript errors") will be removed. After that point, a failing lint or type check will block deployment. This is intentional — keep the build clean.
+**Vercel strictness:** The lint/type cleanup plan (phases 1–8) is now complete. The Vercel bypasses ("Ignore ESLint errors", "Ignore TypeScript errors") should be removed — any error will now block deployment. Keep the build clean.
+
+**DB type → form type cast pattern:**
+`HuntWithDetails` (DB shape) has `string | null` fields where `Partial<HuntFormData>` (form shape) expects `string | undefined`. The structural gap is too wide to bridge with spreads. Use:
+```typescript
+hunt={editingHunt as unknown as Partial<HuntFormData> | undefined}
+```
+The form's internal `|| ''` fallbacks handle nulls safely at runtime. Don't try to map every field — the cast is intentional here.
 
 ### Date and Timezone Handling
 
