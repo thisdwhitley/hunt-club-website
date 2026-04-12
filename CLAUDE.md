@@ -482,10 +482,10 @@ When a camera is pulled from the field, its **deployment** is deactivated (`acti
 
 Two slash commands are available to keep sessions focused:
 
-- **`/start`** — Run at the beginning of every session. Asks "what does done look like?" and holds the conversation accountable to that goal.
+- **`/begin`** — Run at the beginning of every session. Checks pending plans, pulls open GitHub issues, recommends the best next task, then confirms the session goal.
 - **`/done`** — Run at the end of every session. Checks git status, captures any new decisions into CLAUDE.md, flags obsolete docs, and summarizes what was accomplished.
 
-Skills live in `.claude/skills/`. If you don't use `/start`, ask yourself: "what exactly am I trying to finish today?"
+Skills live in `.claude/skills/`. If you don't use `/begin`, ask yourself: "what exactly am I trying to finish today?"
 
 ### Task Backlog
 
@@ -493,7 +493,7 @@ GitHub Issues (`thisdwhitley/hunt-club-website`) is the primary task backlog. Wh
 
 ### Approved Plans
 
-Approved implementation plans are stored in `~/.claude/plans/` (e.g., `/Users/daniel/.claude/plans/cosmic-sniffing-lightning.md`). At `/start`, always check this directory for pending plans before looking at in-repo docs like `INTEGRATION_STATUS.md`.
+Approved implementation plans are stored in `~/.claude/plans/` (e.g., `/Users/daniel/.claude/plans/cosmic-sniffing-lightning.md`). At `/begin`, always check this directory for pending plans before looking at in-repo docs like `INTEGRATION_STATUS.md`.
 
 ## Key Files Reference
 
