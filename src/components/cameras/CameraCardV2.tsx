@@ -7,6 +7,7 @@
 import React from 'react'
 import BaseCard from '@/components/shared/cards/BaseCard'
 import { getIcon } from '@/lib/shared/icons'
+import { parseDBDate } from '@/lib/utils/date'
 import type { CameraWithStatus } from '@/lib/cameras/types'
 import type { CardMode } from '@/components/shared/cards/types'
 
@@ -189,15 +190,25 @@ export default function CameraCardV2({
       return 'Unknown'
     }
 
+    const reportDateParsed = camera.latest_report.report_date
+      ? parseDBDate(camera.latest_report.report_date)
+      : null
+    const shortDate = reportDateParsed
+      ? reportDateParsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      : ''
+    const dateSuffix = shortDate ? ` (${shortDate})` : ''
+
     // Very old data (likely not deployed or transmitting)
     if (reportAge > 30) {
-      return `${reportAge} days ago (stale)`
+      return shortDate
+        ? `${reportAge} days ago (${shortDate}, stale)`
+        : `${reportAge} days ago (stale)`
     }
 
     // Recent data
-    if (reportAge === 0) return 'Today'
-    if (reportAge === 1) return '1 day ago'
-    return `${reportAge} days ago`
+    if (reportAge === 0) return `Today${dateSuffix}`
+    if (reportAge === 1) return `1 day ago${dateSuffix}`
+    return `${reportAge} days ago${dateSuffix}`
   }
 
   // ==================== FULL MODE ====================

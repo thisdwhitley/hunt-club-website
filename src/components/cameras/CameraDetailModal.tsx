@@ -5,7 +5,7 @@
 
 import React from 'react'
 import { X, Camera, MapPin, Settings, Battery, Signal, HardDrive, Images, AlertTriangle, Navigation, Edit3 } from 'lucide-react'
-import { formatDate } from '@/lib/utils/date'
+import { formatDate, parseDBDate } from '@/lib/utils/date'
 import type { CameraWithStatus } from '@/lib/cameras/types'
 
 // Hunting club color constants
@@ -290,9 +290,13 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
                   <Camera size={20} />
                   Latest Status Report
                   <span className="text-sm font-normal text-gray-600">
-                    ({camera.days_since_last_report === 0 ? 'Today' : 
-                      camera.days_since_last_report === 1 ? '1 day ago' : 
-                      `${camera.days_since_last_report} days ago`})
+                    ({camera.days_since_last_report === 0 ? 'Today' :
+                      camera.days_since_last_report === 1 ? '1 day ago' :
+                      `${camera.days_since_last_report} days ago`}
+                    {camera.latest_report.report_date && (() => {
+                      const d = parseDBDate(camera.latest_report.report_date)
+                      return d ? ` — ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''
+                    })()})
                   </span>
                 </h3>
                 
