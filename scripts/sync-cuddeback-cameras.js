@@ -225,6 +225,19 @@ const parseIntSafe = (value) => {
     return isNaN(parsed) ? null : parsed;
 };
 
+// Parse storage values like "28.8 GB" or "512 MB" into MB
+const parseStorageMB = (value) => {
+  if (!value || value === 'N/A' || value === '-') return null;
+  const match = value.match(/^([\d.]+)\s*(TB|GB|MB)?/i);
+  if (!match) return null;
+  const num = parseFloat(match[1]);
+  if (isNaN(num)) return null;
+  const unit = (match[2] || 'MB').toUpperCase();
+  if (unit === 'TB') return Math.round(num * 1024 * 1024);
+  if (unit === 'GB') return Math.round(num * 1024);
+  return Math.round(num);
+};
+
 /**
  * Main sync function
  */
@@ -756,7 +769,7 @@ async function syncCameraData(cuddebackData, deployments, cuddebackReportTime) {
         signal_level: signalLevel,
         network_links: parseIntSafe(cameraItem.links),
         sd_images_count: parseIntSafe(cameraItem.sd_images),
-        sd_free_space_mb: parseIntSafe(cameraItem.sd_free_space),
+        sd_free_space_mb: parseStorageMB(cameraItem.sd_free_space),
         image_queue: parseIntSafe(cameraItem.image_queue),
         cuddeback_report_timestamp: cuddebackReportTime ? new Date(cuddebackReportTime).toISOString() : null,
         report_processing_date: new Date().toISOString()
