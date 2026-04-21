@@ -2,7 +2,7 @@
 description: Use at the start of a work session to establish a clear goal. Prompts for what "done" looks like and holds the session accountable to it.
 ---
 
-# Session Start
+# Begin
 
 **Before saying anything to the user, complete Steps 1 and 2 in order. Do not ask the user a question until both steps are done.**
 
