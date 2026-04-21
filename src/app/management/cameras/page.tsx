@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { Camera, Search, Filter, Plus, MapPin, AlertCircle, X, Upload, LayoutGrid, List, Grid3X3 } from 'lucide-react'
+import { Camera, Search, Filter, Plus, MapPin, AlertCircle, Upload, LayoutGrid, List, Grid3X3 } from 'lucide-react'
+import { getIcon } from '@/lib/shared/icons'
 import { useCameras, useCameraAlerts, useCameraHardware } from '@/lib/cameras/hooks'
 import CameraCardV2 from '@/components/cameras/CameraCardV2'
 import { CameraForm } from '@/components/cameras/CameraForms'
@@ -43,164 +44,117 @@ interface CameraImportData {
   import_notes: string
 }
 
-// Filters Component matching your StandFilters pattern
+const DEFAULT_FILTERS: CameraManagementFilters = {
+  search: '',
+  status: 'active',
+  brand: 'all',
+  alerts: 'all',
+  hasCoordinates: 'all',
+  season: 'all',
+}
+
 interface CameraFiltersProps {
   filters: CameraManagementFilters
   onFiltersChange: (filters: CameraManagementFilters) => void
-  onClose: () => void
 }
 
-function CameraFilters({ filters, onFiltersChange, onClose }: CameraFiltersProps) {
+function CameraFilters({ filters, onFiltersChange }: CameraFiltersProps) {
   const updateFilter = (key: keyof CameraManagementFilters, value: string) => {
-    onFiltersChange({
-      ...filters,
-      [key]: value
-    })
+    onFiltersChange({ ...filters, [key]: value })
   }
 
-  const clearAllFilters = () => {
-    onFiltersChange({
-      search: '',
-      status: 'all',
-      brand: 'all',
-      alerts: 'all',
-      hasCoordinates: 'all',
-      season: 'all'
-    })
-  }
-
-  const hasActiveFilters = Object.values(filters).some(value => value !== 'all' && value !== '')
+  const hasActiveFilters = (
+    Object.keys(DEFAULT_FILTERS) as (keyof CameraManagementFilters)[]
+  ).some(key => filters[key] !== DEFAULT_FILTERS[key])
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      {/* Header */}
-      <div className="bg-olive-green text-white px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Filter size={20} />
-          <h3 className="font-medium">Filter Cameras</h3>
-        </div>
-        <button
-          onClick={onClose}
-          className="p-1 hover:bg-pine-needle rounded transition-colors"
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+        <select
+          value={filters.status}
+          onChange={(e) => updateFilter('status', e.target.value)}
+          className="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
         >
-          <X size={18} />
-        </button>
+          <option value="all">All Statuses</option>
+          <option value="active">Active Only</option>
+          <option value="inactive">Inactive Only</option>
+        </select>
       </div>
 
-      {/* Filter Controls */}
-      <div className="p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Status Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
-            <select
-              value={filters.status}
-              onChange={(e) => updateFilter('status', e.target.value)}
-              className="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-            >
-              <option value="all">All Statuses</option>
-              <option value="active">Active Only</option>
-              <option value="inactive">Inactive Only</option>
-            </select>
-          </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+        <select
+          value={filters.brand}
+          onChange={(e) => updateFilter('brand', e.target.value)}
+          className="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+        >
+          <option value="all">All Brands</option>
+          <option value="Reconyx">Reconyx</option>
+          <option value="Stealth Cam">Stealth Cam</option>
+          <option value="Moultrie">Moultrie</option>
+          <option value="Bushnell">Bushnell</option>
+          <option value="Spypoint">Spypoint</option>
+        </select>
+      </div>
 
-          {/* Brand Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Brand
-            </label>
-            <select
-              value={filters.brand}
-              onChange={(e) => updateFilter('brand', e.target.value)}
-              className="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-            >
-              <option value="all">All Brands</option>
-              <option value="Reconyx">Reconyx</option>
-              <option value="Stealth Cam">Stealth Cam</option>
-              <option value="Moultrie">Moultrie</option>
-              <option value="Bushnell">Bushnell</option>
-              <option value="Spypoint">Spypoint</option>
-            </select>
-          </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Alerts</label>
+        <select
+          value={filters.alerts}
+          onChange={(e) => updateFilter('alerts', e.target.value)}
+          className="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+        >
+          <option value="all">All Cameras</option>
+          <option value="has-alerts">Has Alerts</option>
+          <option value="no-alerts">No Alerts</option>
+        </select>
+      </div>
 
-          {/* Alerts Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Alerts
-            </label>
-            <select
-              value={filters.alerts}
-              onChange={(e) => updateFilter('alerts', e.target.value)}
-              className="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-            >
-              <option value="all">All Cameras</option>
-              <option value="has-alerts">Has Alerts</option>
-              <option value="no-alerts">No Alerts</option>
-            </select>
-          </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+        <select
+          value={filters.hasCoordinates}
+          onChange={(e) => updateFilter('hasCoordinates', e.target.value)}
+          className="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+        >
+          <option value="all">All</option>
+          <option value="mapped">Mapped</option>
+          <option value="unmapped">Unmapped</option>
+        </select>
+      </div>
 
-          {/* Coordinates Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Location
-            </label>
-            <select
-              value={filters.hasCoordinates}
-              onChange={(e) => updateFilter('hasCoordinates', e.target.value)}
-              className="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-            >
-              <option value="all">All</option>
-              <option value="mapped">Mapped</option>
-              <option value="unmapped">Unmapped</option>
-            </select>
-          </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Season</label>
+        <select
+          value={filters.season}
+          onChange={(e) => updateFilter('season', e.target.value)}
+          className="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+        >
+          <option value="all">All Seasons</option>
+          <option value="2025">2025 Season</option>
+          <option value="2024">2024 Season</option>
+          <option value="2023">2023 Season</option>
+        </select>
+      </div>
 
-          {/* Season Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Season
-            </label>
-            <select
-              value={filters.season}
-              onChange={(e) => updateFilter('season', e.target.value)}
-              className="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-            >
-              <option value="all">All Seasons</option>
-              <option value="2025">2025 Season</option>
-              <option value="2024">2024 Season</option>
-              <option value="2023">2023 Season</option>
-            </select>
-          </div>
+      {hasActiveFilters && (
+        <div className="flex items-end">
+          <button
+            onClick={() => onFiltersChange(DEFAULT_FILTERS)}
+            className="text-sm text-olive-green hover:text-pine-needle font-medium pb-2"
+          >
+            Clear all filters
+          </button>
         </div>
-
-        {/* Clear Filters */}
-        {hasActiveFilters && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <button
-              onClick={clearAllFilters}
-              className="text-sm text-olive-green hover:text-pine-needle font-medium"
-            >
-              Clear all filters
-            </button>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   )
 }
 
 // Main Camera Management Page
 export default function CameraManagementPage() {
-  const [filters, setFilters] = useState<CameraManagementFilters>({
-    search: '',
-    status: 'all',
-    brand: 'all',
-    alerts: 'all',
-    hasCoordinates: 'all',
-    season: 'all'
-  })
+  const [filters, setFilters] = useState<CameraManagementFilters>(DEFAULT_FILTERS)
   const [showFilters, setShowFilters] = useState(false)
 
   // Modal states
@@ -222,7 +176,7 @@ export default function CameraManagementPage() {
   const [viewMode, setViewMode] = useState<'full' | 'compact' | 'list'>('full')
 
   // Sorting state
-  const [sortBy, setSortBy] = useState<'location_name' | 'device_id' | 'last_seen' | 'battery_status' | 'brand'>('location_name')
+  const [sortBy, setSortBy] = useState<'location_name' | 'device_id' | 'last_seen' | 'battery_status' | 'brand'>('device_id')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
   // Load data using your hooks with proper filtering
@@ -332,32 +286,7 @@ export default function CameraManagementPage() {
     return sorted
   }, [cameras, filters.hasCoordinates, filters.status, sortBy, sortDirection])
 
-  // Check if any filters are active
-  const hasActiveFilters = Object.values(filters).some(value => value !== 'all' && value !== '')
-
-  // Helper function to get readable sort labels
-  const getSortLabel = (sortKey: string) => {
-    const labels: Record<string, string> = {
-      'location_name': 'location name',
-      'device_id': 'device ID',
-      'last_seen': 'last seen',
-      'battery_status': 'battery status',
-      'brand': 'brand'
-    }
-    return labels[sortKey] || sortKey
-  }
-
-  // Clear all filters
-  const clearFilters = () => {
-    setFilters({
-      search: '',
-      status: 'all',
-      brand: 'all',
-      alerts: 'all',
-      hasCoordinates: 'all',
-      season: 'all'
-    })
-  }
+  const clearFilters = () => setFilters(DEFAULT_FILTERS)
 
   // End Season handler
   const handleEndSeason = async () => {
@@ -621,18 +550,6 @@ Type "${deviceId}" to confirm deletion:`
               
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`p-2 rounded-lg border-2 transition-colors ${
-                    showFilters
-                      ? 'bg-pine-needle border-pine-needle text-white'
-                      : 'border-green-200 text-green-100 hover:bg-green-700'
-                  }`}
-                  title="Toggle Filters"
-                >
-                  <Filter size={20} />
-                </button>
-
-                <button
                   onClick={() => setShowDeploymentImport(true)}
                   className="bg-olive-green hover:bg-pine-needle border border-green-300 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium"
                   title="Import camera deployments"
@@ -673,58 +590,90 @@ Type "${deviceId}" to confirm deletion:`
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Search and Stats Bar - matching your stands pattern */}
+        {/* Search, Sort, Filter Bar */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            {/* Search and Sort Row */}
-            <div className="flex flex-col sm:flex-row gap-3 flex-1">
-              {/* Search */}
-              <div className="relative flex-1 max-w-md">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-weathered-wood" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search cameras by device ID, location, brand..."
-                  value={filters.search}
-                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-morning-mist placeholder-weathered-wood focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-                />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            {/* Search */}
+            <div className="relative flex-1 min-w-0">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-weathered-wood" />
               </div>
-
-              {/* Sort Controls */}
-              <div className="flex items-center gap-2 min-w-0">
-                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Sort by:</label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'location_name' | 'device_id' | 'last_seen' | 'battery_status' | 'brand')}
-                  className="text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-                >
-                  <option value="location_name">Location Name</option>
-                  <option value="device_id">Device ID</option>
-                  <option value="brand">Brand</option>
-                  <option value="last_seen">Last Seen</option>
-                  <option value="battery_status">Battery Status</option>
-                </select>
-                <button
-                  onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
-                  className="p-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                  title={`Sort ${sortDirection === 'asc' ? 'Descending' : 'Ascending'}`}
-                >
-                  <div className="flex flex-col items-center justify-center w-4 h-4">
-                    <div className={`w-0 h-0 border-l-2 border-r-2 border-b-2 border-transparent ${
-                      sortDirection === 'asc' ? 'border-b-gray-600' : 'border-b-gray-300'
-                    } mb-0.5`} style={{ borderBottomWidth: '3px', borderLeftWidth: '2px', borderRightWidth: '2px' }} />
-                    <div className={`w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent ${
-                      sortDirection === 'desc' ? 'border-t-gray-600' : 'border-t-gray-300'
-                    }`} style={{ borderTopWidth: '3px', borderLeftWidth: '2px', borderRightWidth: '2px' }} />
-                  </div>
-                </button>
-              </div>
+              <input
+                type="text"
+                placeholder="Search by device ID, location, brand…"
+                value={filters.search}
+                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-morning-mist placeholder-weathered-wood focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+              />
             </div>
 
+            {/* Sort Controls */}
+            <div className="flex items-center gap-2 shrink-0">
+              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Sort:</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'location_name' | 'device_id' | 'last_seen' | 'battery_status' | 'brand')}
+                className="text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+              >
+                <option value="location_name">Location</option>
+                <option value="device_id">Device ID</option>
+                <option value="brand">Brand</option>
+                <option value="last_seen">Last Seen</option>
+                <option value="battery_status">Battery</option>
+              </select>
+              <button
+                onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+                className="p-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                title={`Sort ${sortDirection === 'asc' ? 'Descending' : 'Ascending'}`}
+              >
+                <div className="flex flex-col items-center justify-center w-4 h-4">
+                  <div className={`w-0 h-0 border-l-2 border-r-2 border-b-2 border-transparent ${
+                    sortDirection === 'asc' ? 'border-b-gray-600' : 'border-b-gray-300'
+                  } mb-0.5`} style={{ borderBottomWidth: '3px', borderLeftWidth: '2px', borderRightWidth: '2px' }} />
+                  <div className={`w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent ${
+                    sortDirection === 'desc' ? 'border-t-gray-600' : 'border-t-gray-300'
+                  }`} style={{ borderTopWidth: '3px', borderLeftWidth: '2px', borderRightWidth: '2px' }} />
+                </div>
+              </button>
+            </div>
+
+            {/* Filters Button */}
+            {(() => {
+              const ChevronDownIcon = getIcon('chevronDown')
+              const activeFilterCount = (
+                Object.keys(DEFAULT_FILTERS) as (keyof CameraManagementFilters)[]
+              ).filter(key => filters[key] !== DEFAULT_FILTERS[key] && key !== 'search').length
+              return (
+                <button
+                  onClick={() => setShowFilters(s => !s)}
+                  className={`flex items-center gap-1.5 px-3 py-2 border rounded-md text-sm font-medium transition-colors shrink-0 ${
+                    showFilters
+                      ? 'bg-olive-green border-olive-green text-white'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Filter size={15} />
+                  <span>Filters</span>
+                  {activeFilterCount > 0 && (
+                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
+                      showFilters ? 'bg-white text-olive-green' : 'bg-burnt-orange text-white'
+                    }`}>
+                      {activeFilterCount}
+                    </span>
+                  )}
+                  <ChevronDownIcon
+                    size={14}
+                    className={`transition-transform duration-200 ${showFilters ? 'rotate-180' : ''}`}
+                  />
+                </button>
+              )
+            })()}
+
+            {/* Divider */}
+            <div className="hidden sm:block w-px h-8 bg-gray-200 shrink-0" />
+
             {/* View Mode Toggle */}
-            <div className="flex items-center gap-1 border border-gray-300 rounded-md p-0.5">
+            <div className="flex items-center gap-1 border border-gray-300 rounded-md p-0.5 shrink-0">
               {([
                 { mode: 'full' as const, icon: LayoutGrid, title: 'Full cards' },
                 { mode: 'compact' as const, icon: Grid3X3, title: 'Compact grid' },
@@ -746,57 +695,31 @@ Type "${deviceId}" to confirm deletion:`
             </div>
 
             {/* Stats */}
-            <div className="flex items-center gap-4 text-sm text-weathered-wood">
+            <div className="flex items-center gap-3 text-sm text-weathered-wood shrink-0">
               <div className="flex items-center gap-1">
-                <div className="w-3 h-3 bg-olive-green rounded-full"></div>
-                <span>
-                  {filteredCameras.length} of {cameras.length} cameras
-                </span>
+                <div className="w-2.5 h-2.5 bg-olive-green rounded-full" />
+                <span>{filteredCameras.length} of {cameras.length}</span>
               </div>
               <div className="flex items-center gap-1">
-                <MapPin size={16} />
-                <span>
-                  {filteredCameras.filter(c => c.deployment?.latitude && c.deployment?.longitude).length} mapped
-                </span>
+                <MapPin size={14} />
+                <span>{filteredCameras.filter(c => c.deployment?.latitude && c.deployment?.longitude).length} mapped</span>
               </div>
               {!alertsLoading && alerts.length > 0 && (
                 <div className="flex items-center gap-1 text-red-600">
-                  <AlertCircle size={16} />
-                  <span>{alerts.length} alerts</span>
+                  <AlertCircle size={14} />
+                  <span>{alerts.length}</span>
                 </div>
               )}
-              <div className="hidden sm:flex items-center gap-1 text-xs text-gray-500">
-                <span>•</span>
-                <span>
-                  Sorted by {getSortLabel(sortBy)} ({sortDirection === 'asc' ? '↑' : '↓'})
-                </span>
-              </div>
             </div>
           </div>
 
-          {/* Clear filters button */}
-          {hasActiveFilters && (
-            <div className="mt-3 pt-3 border-t border-gray-200">
-              <button
-                onClick={clearFilters}
-                className="text-sm text-olive-green hover:text-pine-needle font-medium"
-              >
-                Clear all filters
-              </button>
+          {/* Expandable Filter Panel */}
+          {showFilters && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <CameraFilters filters={filters} onFiltersChange={setFilters} />
             </div>
           )}
         </div>
-
-        {/* Filters Panel */}
-        {showFilters && (
-          <div className="mb-6">
-            <CameraFilters 
-              filters={filters}
-              onFiltersChange={setFilters}
-              onClose={() => setShowFilters(false)}
-            />
-          </div>
-        )}
 
         {/* Alert Banner - only show if there are alerts */}
         {!alertsLoading && alerts.length > 0 && (
