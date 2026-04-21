@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# cuddeback sync runtime output
+sync-log.txt
+sync-results-*.json
+debug-login-*.png
+debug-login-*.html
