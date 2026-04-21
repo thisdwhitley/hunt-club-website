@@ -488,6 +488,10 @@ These defaults are intentional — do not change them without good reason:
 
 **Filter button badge:** Shows count of filters that differ from `DEFAULT_FILTERS`, excluding the search field (search has its own input). Badge is burnt-orange when panel is closed, white-on-olive when open.
 
+**Header button hierarchy:** Use a split-button for the primary add action — left half fires the action directly (`Add Camera`), right half (chevron) opens a dropdown for secondary import paths (`Import Deployments`, `Import from GPX`). Rare or destructive actions (`End Season`) belong in a `⋮` overflow/kebab menu, never alongside everyday buttons. Close dropdowns on outside click via `useRef` + `useEffect`.
+
+**SD free space parsing:** The sync script (`scripts/sync-cuddeback-cameras.js`) uses `parseStorageMB()` to parse Cuddeback's storage strings (e.g. `"28.8 GB"`) into MB for `sd_free_space_mb`. Never use `parseIntSafe()` for storage fields — it strips the decimal and ignores the unit, causing a ~1000x error for GB values and false low-storage alerts.
+
 ### Working with Forms
 - Use `react-hook-form` for form state management
 - Use `zod` for validation schemas
