@@ -482,10 +482,10 @@ When a camera is pulled from the field, its **deployment** is deactivated (`acti
 
 Two slash commands are available to keep sessions focused:
 
-- **`/begin`** — Run at the beginning of every session. Checks pending plans, pulls open GitHub issues, recommends the best next task, then confirms the session goal.
-- **`/done`** — Run at the end of every session. Checks git status, captures any new decisions into CLAUDE.md, flags obsolete docs, and summarizes what was accomplished.
+- **`/start`** — Run at the beginning of every session. Checks pending plans, pulls open GitHub issues, recommends the best next task, then confirms the session goal.
+- **`/done`** — Run at the end of every session. Verifies changes, commits, captures decisions into CLAUDE.md, flags obsolete docs, and summarizes what was accomplished.
 
-Skills live in `.claude/skills/`. If you don't use `/begin`, ask yourself: "what exactly am I trying to finish today?"
+Skills live in `~/.claude/commands/` (global, available in all projects). If you don't use `/start`, ask yourself: "what exactly am I trying to finish today?"
 
 ### Task Backlog
 
