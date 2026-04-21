@@ -473,6 +473,21 @@ The camera system is split into two separate concepts — never conflate them:
 
 When a camera is pulled from the field, its **deployment** is deactivated (`active=false`) — the hardware record is untouched. Historical deployments are preserved for every season.
 
+### Cameras Management Page — UX Defaults
+
+**File:** `src/app/management/cameras/page.tsx`
+
+These defaults are intentional — do not change them without good reason:
+
+- **Default filter:** Active deployments only (`status: 'active'`). Inactive cameras require the user to explicitly open filters and change Status.
+- **Default sort:** Device ID (`device_id`), ascending.
+- **Filter panel:** Starts collapsed. Toggled by the "Filters" button in the toolbar; expands inline within the same card.
+- **`DEFAULT_FILTERS` constant:** Used for initialization, reset (`clearFilters`), and computing the active-filter count badge. Always update this constant if a new filter is added — never hardcode default values in multiple places.
+
+**Toolbar layout (left → right):** Search input → Sort select + direction toggle → Filters button → View mode toggle → Stats
+
+**Filter button badge:** Shows count of filters that differ from `DEFAULT_FILTERS`, excluding the search field (search has its own input). Badge is burnt-orange when panel is closed, white-on-olive when open.
+
 ### Working with Forms
 - Use `react-hook-form` for form state management
 - Use `zod` for validation schemas
