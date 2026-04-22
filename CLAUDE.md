@@ -486,6 +486,8 @@ These defaults are intentional — do not change them without good reason:
 
 **Toolbar layout (left → right):** Search input → Sort select + direction toggle → Filters button → View mode toggle → Stats
 
+**Sticky toolbar pattern:** The search/filter toolbar is lifted out of the scrolling content area into its own full-width sticky wrapper: `<div className="sticky top-16 z-10 bg-gray-50 shadow-sm">`. The `top-16` accounts for the fixed navigation bar (`h-16` = 64px). Use `bg-gray-50` (matching the page background) on the outer wrapper so it fills edge-to-edge when stuck. The inner `max-w-7xl` constraint and the white card sit inside this wrapper. Content below (alerts, camera grid) lives in a separate `<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">`. Apply this same pattern to any management page that gets a sticky toolbar.
+
 **Filter button badge:** Shows count of filters that differ from `DEFAULT_FILTERS`, excluding the search field (search has its own input). Badge is burnt-orange when panel is closed, white-on-olive when open.
 
 **Header button hierarchy:** Use a split-button for the primary add action — left half fires the action directly (`Add Camera`), right half (chevron) opens a dropdown for secondary import paths (`Import Deployments`, `Import from GPX`). Rare or destructive actions (`End Season`) belong in a `⋮` overflow/kebab menu, never alongside everyday buttons. Close dropdowns on outside click via `useRef` + `useEffect`.
