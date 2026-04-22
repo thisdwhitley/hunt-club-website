@@ -632,11 +632,11 @@ Type "${deviceId}" to confirm deletion:`
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Search, Sort, Filter Bar */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+      {/* Sticky Search, Sort, Filter Bar */}
+      <div className="sticky top-16 z-10 bg-gray-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             {/* Search */}
             <div className="relative flex-1 min-w-0">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -763,8 +763,12 @@ Type "${deviceId}" to confirm deletion:`
               <CameraFilters filters={filters} onFiltersChange={setFilters} />
             </div>
           )}
+          </div>
         </div>
+      </div>
 
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Alert Banner - only show if there are alerts */}
         {!alertsLoading && alerts.length > 0 && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
