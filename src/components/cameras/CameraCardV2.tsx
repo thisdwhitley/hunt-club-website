@@ -7,6 +7,7 @@
 import React from 'react'
 import BaseCard from '@/components/shared/cards/BaseCard'
 import { getIcon } from '@/lib/shared/icons'
+import type { IconName } from '@/lib/shared/icons'
 import { parseDBDate } from '@/lib/utils/date'
 import type { CameraWithStatus } from '@/lib/cameras/types'
 import type { CardMode } from '@/components/shared/cards/types'
@@ -57,6 +58,25 @@ const DeviceIcon = ({ deviceId, mode = 'full' }: { deviceId: string, mode?: Card
   )
 }
 
+// Small pill showing a power source attribute (battery type or external source)
+const PowerChip = ({ iconName, label, color }: { iconName: IconName, label?: string, color: string }) => {
+  const Icon = getIcon(iconName)
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 rounded-full font-semibold flex-shrink-0 ${label ? 'px-1 py-px' : 'p-1'}`}
+      style={{
+        fontSize: '10px',
+        backgroundColor: `${color}18`,
+        color,
+        border: `1px solid ${color}30`,
+      }}
+    >
+      <Icon size={9} />
+      {label && <span>{label}</span>}
+    </span>
+  )
+}
+
 interface CameraCardV2Props {
   camera: CameraWithStatus
   mode?: CardMode
@@ -77,13 +97,6 @@ export default function CameraCardV2({
 
   const isInactive = !camera.deployment || camera.deployment.active === false
 
-  // Get power source icon based on camera data
-  const getPowerSourceIcon = () => {
-    if (camera.deployment?.has_solar_panel) return 'solar'
-    if (camera.latest_report?.battery_status === 'Ext OK') return 'batteryCharging'
-    return 'battery'
-  }
-
   // Determine alert status and color
   const getAlertStatus = () => {
     if (camera.deployment?.is_missing) {
@@ -102,7 +115,6 @@ export default function CameraCardV2({
   }
 
   const alertStatus = getAlertStatus()
-  const powerSourceIcon = getPowerSourceIcon()
 
   // Get actions with proper camera-style colors (matching Stand/Hunt pattern)
   const getActions = () => {
@@ -168,6 +180,41 @@ export default function CameraCardV2({
   }
 
   const reportFreshnessColor = getReportFreshnessColor()
+
+  const getBatteryChip = () => {
+    if (!camera.hardware.battery_type) return null
+    return (
+      <PowerChip
+        iconName="battery"
+        label={camera.hardware.battery_type}
+        color={HUNTING_COLORS.darkTeal}
+      />
+    )
+  }
+
+  const getExternalChip = (iconOnly = false) => {
+    if (camera.deployment?.has_solar_panel) {
+      const rawId = camera.deployment.solar_panel_id || ''
+      const label = rawId.replace(/^solar\s*/i, '') || undefined
+      return (
+        <PowerChip
+          iconName="solar"
+          label={iconOnly ? undefined : label}
+          color={HUNTING_COLORS.weatheredWood}
+        />
+      )
+    }
+    if (camera.latest_report?.battery_status?.toUpperCase() === 'EXTERNAL OK') {
+      return (
+        <PowerChip
+          iconName="batteryCharging"
+          label={iconOnly ? undefined : 'Ext.'}
+          color={HUNTING_COLORS.weatheredWood}
+        />
+      )
+    }
+    return null
+  }
 
   // Format report age text with better handling for missing/stale data
   // TODO: Underlying timestamp data is suspect (webpage scraping issues)
@@ -300,16 +347,14 @@ export default function CameraCardV2({
             )}
 
             {/* Power Source */}
-            <div className="flex items-center gap-2">
-              {React.createElement(getIcon(powerSourceIcon), { size: 14, style: { color: HUNTING_COLORS.darkTeal } })}
-              <span style={{ color: HUNTING_COLORS.forestShadow }}>
-                <strong>Power:</strong>{' '}
-                {camera.deployment?.has_solar_panel
-                  ? 'Solar Panel'
-                  : camera.latest_report?.battery_status === 'Ext OK'
-                  ? 'Battery Bank'
-                  : 'Internal Battery'}
-              </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {React.createElement(getIcon('power'), { size: 14, style: { color: HUNTING_COLORS.darkTeal } })}
+              <span style={{ color: HUNTING_COLORS.forestShadow }}><strong>Power:</strong></span>
+              {getBatteryChip()}
+              {getExternalChip()}
+              {!camera.hardware.battery_type && !camera.deployment?.has_solar_panel && camera.latest_report?.battery_status?.toUpperCase() !== 'EXTERNAL OK' && (
+                <span style={{ color: HUNTING_COLORS.weatheredWood, fontSize: '0.75rem' }}>Unknown</span>
+              )}
             </div>
           </div>
         </div>
@@ -516,14 +561,6 @@ export default function CameraCardV2({
       return status
     }
 
-    // Only bold text if there's an issue
-    const getBatteryFontWeight = () => {
-      if (!camera.latest_report?.battery_status) return 'normal'
-      const status = camera.latest_report.battery_status.toLowerCase()
-      if (status === 'critical' || status === 'low') return '600'
-      return 'normal'
-    }
-
     return (
       <BaseCard mode={mode} onClick={onClick ? () => onClick(camera) : undefined} clickable={!!onClick} className={isInactive ? 'opacity-60' : ''}>
         <div className="flex items-start gap-2.5">
@@ -549,7 +586,7 @@ export default function CameraCardV2({
             </div>
 
             {/* Key info row */}
-            <div className="flex items-center gap-2.5 flex-wrap text-xs text-forest-shadow">
+            <div className="flex items-center gap-1.5 flex-wrap text-xs text-forest-shadow">
               {/* Hardware */}
               {camera.hardware.brand && camera.hardware.model && (
                 <span className="truncate">
@@ -557,14 +594,24 @@ export default function CameraCardV2({
                 </span>
               )}
 
-              {/* Battery Status with appropriate icon (replaces standalone solar icon) */}
+              {/* Battery type + external source chips */}
+              {getBatteryChip()}
+              {getExternalChip(true)}
+
+              {/* Battery status pill */}
               {camera.latest_report?.battery_status && (
-                <div className="flex items-center gap-1" title="Battery status">
-                  {React.createElement(getIcon(powerSourceIcon), { size: 12, style: { color: getBatteryColor() } })}
-                  <span style={{ color: getBatteryColor(), fontWeight: getBatteryFontWeight() }}>
-                    {formatBatteryStatus(camera.latest_report.battery_status)}
-                  </span>
-                </div>
+                <span
+                  className="inline-flex items-center px-1 py-px rounded-full font-semibold flex-shrink-0"
+                  style={{
+                    fontSize: '10px',
+                    backgroundColor: `${getBatteryColor()}18`,
+                    color: getBatteryColor(),
+                    border: `1px solid ${getBatteryColor()}30`,
+                  }}
+                  title="Battery status"
+                >
+                  {formatBatteryStatus(camera.latest_report.battery_status)}
+                </span>
               )}
             </div>
           </div>
@@ -588,14 +635,6 @@ export default function CameraCardV2({
     const formatBatteryStatus = (status: string) => {
       if (status.toUpperCase() === 'EXTERNAL OK') return 'Ext OK'
       return status
-    }
-
-    // Only bold text if there's an issue
-    const getBatteryFontWeight = () => {
-      if (!camera.latest_report?.battery_status) return 'normal'
-      const status = camera.latest_report.battery_status.toLowerCase()
-      if (status === 'critical' || status === 'low') return '600'
-      return 'normal'
     }
 
     return (
@@ -626,9 +665,9 @@ export default function CameraCardV2({
           </div>
         </td>
 
-        {/* Hardware Column - Model + Battery Status */}
+        {/* Hardware Column - Model + chips */}
         <td className="px-4 py-3 text-sm text-gray-700">
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
             {/* Brand/Model */}
             {camera.hardware.brand && camera.hardware.model ? (
               <span>
@@ -638,14 +677,24 @@ export default function CameraCardV2({
               <span className="text-gray-400 italic">Not specified</span>
             )}
 
-            {/* Battery Status with icon */}
+            {/* Battery type + external source chips (full text in list mode) */}
+            {getBatteryChip()}
+            {getExternalChip()}
+
+            {/* Battery status pill */}
             {camera.latest_report?.battery_status && (
-              <div className="flex items-center gap-1" title="Battery status">
-                {React.createElement(getIcon(powerSourceIcon), { size: 12, style: { color: getBatteryColor() } })}
-                <span style={{ color: getBatteryColor(), fontWeight: getBatteryFontWeight(), fontSize: '0.75rem' }}>
-                  {formatBatteryStatus(camera.latest_report.battery_status)}
-                </span>
-              </div>
+              <span
+                className="inline-flex items-center px-1 py-px rounded-full font-semibold flex-shrink-0"
+                style={{
+                  fontSize: '10px',
+                  backgroundColor: `${getBatteryColor()}18`,
+                  color: getBatteryColor(),
+                  border: `1px solid ${getBatteryColor()}30`,
+                }}
+                title="Battery status"
+              >
+                {formatBatteryStatus(camera.latest_report.battery_status)}
+              </span>
             )}
           </div>
         </td>
