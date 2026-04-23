@@ -156,6 +156,11 @@ import {
   Heart,
   Flag,
 
+  // View Mode Toggles
+  LayoutGrid,
+  List,
+  Grid3X3,
+
   // Additional Lucide Icons
   type LucideIcon
 } from 'lucide-react'
@@ -323,6 +328,11 @@ export const ICONS: IconRegistry = {
   star: Star,
   heart: Heart,
   flag: Flag,
+
+  // View Mode Toggles
+  viewGrid: LayoutGrid,
+  viewList: List,
+  viewCompact: Grid3X3,
 } as const
 
 /**

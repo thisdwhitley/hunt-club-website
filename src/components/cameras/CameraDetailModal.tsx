@@ -4,7 +4,19 @@
 'use client'
 
 import React from 'react'
-import { X, Camera, MapPin, Settings, Battery, Signal, HardDrive, Images, AlertTriangle, Navigation, Edit3 } from 'lucide-react'
+import { getIcon } from '@/lib/shared/icons'
+
+const XIcon = getIcon('close')
+const CameraIcon = getIcon('camera')
+const MapPinIcon = getIcon('mapPin')
+const SettingsIcon = getIcon('settings')
+const BatteryIcon = getIcon('battery')
+const SignalIcon = getIcon('signal')
+const HardDriveIcon = getIcon('hardDrive')
+const ImagesIcon = getIcon('images')
+const AlertTriangleIcon = getIcon('alert')
+const NavigationIcon = getIcon('navigation')
+const EditIcon = getIcon('edit')
 import { formatDate, parseDBDate } from '@/lib/utils/date'
 import type { CameraWithStatus } from '@/lib/cameras/types'
 
@@ -67,7 +79,7 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
         {/* Header */}
         <div className="bg-olive-green text-white px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Camera size={24} />
+            <CameraIcon size={24} />
             <div>
               <h2 className="text-xl font-semibold">
                 {camera.deployment?.location_name || 'Unknown Location'}
@@ -85,7 +97,7 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
                 className="p-2 hover:bg-pine-needle rounded-lg transition-colors flex items-center gap-2"
                 title="Edit Camera"
               >
-                <Edit3 size={18} />
+                <EditIcon size={18} />
                 <span className="hidden sm:inline">Edit</span>
               </button>
             )}
@@ -97,7 +109,7 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
                 className="p-2 hover:bg-pine-needle rounded-lg transition-colors flex items-center gap-2"
                 title="Navigate to Camera"
               >
-                <Navigation size={18} />
+                <NavigationIcon size={18} />
                 <span className="hidden sm:inline">Navigate</span>
               </button>
             )}
@@ -107,7 +119,7 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
               onClick={onClose}
               className="p-2 hover:bg-pine-needle rounded-lg transition-colors"
             >
-              <X size={20} />
+              <XIcon size={20} />
             </button>
           </div>
         </div>
@@ -123,7 +135,7 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
                   borderLeftColor: alertStatus.color 
                 }}
               >
-                <AlertTriangle size={20} style={{ color: alertStatus.color }} />
+                <AlertTriangleIcon size={20} style={{ color: alertStatus.color }} />
                 <div>
                   <h3 className="font-medium" style={{ color: alertStatus.color }}>
                     {alertStatus.label}
@@ -140,7 +152,7 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
             {/* Hardware Information */}
             <div className="bg-gray-50 rounded-lg p-6">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: HUNTING_COLORS.forestGreen }}>
-                <Settings size={20} />
+                <SettingsIcon size={20} />
                 Hardware Information
               </h3>
               
@@ -209,7 +221,7 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
             {camera.deployment && (
               <div className="bg-gray-50 rounded-lg p-6">
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: HUNTING_COLORS.forestGreen }}>
-                  <MapPin size={20} />
+                  <MapPinIcon size={20} />
                   Deployment Information
                 </h3>
                 
@@ -287,7 +299,7 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
             {camera.latest_report ? (
               <div className="bg-gray-50 rounded-lg p-6">
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: HUNTING_COLORS.forestGreen }}>
-                  <Camera size={20} />
+                  <CameraIcon size={20} />
                   Latest Status Report
                   <span className="text-sm font-normal text-gray-600">
                     ({camera.days_since_last_report === 0 ? 'Today' :
@@ -302,7 +314,7 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="flex items-center gap-2">
-                    <Battery size={16} style={{ color: HUNTING_COLORS.darkTeal }} />
+                    <BatteryIcon size={16} style={{ color: HUNTING_COLORS.darkTeal }} />
                     <div>
                       <label className="text-sm font-medium text-gray-600">Battery Status</label>
                       <p className="text-gray-900">{camera.latest_report.battery_status || 'Unknown'}</p>
@@ -310,7 +322,7 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <Signal size={16} style={{ color: HUNTING_COLORS.darkTeal }} />
+                    <SignalIcon size={16} style={{ color: HUNTING_COLORS.darkTeal }} />
                     <div>
                       <label className="text-sm font-medium text-gray-600">Signal Level</label>
                       <p className="text-gray-900">
@@ -320,7 +332,7 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <Images size={16} style={{ color: HUNTING_COLORS.darkTeal }} />
+                    <ImagesIcon size={16} style={{ color: HUNTING_COLORS.darkTeal }} />
                     <div>
                       <label className="text-sm font-medium text-gray-600">Photos on SD</label>
                       <p className="text-gray-900">
@@ -331,7 +343,7 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <HardDrive size={16} style={{ color: HUNTING_COLORS.darkTeal }} />
+                    <HardDriveIcon size={16} style={{ color: HUNTING_COLORS.darkTeal }} />
                     <div>
                       <label className="text-sm font-medium text-gray-600">Free Storage</label>
                       <p className="text-gray-900">
@@ -385,7 +397,7 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
             {camera.deployment?.is_missing && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-6">
                 <h3 className="text-lg font-semibold mb-4 text-red-800 flex items-center gap-2">
-                  <AlertTriangle size={20} />
+                  <AlertTriangleIcon size={20} />
                   Missing Camera Alert
                 </h3>
                 

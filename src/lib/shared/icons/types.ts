@@ -164,6 +164,11 @@ export type IconName =
   | 'heart'
   | 'flag'
 
+  // View Mode Toggles
+  | 'viewGrid'
+  | 'viewList'
+  | 'viewCompact'
+
 /**
  * Icon Component Props Interface
  */

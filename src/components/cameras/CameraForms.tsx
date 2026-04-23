@@ -4,7 +4,13 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, Save, MapPin, Camera, Settings } from 'lucide-react'
+import { getIcon } from '@/lib/shared/icons'
+
+const XIcon = getIcon('close')
+const SaveIcon = getIcon('save')
+const MapPinIcon = getIcon('mapPin')
+const CameraIcon = getIcon('camera')
+const SettingsIcon = getIcon('settings')
 import { useStands } from '@/hooks/useStands' // Import your stands hook
 import { BATTERY_TYPES } from '@/lib/cameras/types'
 import type {
@@ -209,14 +215,14 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
         {/* Header */}
         <div className="bg-olive-green text-white px-6 py-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Camera size={20} />
+            <CameraIcon size={20} />
             {getTitle()}
           </h2>
           <button
             onClick={onClose}
             className="p-1 hover:bg-pine-needle rounded transition-colors"
           >
-            <X size={20} />
+            <XIcon size={20} />
           </button>
         </div>
 
@@ -224,7 +230,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
           {/* Hardware Section */}
           <div className="border border-gray-200 rounded-lg p-4">
             <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-              <Settings size={18} />
+              <SettingsIcon size={18} />
               Camera Hardware Details
             </h3>
             
@@ -411,7 +417,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
           <div className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                <MapPin size={18} />
+                <MapPinIcon size={18} />
                 Camera Location & Deployment
               </h3>
               
@@ -505,7 +511,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
                       {gettingLocation ? (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
                       ) : (
-                        <MapPin size={16} />
+                        <MapPinIcon size={16} />
                       )}
                       {gettingLocation ? 'Getting location...' : 'Use Current Location'}
                     </button>
@@ -657,7 +663,7 @@ export function CameraForm({ camera, onClose, onSubmit, isLoading, mode }: Camer
               {isLoading ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
               ) : (
-                <Save size={16} />
+                <SaveIcon size={16} />
               )}
               {getSubmitButtonText()}
             </button>

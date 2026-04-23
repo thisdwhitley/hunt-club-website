@@ -1,8 +1,18 @@
 'use client'
 
 import React, { useState, useMemo, useRef, useEffect } from 'react'
-import { Camera, Search, Filter, Plus, MapPin, AlertCircle, Upload, LayoutGrid, List, Grid3X3 } from 'lucide-react'
 import { getIcon } from '@/lib/shared/icons'
+
+const CameraIcon = getIcon('camera')
+const SearchIcon = getIcon('search')
+const FilterIcon = getIcon('filter')
+const PlusIcon = getIcon('plus')
+const MapPinIcon = getIcon('mapPin')
+const AlertCircleIcon = getIcon('alertCircle')
+const UploadIcon = getIcon('upload')
+const ViewGridIcon = getIcon('viewGrid')
+const ViewCompactIcon = getIcon('viewCompact')
+const ViewListIcon = getIcon('viewList')
 import { useCameras, useCameraAlerts, useCameraHardware } from '@/lib/cameras/hooks'
 import CameraCardV2 from '@/components/cameras/CameraCardV2'
 import { CameraForm } from '@/components/cameras/CameraForms'
@@ -556,7 +566,7 @@ Type "${deviceId}" to confirm deletion:`
           <div className="py-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3 mb-4 sm:mb-0">
-                <Camera size={28} className="text-white" />
+                <CameraIcon size={28} className="text-white" />
                 <div>
                   <h1 className="text-2xl font-bold">Trail Camera Management</h1>
                   <p className="text-green-100 opacity-90">
@@ -573,7 +583,7 @@ Type "${deviceId}" to confirm deletion:`
                       onClick={handleCreateCamera}
                       className="bg-burnt-orange hover:bg-clay-earth text-white px-4 py-2 rounded-l-lg flex items-center gap-2 transition-colors font-medium"
                     >
-                      <Plus size={20} />
+                      <PlusIcon size={20} />
                       <span className="hidden sm:inline">Add Camera</span>
                     </button>
                     <button
@@ -640,7 +650,7 @@ Type "${deviceId}" to confirm deletion:`
             {/* Search */}
             <div className="relative flex-1 min-w-0">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-weathered-wood" />
+                <SearchIcon className="h-5 w-5 text-weathered-wood" />
               </div>
               <input
                 type="text"
@@ -696,7 +706,7 @@ Type "${deviceId}" to confirm deletion:`
                       : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <Filter size={15} />
+                  <FilterIcon size={15} />
                   <span>Filters</span>
                   {activeFilterCount > 0 && (
                     <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
@@ -719,9 +729,9 @@ Type "${deviceId}" to confirm deletion:`
             {/* View Mode Toggle */}
             <div className="flex items-center gap-1 border border-gray-300 rounded-md p-0.5 shrink-0">
               {([
-                { mode: 'full' as const, icon: LayoutGrid, title: 'Full cards' },
-                { mode: 'compact' as const, icon: Grid3X3, title: 'Compact grid' },
-                { mode: 'list' as const, icon: List, title: 'List view' },
+                { mode: 'full' as const, icon: ViewGridIcon, title: 'Full cards' },
+                { mode: 'compact' as const, icon: ViewCompactIcon, title: 'Compact grid' },
+                { mode: 'list' as const, icon: ViewListIcon, title: 'List view' },
               ]).map(({ mode, icon: Icon, title }) => (
                 <button
                   key={mode}
@@ -745,12 +755,12 @@ Type "${deviceId}" to confirm deletion:`
                 <span>{filteredCameras.length} of {cameras.length}</span>
               </div>
               <div className="flex items-center gap-1">
-                <MapPin size={14} />
+                <MapPinIcon size={14} />
                 <span>{filteredCameras.filter(c => c.deployment?.latitude && c.deployment?.longitude).length} mapped</span>
               </div>
               {!alertsLoading && alerts.length > 0 && (
                 <div className="flex items-center gap-1 text-red-600">
-                  <AlertCircle size={14} />
+                  <AlertCircleIcon size={14} />
                   <span>{alerts.length}</span>
                 </div>
               )}
@@ -773,7 +783,7 @@ Type "${deviceId}" to confirm deletion:`
         {!alertsLoading && alerts.length > 0 && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
             <div className="flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+              <AlertCircleIcon className="h-5 w-5 text-red-600 flex-shrink-0" />
               <div>
                 <h3 className="text-red-800 font-medium">
                   {alerts.length} {alerts.length === 1 ? 'Camera Needs' : 'Cameras Need'} Attention
@@ -797,7 +807,7 @@ Type "${deviceId}" to confirm deletion:`
         {/* Error State */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center gap-3">
-            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+            <AlertCircleIcon className="h-5 w-5 text-red-600 flex-shrink-0" />
             <div>
               <h3 className="text-red-800 font-medium">Error Loading Cameras</h3>
               <p className="text-red-700 text-sm">{error}</p>
@@ -814,7 +824,7 @@ Type "${deviceId}" to confirm deletion:`
         {/* Empty State */}
         {!loading && !error && filteredCameras.length === 0 && cameras.length === 0 && (
           <div className="text-center py-12">
-            <Camera className="h-12 w-12 text-weathered-wood mx-auto mb-4" />
+            <CameraIcon className="h-12 w-12 text-weathered-wood mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No cameras deployed yet</h3>
             <p className="text-weathered-wood mb-4">
               Get started by adding cameras manually or importing from a GPX file.
@@ -824,7 +834,7 @@ Type "${deviceId}" to confirm deletion:`
                 onClick={() => setShowGPXImport(true)}
                 className="bg-olive-green hover:bg-pine-needle text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
               >
-                <Upload size={16} />
+                <UploadIcon size={16} />
                 Import from GPX
               </button>
               <button
@@ -840,7 +850,7 @@ Type "${deviceId}" to confirm deletion:`
         {/* No Results State */}
         {!loading && !error && filteredCameras.length === 0 && cameras.length > 0 && (
           <div className="text-center py-12">
-            <Camera className="h-12 w-12 text-weathered-wood mx-auto mb-4" />
+            <CameraIcon className="h-12 w-12 text-weathered-wood mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No cameras match your filters</h3>
             <p className="text-weathered-wood mb-4">
               Try adjusting your search terms or filters to find cameras.
