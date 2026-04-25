@@ -12,7 +12,7 @@ import StandCard from '@/components/stands/StandCard'
 import type { Stand } from '@/lib/database/stands'
 import type { CameraWithStatus } from '@/lib/cameras/types'
 import { getCameraDeployments } from '@/lib/cameras/database'
-import CameraCard from '@/components/cameras/CameraCard'
+import CameraCardV2 from '@/components/cameras/CameraCardV2'
 
 // Property coordinates for Caswell County Yacht Club clubhouse
 const PROPERTY_CENTER: [number, number] = [36.42712517693617, -79.51073582842501]
@@ -392,16 +392,11 @@ export default function PropertyMap({
     const root = createRoot(popupDiv)
     
     root.render(
-      <CameraCard
+      <CameraCardV2
         camera={camera}
-        mode="popup"
-        popupWidth={330}
-        onClick={onCameraClick || ((camera) => {
-          console.log('Camera clicked:', camera.deployment?.location_name || 'Unknown')
-        })}
-        showLocation={true}
-        showStats={true}
-        showActions={true}
+        mode="compact"
+        onClick={onCameraClick}
+        showActions={false}
       />
     )
     
