@@ -2,9 +2,9 @@
 -- PostgreSQL database dump
 --
 
-\restrict 7y7c9TSGB43kZad3bhVLyYHZUBwQ26LL26r6qFqziTSFMP8DlwOrwVcXjyFDkbU
+\restrict ZkSm6bZBcoEWuBrecA9hN8N7UAjL3eizYN80wQ1JqgIye6mGbd3uCemA3LcCzlv
 
--- Dumped from database version 17.4
+-- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.9 (Debian 17.9-1.pgdg13+1)
 
 SET statement_timeout = 0;
@@ -929,7 +929,8 @@ CREATE TABLE "public"."camera_deployments" (
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
     "solar_panel_id" character varying(50),
-    CONSTRAINT "camera_deployments_facing_direction_check" CHECK ((("facing_direction")::"text" = ANY ((ARRAY['N'::character varying, 'NE'::character varying, 'E'::character varying, 'SE'::character varying, 'S'::character varying, 'SW'::character varying, 'W'::character varying, 'NW'::character varying])::"text"[])))
+    "external_bank_id" character varying,
+    CONSTRAINT "camera_deployments_facing_direction_check" CHECK ((("facing_direction")::"text" = ANY (ARRAY[('N'::character varying)::"text", ('NE'::character varying)::"text", ('E'::character varying)::"text", ('SE'::character varying)::"text", ('S'::character varying)::"text", ('SW'::character varying)::"text", ('W'::character varying)::"text", ('NW'::character varying)::"text"])))
 );
 
 
@@ -954,8 +955,8 @@ CREATE TABLE "public"."camera_hardware" (
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
     "battery_type" character varying(10),
-    CONSTRAINT "camera_hardware_battery_type_check" CHECK ((("battery_type")::"text" = ANY ((ARRAY['AA'::character varying, 'D'::character varying, 'External'::character varying])::"text"[]))),
-    CONSTRAINT "camera_hardware_condition_check" CHECK ((("condition")::"text" = ANY ((ARRAY['good'::character varying, 'questionable'::character varying, 'poor'::character varying, 'retired'::character varying])::"text"[])))
+    CONSTRAINT "camera_hardware_battery_type_check" CHECK ((("battery_type")::"text" = ANY (ARRAY[('AA'::character varying)::"text", ('D'::character varying)::"text", ('External'::character varying)::"text"]))),
+    CONSTRAINT "camera_hardware_condition_check" CHECK ((("condition")::"text" = ANY (ARRAY[('good'::character varying)::"text", ('questionable'::character varying)::"text", ('poor'::character varying)::"text", ('retired'::character varying)::"text"])))
 );
 
 
@@ -1216,9 +1217,9 @@ CREATE TABLE "public"."hunt_harvests" (
     "processing_notes" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
-    CONSTRAINT "hunt_harvests_gender_check" CHECK ((("gender")::"text" = ANY ((ARRAY['Buck'::character varying, 'Doe'::character varying, 'Unknown'::character varying])::"text"[]))),
-    CONSTRAINT "hunt_harvests_hide_condition_check" CHECK ((("hide_condition")::"text" = ANY ((ARRAY['Excellent'::character varying, 'Good'::character varying, 'Fair'::character varying, 'Poor'::character varying, 'Damaged'::character varying])::"text"[]))),
-    CONSTRAINT "hunt_harvests_meat_condition_check" CHECK ((("meat_condition")::"text" = ANY ((ARRAY['Excellent'::character varying, 'Good'::character varying, 'Fair'::character varying, 'Poor'::character varying, 'Damaged'::character varying])::"text"[])))
+    CONSTRAINT "hunt_harvests_gender_check" CHECK ((("gender")::"text" = ANY (ARRAY[('Buck'::character varying)::"text", ('Doe'::character varying)::"text", ('Unknown'::character varying)::"text"]))),
+    CONSTRAINT "hunt_harvests_hide_condition_check" CHECK ((("hide_condition")::"text" = ANY (ARRAY[('Excellent'::character varying)::"text", ('Good'::character varying)::"text", ('Fair'::character varying)::"text", ('Poor'::character varying)::"text", ('Damaged'::character varying)::"text"]))),
+    CONSTRAINT "hunt_harvests_meat_condition_check" CHECK ((("meat_condition")::"text" = ANY (ARRAY[('Excellent'::character varying)::"text", ('Good'::character varying)::"text", ('Fair'::character varying)::"text", ('Poor'::character varying)::"text", ('Damaged'::character varying)::"text"])))
 );
 
 
@@ -1266,7 +1267,7 @@ CREATE TABLE "public"."hunt_logs" (
     "weather_fetched_at" timestamp with time zone,
     "stand_coordinates" "jsonb",
     "season" character varying(10) DEFAULT '2025'::character varying NOT NULL,
-    CONSTRAINT "hunt_logs_hunt_type_check" CHECK ((("hunt_type")::"text" = ANY ((ARRAY['AM'::character varying, 'PM'::character varying, 'All Day'::character varying])::"text"[]))),
+    CONSTRAINT "hunt_logs_hunt_type_check" CHECK ((("hunt_type")::"text" = ANY (ARRAY[('AM'::character varying)::"text", ('PM'::character varying)::"text", ('All Day'::character varying)::"text"]))),
     CONSTRAINT "hunt_logs_moon_illumination_check" CHECK ((("moon_illumination" >= (0)::numeric) AND ("moon_illumination" <= (100)::numeric)))
 );
 
@@ -1374,8 +1375,8 @@ CREATE TABLE "public"."hunt_sightings" (
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
     CONSTRAINT "hunt_sightings_count_check" CHECK (("count" > 0)),
-    CONSTRAINT "hunt_sightings_direction_check" CHECK ((("direction")::"text" = ANY ((ARRAY['N'::character varying, 'NE'::character varying, 'E'::character varying, 'SE'::character varying, 'S'::character varying, 'SW'::character varying, 'W'::character varying, 'NW'::character varying, 'Unknown'::character varying])::"text"[]))),
-    CONSTRAINT "hunt_sightings_gender_check" CHECK ((("gender")::"text" = ANY ((ARRAY['Buck'::character varying, 'Doe'::character varying, 'Mixed'::character varying, 'Unknown'::character varying])::"text"[])))
+    CONSTRAINT "hunt_sightings_direction_check" CHECK ((("direction")::"text" = ANY (ARRAY[('N'::character varying)::"text", ('NE'::character varying)::"text", ('E'::character varying)::"text", ('SE'::character varying)::"text", ('S'::character varying)::"text", ('SW'::character varying)::"text", ('W'::character varying)::"text", ('NW'::character varying)::"text", ('Unknown'::character varying)::"text"]))),
+    CONSTRAINT "hunt_sightings_gender_check" CHECK ((("gender")::"text" = ANY (ARRAY[('Buck'::character varying)::"text", ('Doe'::character varying)::"text", ('Mixed'::character varying)::"text", ('Unknown'::character varying)::"text"])))
 );
 
 
@@ -3774,5 +3775,5 @@ ALTER EVENT TRIGGER "pgrst_drop_watch" OWNER TO "supabase_admin";
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 7y7c9TSGB43kZad3bhVLyYHZUBwQ26LL26r6qFqziTSFMP8DlwOrwVcXjyFDkbU
+\unrestrict ZkSm6bZBcoEWuBrecA9hN8N7UAjL3eizYN80wQ1JqgIye6mGbd3uCemA3LcCzlv
 

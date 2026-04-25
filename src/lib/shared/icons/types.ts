@@ -124,6 +124,7 @@ export type IconName =
   | 'battery'
   | 'batteryLow'
   | 'batteryCharging'
+  | 'batteryPlus'
   | 'wifi'
   | 'wifiOff'
   | 'signal'

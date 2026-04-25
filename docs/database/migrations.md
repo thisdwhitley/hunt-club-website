@@ -35,6 +35,37 @@
 
 ---
 
+### 2026-04-24: Add external_bank_id to camera_deployments
+
+**Type**: Schema Addition
+**Affected Tables**: camera_deployments
+**Breaking Changes**: No
+**Rollback Available**: Yes
+
+**Purpose**: Track external battery banks attached to camera deployments. Device 1 (G-2+, Oak Ridge) uses a dual-bank external battery unit. The existing `has_solar_panel`/`solar_panel_id` fields only cover solar; this adds a parallel field for battery banks. The G-2+ reports `EXTERNAL-1 OK` / `EXTERNAL-2 OK` battery status (Cuddeback's internal bank tracking) but that string is not reliable across models — schema-level tracking is the authoritative signal.
+
+**Changes Made**:
+- Added `external_bank_id varchar` to `camera_deployments`
+- Populated `external_bank_id = 'ext-bank'` for device 1's active deployment
+
+**Migration SQL**:
+```sql
+ALTER TABLE camera_deployments ADD COLUMN external_bank_id varchar;
+
+UPDATE camera_deployments
+SET external_bank_id = 'ext-bank'
+WHERE id = '9501caa9-89ca-40e9-bcf5-e1fb12c543c5';
+```
+
+**Files Modified**:
+- `supabase/schema.sql` (exported)
+- `src/lib/cameras/types.ts` — added `external_bank_id` to `CameraDeployment` and `CameraDeploymentFormData`
+- `src/lib/shared/icons/types.ts` — added `batteryPlus` icon name
+- `src/lib/shared/icons/index.ts` — registered `BatteryPlus` icon
+- `src/components/cameras/CameraCardV2.tsx` — `getExternalChip` checks `external_bank_id` first; `formatBatteryStatus` uses regex to shorten all `EXTERNAL*` variants
+
+---
+
 ### 2025-11-05: Update Camera Alert Logic for Post-Firmware Behavior
 
 **Type**: Function Modification

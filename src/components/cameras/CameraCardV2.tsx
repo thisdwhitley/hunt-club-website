@@ -204,7 +204,16 @@ export default function CameraCardV2({
         />
       )
     }
-    if (camera.latest_report?.battery_status?.toUpperCase() === 'EXTERNAL OK') {
+    if (camera.deployment?.external_bank_id) {
+      return (
+        <PowerChip
+          iconName="batteryPlus"
+          label={iconOnly ? undefined : 'Bank'}
+          color={HUNTING_COLORS.weatheredWood}
+        />
+      )
+    }
+    if (camera.latest_report?.battery_status?.toUpperCase().startsWith('EXTERNAL')) {
       return (
         <PowerChip
           iconName="batteryCharging"
@@ -352,7 +361,7 @@ export default function CameraCardV2({
               <span style={{ color: HUNTING_COLORS.forestShadow }}><strong>Power:</strong></span>
               {getBatteryChip()}
               {getExternalChip()}
-              {!camera.hardware.battery_type && !camera.deployment?.has_solar_panel && camera.latest_report?.battery_status?.toUpperCase() !== 'EXTERNAL OK' && (
+              {!camera.hardware.battery_type && !camera.deployment?.has_solar_panel && !camera.deployment?.external_bank_id && !camera.latest_report?.battery_status?.toUpperCase().startsWith('EXTERNAL') && (
                 <span style={{ color: HUNTING_COLORS.weatheredWood, fontSize: '0.75rem' }}>Unknown</span>
               )}
             </div>
@@ -555,10 +564,9 @@ export default function CameraCardV2({
       return HUNTING_COLORS.forestShadow
     }
 
-    // Format battery status text (shorten "EXTERNAL OK" to "Ext OK")
+    // Format battery status text (shorten "EXTERNAL*" variants to "Ext*")
     const formatBatteryStatus = (status: string) => {
-      if (status.toUpperCase() === 'EXTERNAL OK') return 'Ext OK'
-      return status
+      return status.replace(/^EXTERNAL/i, 'Ext')
     }
 
     return (
@@ -631,10 +639,9 @@ export default function CameraCardV2({
       return HUNTING_COLORS.forestShadow
     }
 
-    // Format battery status text (shorten "EXTERNAL OK" to "Ext OK")
+    // Format battery status text (shorten "EXTERNAL*" variants to "Ext*")
     const formatBatteryStatus = (status: string) => {
-      if (status.toUpperCase() === 'EXTERNAL OK') return 'Ext OK'
-      return status
+      return status.replace(/^EXTERNAL/i, 'Ext')
     }
 
     return (

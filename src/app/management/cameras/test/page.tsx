@@ -58,6 +58,7 @@ export default function CamerasTestPage() {
       facing_direction: 'N',
       has_solar_panel: true,
       solar_panel_id: null,
+      external_bank_id: null,
       active: true,
       notes: 'Test deployment for component testing',
       last_seen_date: '2025-01-06',

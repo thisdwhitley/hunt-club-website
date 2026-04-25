@@ -67,6 +67,7 @@ export interface CameraDeployment {
   facing_direction: FacingDirection | null;
   has_solar_panel: boolean;    // Critical for battery alerts
   solar_panel_id: string | null;
+  external_bank_id: string | null;
   active: boolean;
   notes: string | null;
   // Missing detection fields
@@ -181,6 +182,7 @@ export interface CameraDeploymentFormData {
   facing_direction?: FacingDirection;
   has_solar_panel: boolean;
   solar_panel_id?: string;
+  external_bank_id?: string;
   active: boolean;
   notes?: string;
 }
