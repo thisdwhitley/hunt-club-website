@@ -101,24 +101,7 @@ export default function CameraCardV2({
   // Shorten "EXTERNAL OK" → "Ext OK" etc. to keep battery text compact across all modes
   const formatBatteryStatus = (status: string) => status.replace(/^EXTERNAL/i, 'Ext')
 
-  // Determine alert status and color
-  const getAlertStatus = () => {
-    if (camera.deployment?.is_missing) {
-      return { status: 'missing', color: HUNTING_COLORS.weatheredWood, label: 'MISSING' }
-    }
-    if (camera.latest_report?.needs_attention) {
-      return { status: 'critical', color: HUNTING_COLORS.clayEarth, label: 'CRITICAL' }
-    }
-    if (
-      camera.latest_report?.battery_status === 'Low' ||
-      (camera.days_since_last_report && camera.days_since_last_report > 3)
-    ) {
-      return { status: 'warning', color: HUNTING_COLORS.mutedGold, label: 'WARNING' }
-    }
-    return { status: 'good', color: HUNTING_COLORS.forestGreen, label: 'GOOD' }
-  }
 
-  const alertStatus = getAlertStatus()
 
   // Get actions with proper camera-style colors (matching Stand/Hunt pattern)
   const getActions = () => {
@@ -242,7 +225,6 @@ export default function CameraCardV2({
 
     // Prefer the real per-camera check-in timestamp; fall back to sync date
     const checkinRaw = camera.latest_report.cuddeback_last_checkin_at
-    const sourceDateRaw = checkinRaw || camera.latest_report.report_date
 
     const sourceDateParsed = checkinRaw
       ? new Date(checkinRaw)
