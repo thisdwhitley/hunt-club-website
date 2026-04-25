@@ -494,7 +494,7 @@ These defaults are intentional — do not change them without good reason:
 
 **Toolbar layout (left → right):** Search input → Sort select + direction toggle → Filters button → View mode toggle → Stats
 
-**Sticky toolbar pattern:** The search/filter toolbar is lifted out of the scrolling content area into its own full-width sticky wrapper: `<div className="sticky top-16 z-10 bg-gray-50 shadow-sm">`. The `top-16` accounts for the fixed navigation bar (`h-16` = 64px). Use `bg-gray-50` (matching the page background) on the outer wrapper so it fills edge-to-edge when stuck. The inner `max-w-7xl` constraint and the white card sit inside this wrapper. Content below (alerts, camera grid) lives in a separate `<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">`. Apply this same pattern to any management page that gets a sticky toolbar.
+**Sticky toolbar pattern:** Use `sticky top-[68px] z-10` — NOT `top-16`. The nav is `h-16` (64px) plus a 4px burnt-orange accent border (`h-1`), making the true nav height 68px. Using `top-16` causes a visible 4px jump when scrolling starts. The wrapper needs no background or shadow — just `sticky top-[68px] z-10`. The white card inside provides its own `shadow-sm border`. Content below lives in a separate `<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">`.
 
 **Filter button badge:** Shows count of filters that differ from `DEFAULT_FILTERS`, excluding the search field (search has its own input). Badge is burnt-orange when panel is closed, white-on-olive when open.
 

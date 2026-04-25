@@ -565,38 +565,34 @@ Type "${deviceId}" to confirm deletion:`
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header - matching your stands page pattern with GPX import button */}
-      <div className="bg-olive-green text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3 mb-4 sm:mb-0">
-                <CameraIcon size={28} className="text-white" />
-                <div>
-                  <h1 className="text-2xl font-bold">Trail Camera Management</h1>
-                  <p className="text-green-100 opacity-90">
-                    Monitor and manage all trail cameras across the property
-                  </p>
-                </div>
+      {/* Sticky Toolbar — title, actions, search, sort, filter all in one card */}
+      <div className="sticky top-[68px] z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-3">
+
+            {/* Title row — hidden on mobile, nav already provides context */}
+            <div className="hidden sm:flex items-center justify-between">
+              <div className="flex items-center gap-2 text-forest-shadow">
+                <CameraIcon size={18} className="text-olive-green" />
+                <h1 className="text-base font-semibold">Trail Camera Management</h1>
               </div>
-              
               <div className="flex items-center gap-2">
                 {/* Split-button: Add Camera (primary) + Import dropdown */}
                 <div className="relative" ref={importDropdownRef}>
                   <div className="flex">
                     <button
                       onClick={handleCreateCamera}
-                      className="bg-burnt-orange hover:bg-clay-earth text-white px-4 py-2 rounded-l-lg flex items-center gap-2 transition-colors font-medium"
+                      className="bg-burnt-orange hover:bg-clay-earth text-white px-3 py-1.5 rounded-l-md flex items-center gap-1.5 transition-colors font-medium text-sm"
                     >
-                      <PlusIcon size={20} />
+                      <PlusIcon size={16} />
                       <span className="hidden sm:inline">Add Camera</span>
                     </button>
                     <button
                       onClick={() => setShowImportDropdown(prev => !prev)}
-                      className="bg-burnt-orange hover:bg-clay-earth text-white px-2 py-2 rounded-r-lg border-l border-white/30 transition-colors"
+                      className="bg-burnt-orange hover:bg-clay-earth text-white px-1.5 py-1.5 rounded-r-md border-l border-white/30 transition-colors"
                       aria-label="Import options"
                     >
-                      {React.createElement(getIcon('chevronDown'), { size: 16 })}
+                      {React.createElement(getIcon('chevronDown'), { size: 14 })}
                     </button>
                   </div>
                   {showImportDropdown && (
@@ -625,10 +621,10 @@ Type "${deviceId}" to confirm deletion:`
                 <div className="relative" ref={overflowMenuRef}>
                   <button
                     onClick={() => setShowOverflowMenu(prev => !prev)}
-                    className="border border-white/30 text-white/70 hover:bg-white/10 hover:text-white p-2 rounded-lg transition-colors"
+                    className="border border-gray-300 text-gray-500 hover:bg-gray-50 hover:text-gray-700 p-1.5 rounded-md transition-colors"
                     title="More options"
                   >
-                    {React.createElement(getIcon('moreVertical'), { size: 20 })}
+                    {React.createElement(getIcon('moreVertical'), { size: 16 })}
                   </button>
                   {showOverflowMenu && (
                     <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50">
@@ -643,17 +639,14 @@ Type "${deviceId}" to confirm deletion:`
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Sticky Search, Sort, Filter Bar */}
-      <div className="sticky top-16 z-10 bg-gray-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            {/* Divider — only needed when title row is visible */}
+            <div className="hidden sm:block border-t border-gray-100" />
+
+            {/* Search / sort / filter row */}
+            <div className="flex flex-wrap items-center gap-2">
             {/* Search */}
-            <div className="relative flex-1 min-w-0">
+            <div className="relative w-full sm:flex-1 sm:min-w-0">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <SearchIcon className="h-5 w-5 text-weathered-wood" />
               </div>
@@ -667,12 +660,12 @@ Type "${deviceId}" to confirm deletion:`
             </div>
 
             {/* Sort Controls */}
-            <div className="flex items-center gap-2 shrink-0">
-              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Sort:</label>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <label className="hidden sm:block text-sm font-medium text-gray-700 whitespace-nowrap">Sort:</label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'location_name' | 'device_id' | 'last_seen' | 'battery_status' | 'brand')}
-                className="text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
+                className="text-sm text-gray-900 border border-gray-300 rounded-md px-2 sm:px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
               >
                 <option value="location_name">Location</option>
                 <option value="device_id">Device ID</option>
@@ -712,7 +705,7 @@ Type "${deviceId}" to confirm deletion:`
                   }`}
                 >
                   <FilterIcon size={15} />
-                  <span>Filters</span>
+                  <span className="hidden sm:inline">Filters</span>
                   {activeFilterCount > 0 && (
                     <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
                       showFilters ? 'bg-white text-olive-green' : 'bg-burnt-orange text-white'
@@ -722,7 +715,7 @@ Type "${deviceId}" to confirm deletion:`
                   )}
                   <ChevronDownIcon
                     size={14}
-                    className={`transition-transform duration-200 ${showFilters ? 'rotate-180' : ''}`}
+                    className={`hidden sm:block transition-transform duration-200 ${showFilters ? 'rotate-180' : ''}`}
                   />
                 </button>
               )
@@ -753,8 +746,8 @@ Type "${deviceId}" to confirm deletion:`
               ))}
             </div>
 
-            {/* Stats */}
-            <div className="flex items-center gap-3 text-sm text-weathered-wood shrink-0">
+            {/* Stats — hidden on mobile */}
+            <div className="hidden sm:flex items-center gap-3 text-sm text-weathered-wood shrink-0">
               <div className="flex items-center gap-1">
                 <div className="w-2.5 h-2.5 bg-olive-green rounded-full" />
                 <span>{filteredCameras.length} of {cameras.length}</span>
@@ -1003,6 +996,15 @@ Type "${deviceId}" to confirm deletion:`
           </div>
         </div>
       )}
+
+      {/* FAB — mobile only, replaces the Add Camera button hidden with the title row */}
+      <button
+        onClick={handleCreateCamera}
+        className="sm:hidden fixed bottom-6 right-6 z-20 w-14 h-14 bg-burnt-orange hover:bg-clay-earth text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
+        aria-label="Add Camera"
+      >
+        <PlusIcon size={24} />
+      </button>
     </div>
   )
 }
