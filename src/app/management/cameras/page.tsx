@@ -9,6 +9,7 @@ const FilterIcon = getIcon('filter')
 const PlusIcon = getIcon('plus')
 const MapPinIcon = getIcon('mapPin')
 const AlertCircleIcon = getIcon('alertCircle')
+const WarningIcon = getIcon('warning')
 const UploadIcon = getIcon('upload')
 const ViewGridIcon = getIcon('viewGrid')
 const ViewCompactIcon = getIcon('viewCompact')
@@ -201,6 +202,7 @@ export default function CameraManagementPage() {
 
   // View mode
   const [viewMode, setViewMode] = useState<'full' | 'compact' | 'list'>('full')
+  const [alertBannerOpen, setAlertBannerOpen] = useState(false)
 
   // Sorting state
   const [sortBy, setSortBy] = useState<'location_name' | 'device_id' | 'last_seen' | 'battery_status' | 'brand'>('device_id')
@@ -230,6 +232,9 @@ export default function CameraManagementPage() {
   const { cameras, loading, error, refresh: refreshCameras } = useCameras(cameraFilters)
   const { alerts, loading: alertsLoading } = useCameraAlerts()
   const { createHardware, updateHardware } = useCameraHardware()
+
+  // Collapse banner if alerts are resolved
+  useEffect(() => { if (alerts.length === 0) setAlertBannerOpen(false) }, [alerts.length])
 
   // Filter cameras based on coordinate availability and apply sorting
   const filteredCameras = useMemo(() => {
@@ -759,10 +764,18 @@ Type "${deviceId}" to confirm deletion:`
                 <span>{filteredCameras.filter(c => c.deployment?.latitude && c.deployment?.longitude).length} mapped</span>
               </div>
               {!alertsLoading && alerts.length > 0 && (
-                <div className="flex items-center gap-1 text-red-600">
+                <button
+                  onClick={() => setAlertBannerOpen(o => !o)}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded transition-colors"
+                  style={alertBannerOpen
+                    ? { backgroundColor: '#A0653A', color: 'white' }
+                    : { color: '#A0653A' }
+                  }
+                  title={alertBannerOpen ? 'Hide alert details' : 'Show alert details'}
+                >
                   <AlertCircleIcon size={14} />
-                  <span>{alerts.length}</span>
-                </div>
+                  <span className="font-medium">{alerts.length}</span>
+                </button>
               )}
             </div>
           </div>
@@ -779,19 +792,20 @@ Type "${deviceId}" to confirm deletion:`
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Alert Banner - only show if there are alerts */}
-        {!alertsLoading && alerts.length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center gap-3">
-              <AlertCircleIcon className="h-5 w-5 text-red-600 flex-shrink-0" />
-              <div>
-                <h3 className="text-red-800 font-medium">
-                  {alerts.length} {alerts.length === 1 ? 'Camera Needs' : 'Cameras Need'} Attention
-                </h3>
-                <p className="text-red-700 text-sm">
-                  Some cameras require immediate attention due to missing reports, low battery, or other issues.
-                </p>
-              </div>
+        {/* Alert Banner - shown when badge is toggled on */}
+        {!alertsLoading && alerts.length > 0 && alertBannerOpen && (
+          <div
+            className="rounded-lg p-4 mb-6 border-l-4 flex items-start gap-3"
+            style={{ backgroundColor: '#A0653A18', borderLeftColor: '#A0653A' }}
+          >
+            <WarningIcon size={20} className="flex-shrink-0 mt-0.5" style={{ color: '#A0653A' }} />
+            <div>
+              <h3 className="font-semibold" style={{ color: '#A0653A' }}>
+                {alerts.length} {alerts.length === 1 ? 'Camera Needs' : 'Cameras Need'} Attention
+              </h3>
+              <p className="text-sm mt-0.5 text-weathered-wood">
+                {alerts.map(a => a.hardware.cuddeback_name || a.hardware.device_id).join(', ')}
+              </p>
             </div>
           </div>
         )}

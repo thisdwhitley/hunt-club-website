@@ -526,29 +526,17 @@ export async function getStatusReports(
  */
 export async function getCameraAlerts(): Promise<CameraAPIResponse<CameraWithStatus[]>> {
   try {
-    // Get all cameras first
-    const camerasResult = await getCameraDeployments();
+    // Only alert on active deployments — inactive/last-season cameras should never surface
+    const camerasResult = await getCameraDeployments({ active: true });
     if (!camerasResult.success) {
       return { success: false, error: camerasResult.error };
     }
 
     // Filter to only cameras that need attention
     const alertCameras = camerasResult.data?.filter(camera => {
-      // Check if latest report has alerts
-      if (camera.latest_report?.needs_attention) {
-        return true;
-      }
-
-      // Check if camera is missing (no recent reports)
-      if (camera.days_since_last_report !== null && camera.days_since_last_report > 1) {
-        return true;
-      }
-
-      // Check if deployment is marked as missing
-      if (camera.deployment?.is_missing) {
-        return true;
-      }
-
+      if (camera.latest_report?.needs_attention) return true;
+      if (camera.latest_report?.is_check_in_stale) return true;
+      if (camera.deployment?.is_missing) return true;
       return false;
     }) || [];
 
@@ -672,7 +660,7 @@ export async function getCameraStats(): Promise<CameraAPIResponse<CameraStats>> 
     // Calculate basic counts
     const totalHardware = hardware?.length || 0;
     const activeDeployments = deployments?.filter(d => d.active).length || 0;
-    const missingCameras = deployments?.filter(d => d.is_missing).length || 0;
+    const missingCameras = deployments?.filter(d => d.active && d.is_missing).length || 0;
 
     // Calculate brand distribution
     const camerasByBrand: Record<string, number> = {};
