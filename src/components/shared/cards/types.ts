@@ -13,6 +13,7 @@ export interface BaseCardProps {
   onSelect?: () => void
   showCheckbox?: boolean
   className?: string
+  style?: React.CSSProperties
   highlighted?: boolean
   highlightColor?: string
   children: React.ReactNode

@@ -96,6 +96,10 @@ export default function CameraCardV2({
 }: CameraCardV2Props) {
 
   const isInactive = !camera.deployment || camera.deployment.active === false
+  const isMIA = !isInactive && !!camera.latest_report?.is_check_in_stale
+
+  // Shorten "EXTERNAL OK" → "Ext OK" etc. to keep battery text compact across all modes
+  const formatBatteryStatus = (status: string) => status.replace(/^EXTERNAL/i, 'Ext')
 
   // Determine alert status and color
   const getAlertStatus = () => {
@@ -181,6 +185,11 @@ export default function CameraCardV2({
 
   const reportFreshnessColor = getReportFreshnessColor()
 
+  const getMIAChip = () => {
+    if (!isMIA) return null
+    return <PowerChip iconName="wifiOff" label="MIA" color={HUNTING_COLORS.clayEarth} />
+  }
+
   const getBatteryChip = () => {
     if (!camera.hardware.battery_type) return null
     return (
@@ -225,52 +234,37 @@ export default function CameraCardV2({
     return null
   }
 
-  // Format report age text with better handling for missing/stale data
-  // TODO: Underlying timestamp data is suspect (webpage scraping issues)
-  //       See docs/KNOWN_ISSUES.md - "Camera Report Data From Timestamp Accuracy"
+  // Format report age using cuddeback_last_checkin_at (actual camera check-in) when available,
+  // falling back to report_date (sync date) for older records without the health tab data.
   const formatReportAge = () => {
-    // If camera is marked as missing
-    if (camera.deployment?.is_missing) {
-      return 'Camera Missing'
-    }
+    if (camera.deployment?.is_missing) return 'Camera Missing'
+    if (!camera.latest_report) return 'No report data'
 
-    // If no report exists at all
-    if (!camera.latest_report) {
-      return 'No report data'
-    }
+    // Prefer the real per-camera check-in timestamp; fall back to sync date
+    const checkinRaw = camera.latest_report.cuddeback_last_checkin_at
+    const sourceDateRaw = checkinRaw || camera.latest_report.report_date
 
-    const reportAge = camera.days_since_last_report
+    const sourceDateParsed = checkinRaw
+      ? new Date(checkinRaw)
+      : (camera.latest_report.report_date ? parseDBDate(camera.latest_report.report_date) : null)
 
-    // If we couldn't calculate days (null/undefined)
-    if (reportAge === null || reportAge === undefined) {
-      return 'Unknown'
-    }
+    if (!sourceDateParsed) return 'Unknown'
 
-    const reportDateParsed = camera.latest_report.report_date
-      ? parseDBDate(camera.latest_report.report_date)
-      : null
-    const shortDate = reportDateParsed
-      ? reportDateParsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      : ''
-    const dateSuffix = shortDate ? ` (${shortDate})` : ''
+    const msPerDay = 86400000
+    const ageInDays = Math.floor((Date.now() - sourceDateParsed.getTime()) / msPerDay)
+    const shortDate = sourceDateParsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const dateSuffix = ` (${shortDate})`
 
-    // Very old data (likely not deployed or transmitting)
-    if (reportAge > 30) {
-      return shortDate
-        ? `${reportAge} days ago (${shortDate}, stale)`
-        : `${reportAge} days ago (stale)`
-    }
-
-    // Recent data
-    if (reportAge === 0) return `Today${dateSuffix}`
-    if (reportAge === 1) return `1 day ago${dateSuffix}`
-    return `${reportAge} days ago${dateSuffix}`
+    if (ageInDays > 30) return `${ageInDays} days ago${dateSuffix} — stale`
+    if (ageInDays === 0) return `Today${dateSuffix}`
+    if (ageInDays === 1) return `1 day ago${dateSuffix}`
+    return `${ageInDays} days ago${dateSuffix}`
   }
 
   // ==================== FULL MODE ====================
   if (mode === 'full') {
     return (
-      <BaseCard mode={mode} onClick={onClick ? () => onClick(camera) : undefined} clickable={!!onClick} className={isInactive ? 'opacity-60' : ''}>
+      <BaseCard mode={mode} onClick={onClick ? () => onClick(camera) : undefined} clickable={!!onClick} highlighted={isMIA} highlightColor={HUNTING_COLORS.clayEarth} style={isMIA ? { backgroundColor: 'rgba(160,101,58,0.15)' } : undefined} className={isInactive ? 'opacity-60' : ''}>
         {/* Header - Simple title with actions (matches Stand/Hunt pattern) */}
         <div className="flex items-center gap-3 mb-3">
           <DeviceIcon deviceId={camera.hardware.device_id} mode={mode} />
@@ -281,7 +275,7 @@ export default function CameraCardV2({
                   className="font-bold text-lg truncate"
                   style={{ color: HUNTING_COLORS.forestGreen }}
                 >
-                  {camera.deployment?.location_name || 'Not Deployed'}
+                  {camera.hardware.cuddeback_name || camera.deployment?.location_name || 'Not Deployed'}
                 </h3>
                 {isInactive && (
                   <span
@@ -295,6 +289,7 @@ export default function CameraCardV2({
                     Inactive
                   </span>
                 )}
+                {getMIAChip()}
               </div>
 
               {/* Action Buttons */}
@@ -429,14 +424,14 @@ export default function CameraCardV2({
                       <strong>Battery:</strong>{' '}
                       {camera.latest_report.battery_status.toUpperCase() === 'CRITICAL' ? (
                         <span className="font-bold" style={{ color: HUNTING_COLORS.clayEarth }}>
-                          {camera.latest_report.battery_status}
+                          {formatBatteryStatus(camera.latest_report.battery_status)}
                         </span>
                       ) : camera.latest_report.battery_status.toUpperCase() === 'LOW' ? (
                         <span className="font-bold" style={{ color: HUNTING_COLORS.mutedGold }}>
-                          {camera.latest_report.battery_status}
+                          {formatBatteryStatus(camera.latest_report.battery_status)}
                         </span>
                       ) : (
-                        <span>{camera.latest_report.battery_status}</span>
+                        <span>{formatBatteryStatus(camera.latest_report.battery_status)}</span>
                       )}
                     </span>
                   </div>
@@ -531,12 +526,15 @@ export default function CameraCardV2({
               </div>
 
               {/* Alert Reason */}
-              {camera.latest_report.alert_reason && (
+              {(camera.latest_report.alert_reason || isMIA) && (
                 <div className="mt-2 pt-2 border-t border-gray-200">
                   <div className="flex items-center justify-center gap-2 text-xs">
-                    {React.createElement(getIcon('alert'), { size: 12, style: { color: alertStatus.color } })}
-                    <span style={{ color: alertStatus.color }}>
-                      <strong>Alert:</strong> {camera.latest_report.alert_reason}
+                    {React.createElement(getIcon('alert'), { size: 12, style: { color: HUNTING_COLORS.clayEarth } })}
+                    <span style={{ color: HUNTING_COLORS.clayEarth }}>
+                      {isMIA
+                        ? <><strong>MIA:</strong> Deployed but has not checked in recently — data may be stale</>
+                        : <><strong>Alert:</strong> {camera.latest_report.alert_reason}</>
+                      }
                     </span>
                   </div>
                 </div>
@@ -564,20 +562,15 @@ export default function CameraCardV2({
       return HUNTING_COLORS.forestShadow
     }
 
-    // Format battery status text (shorten "EXTERNAL*" variants to "Ext*")
-    const formatBatteryStatus = (status: string) => {
-      return status.replace(/^EXTERNAL/i, 'Ext')
-    }
-
     return (
-      <BaseCard mode={mode} onClick={onClick ? () => onClick(camera) : undefined} clickable={!!onClick} className={isInactive ? 'opacity-60' : ''}>
+      <BaseCard mode={mode} onClick={onClick ? () => onClick(camera) : undefined} clickable={!!onClick} highlighted={isMIA} highlightColor={HUNTING_COLORS.clayEarth} style={isMIA ? { backgroundColor: 'rgba(160,101,58,0.15)' } : undefined} className={isInactive ? 'opacity-60' : ''}>
         <div className="flex items-start gap-2.5">
           <DeviceIcon deviceId={camera.hardware.device_id} mode={mode} />
           <div className="flex-1 min-w-0">
             {/* Title row with location and inactive badge */}
             <div className="flex items-center gap-2 mb-0.5">
               <h3 className="font-bold text-base truncate" style={{ color: HUNTING_COLORS.forestGreen }}>
-                {camera.deployment?.location_name || 'Not Deployed'}
+                {camera.hardware.cuddeback_name || camera.deployment?.location_name || 'Not Deployed'}
               </h3>
               {isInactive && (
                 <span
@@ -591,6 +584,7 @@ export default function CameraCardV2({
                   Inactive
                 </span>
               )}
+              {getMIAChip()}
             </div>
 
             {/* Key info row */}
@@ -639,13 +633,11 @@ export default function CameraCardV2({
       return HUNTING_COLORS.forestShadow
     }
 
-    // Format battery status text (shorten "EXTERNAL*" variants to "Ext*")
-    const formatBatteryStatus = (status: string) => {
-      return status.replace(/^EXTERNAL/i, 'Ext')
-    }
-
     return (
-      <tr className={`border-b border-gray-200 hover:bg-gray-50 transition-colors ${isInactive ? 'opacity-60' : ''}`}>
+      <tr
+        className={`border-b border-gray-200 transition-colors ${isInactive ? 'opacity-60' : ''} ${isMIA ? 'border-l-4' : 'hover:bg-gray-50'}`}
+        style={isMIA ? { borderLeftColor: HUNTING_COLORS.clayEarth, backgroundColor: 'rgba(160,101,58,0.15)' } : undefined}
+      >
         {/* Device Column - Icon only, no text */}
         <td className="px-4 py-3 text-sm">
           <div className="flex items-center">
@@ -656,7 +648,7 @@ export default function CameraCardV2({
         {/* Location Column */}
         <td className="px-4 py-3 text-sm">
           <div className="flex items-center gap-2">
-            <span className="text-forest-shadow font-medium">{camera.deployment?.location_name || 'Not Deployed'}</span>
+            <span className="text-forest-shadow font-medium">{camera.hardware.cuddeback_name || camera.deployment?.location_name || 'Not Deployed'}</span>
             {isInactive && (
               <span
                 className="text-xs font-bold px-1.5 py-0.5 rounded-full"
@@ -669,6 +661,7 @@ export default function CameraCardV2({
                 Inactive
               </span>
             )}
+            {getMIAChip()}
           </div>
         </td>
 

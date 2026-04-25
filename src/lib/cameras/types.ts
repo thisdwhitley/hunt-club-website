@@ -33,7 +33,7 @@ export type BatteryStatus = typeof BATTERY_STATUSES[number];
 
 /**
  * Physical camera hardware device
- * Maps to: camera_hardware table (13 fields)
+ * Maps to: camera_hardware table
  */
 export interface CameraHardware {
   id: string;
@@ -48,6 +48,7 @@ export interface CameraHardware {
   battery_type: BatteryType | null;
   active: boolean;
   notes: string | null;
+  cuddeback_name: string | null; // Authoritative name from Cuddeback site (Title Case), updated each sync
   created_at: string;          // ISO timestamp
   updated_at: string;          // ISO timestamp
 }
@@ -81,7 +82,7 @@ export interface CameraDeployment {
 
 /**
  * Daily camera status report with automatic alerts
- * Maps to: camera_status_reports table (15 fields)
+ * Maps to: camera_status_reports table
  */
 export interface CameraStatusReport {
   id: string;
@@ -98,6 +99,8 @@ export interface CameraStatusReport {
   alert_reason: string | null;
   report_processing_date: string;    // When we processed the report
   cuddeback_report_timestamp: string | null;
+  cuddeback_last_checkin_at: string | null; // When camera last phoned home (from Health tab)
+  is_check_in_stale: boolean;               // True if last check-in > 2 days ago
   created_at: string;
 }
 

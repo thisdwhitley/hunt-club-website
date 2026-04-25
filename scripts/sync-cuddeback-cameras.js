@@ -238,6 +238,26 @@ const parseStorageMB = (value) => {
   return Math.round(num);
 };
 
+// Days without a check-in before a camera is considered stale
+const STALE_THRESHOLD_DAYS = 2;
+
+// Convert ALL CAPS Cuddeback name to Title Case
+const toTitleCase = (str) =>
+  str.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+// Parse "Apr 25 06:12:12 AM" style timestamps from the Health tab (no year)
+const parseHealthTimestamp = (str) => {
+  if (!str || str.trim() === '') return null;
+  const year = new Date().getFullYear();
+  const parsed = new Date(`${str} ${year}`);
+  if (isNaN(parsed.getTime())) return null;
+  // If the parsed date is more than 1 day in the future, it belongs to last year
+  if (parsed.getTime() > Date.now() + 86400000) {
+    return new Date(`${str} ${year - 1}`).toISOString();
+  }
+  return parsed.toISOString();
+};
+
 /**
  * Main sync function
  */
@@ -716,6 +736,49 @@ async function extractCuddebackData(browser) {
       logger.debug(JSON.stringify(extractionResult.cameras[0], null, 2));
     }
 
+    // Click Health tab and extract per-camera Last Updated timestamps
+    logger.info('🏥 Navigating to Health tab...');
+    const healthClicked = await page.evaluate(() => {
+      const buttons = Array.from(document.querySelectorAll('button, a, fluent-button'));
+      const healthButton = buttons.find(b => {
+        const text = b.textContent?.trim().toLowerCase();
+        return text === 'health' && !b.classList.contains('col-sort-button');
+      });
+      if (healthButton) { healthButton.click(); return true; }
+      return false;
+    });
+
+    if (healthClicked) {
+      logger.debug('✅ Clicked Health tab');
+      await delay(3000);
+    } else {
+      logger.warn('⚠️ Could not find Health tab button — skipping check-in timestamps');
+    }
+
+    // Extract "NUMBER - NAME" → "Last Updated" from Camera Status Summary
+    const healthData = await page.evaluate(() => {
+      const result = {};
+      const allRows = Array.from(document.querySelectorAll('tr, fluent-data-grid-row[row-type="default"]'));
+      for (const row of allRows) {
+        const cells = row.querySelectorAll('td, fluent-data-grid-cell');
+        if (cells.length < 2) continue;
+        const firstCell = cells[0]?.textContent?.trim() || '';
+        const match = firstCell.match(/^(\d+)\s*-\s*.+$/);
+        if (!match) continue;
+        const deviceNum = match[1];
+        const lastCell = cells[cells.length - 1]?.textContent?.trim() || '';
+        if (lastCell) result[deviceNum] = lastCell;
+      }
+      return result;
+    });
+
+    logger.info(`📊 Extracted health timestamps for ${Object.keys(healthData).length} cameras`);
+
+    // Merge health timestamps into camera items
+    for (const camera of extractionResult.cameras) {
+      camera.last_checkin_str = healthData[String(parseInt(camera.location_id))] || null;
+    }
+
     return extractionResult;
 
   } catch (error) {
@@ -761,6 +824,7 @@ async function syncCameraData(cuddebackData, deployments, cuddebackReportTime) {
       }
 
       // Create status report with all available data
+      const checkinAt = parseHealthTimestamp(cameraItem.last_checkin_str);
       const reportData = {
         deployment_id: deployment.id,
         hardware_id: deployment.hardware_id,
@@ -772,6 +836,10 @@ async function syncCameraData(cuddebackData, deployments, cuddebackReportTime) {
         sd_free_space_mb: parseStorageMB(cameraItem.sd_free_space),
         image_queue: parseIntSafe(cameraItem.image_queue),
         cuddeback_report_timestamp: cuddebackReportTime ? new Date(cuddebackReportTime).toISOString() : null,
+        cuddeback_last_checkin_at: checkinAt,
+        is_check_in_stale: checkinAt
+          ? (Date.now() - new Date(checkinAt).getTime()) > STALE_THRESHOLD_DAYS * 86400000
+          : false,
         report_processing_date: new Date().toISOString()
       };
 
@@ -811,11 +879,13 @@ async function syncCameraData(cuddebackData, deployments, cuddebackReportTime) {
       results.status_reports_updated++;
       logger.debug(`✅ Updated status report for ${cameraItem.location_id} (${cameraItem.camera_id})`);
 
-      // Update hardware information if versions have changed
+      // Update hardware information
       const hardwareUpdates = {};
-      if (cameraItem.hw_version && cameraItem.hw_version !== deployment.hardware.hw_version) {
-        hardwareUpdates.hw_version = cameraItem.hw_version;
+      // Always sync the authoritative Cuddeback name (Title Case)
+      if (cameraItem.camera_id) {
+        hardwareUpdates.cuddeback_name = toTitleCase(cameraItem.camera_id);
       }
+      // hw_version from Cuddeback has no matching column — skip it
       if (cameraItem.fw_version && cameraItem.fw_version !== deployment.hardware.fw_version) {
         hardwareUpdates.fw_version = cameraItem.fw_version;
       }

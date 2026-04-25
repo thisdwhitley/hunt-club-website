@@ -35,6 +35,38 @@
 
 ---
 
+### 2026-04-25: Add cuddeback_name and check-in staleness fields
+
+**Type**: Schema Addition
+**Affected Tables**: camera_hardware, camera_status_reports
+**Breaking Changes**: No
+**Rollback Available**: Yes
+
+**Purpose**: Support Cuddeback Health tab scraping. `cuddeback_name` stores the authoritative short name from the Cuddeback site (Title Case), updated silently on each sync for active deployments. `cuddeback_last_checkin_at` stores the per-camera "Last Updated" timestamp from the Health tab. `is_check_in_stale` is a derived boolean (true if last check-in > 2 days ago) for easy UI alerting without date math at render time.
+
+**Changes Made**:
+- Added `cuddeback_name varchar(20)` to `camera_hardware`
+- Added `cuddeback_last_checkin_at timestamptz` to `camera_status_reports`
+- Added `is_check_in_stale boolean DEFAULT false` to `camera_status_reports`
+
+**Migration SQL**:
+```sql
+ALTER TABLE camera_hardware
+  ADD COLUMN IF NOT EXISTS cuddeback_name varchar(20);
+
+ALTER TABLE camera_status_reports
+  ADD COLUMN IF NOT EXISTS cuddeback_last_checkin_at timestamptz,
+  ADD COLUMN IF NOT EXISTS is_check_in_stale boolean DEFAULT false;
+```
+
+**Files Modified**:
+- supabase/schema.sql (exported)
+- docs/database/migrations.md
+- src/lib/cameras/types.ts (add fields to CameraStatusReport and CameraHardware)
+- scripts/sync-cuddeback-cameras.js (Health tab scrape + writes)
+
+---
+
 ### 2026-04-24: Add external_bank_id to camera_deployments
 
 **Type**: Schema Addition

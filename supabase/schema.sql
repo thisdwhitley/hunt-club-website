@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict ZkSm6bZBcoEWuBrecA9hN8N7UAjL3eizYN80wQ1JqgIye6mGbd3uCemA3LcCzlv
+\restrict Ds2OeGAw1zv9hmmnMpQc1a3dcMroIabNAh36wbhUJv1vlMgFpaBmpKiC6WHNceY
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.9 (Debian 17.9-1.pgdg13+1)
@@ -955,6 +955,7 @@ CREATE TABLE "public"."camera_hardware" (
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
     "battery_type" character varying(10),
+    "cuddeback_name" character varying(20),
     CONSTRAINT "camera_hardware_battery_type_check" CHECK ((("battery_type")::"text" = ANY (ARRAY[('AA'::character varying)::"text", ('D'::character varying)::"text", ('External'::character varying)::"text"]))),
     CONSTRAINT "camera_hardware_condition_check" CHECK ((("condition")::"text" = ANY (ARRAY[('good'::character varying)::"text", ('questionable'::character varying)::"text", ('poor'::character varying)::"text", ('retired'::character varying)::"text"])))
 );
@@ -981,7 +982,9 @@ CREATE TABLE "public"."camera_status_reports" (
     "alert_reason" "text",
     "report_processing_date" timestamp with time zone DEFAULT "now"(),
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "cuddeback_report_timestamp" timestamp with time zone
+    "cuddeback_report_timestamp" timestamp with time zone,
+    "cuddeback_last_checkin_at" timestamp with time zone,
+    "is_check_in_stale" boolean DEFAULT false
 );
 
 
@@ -3775,5 +3778,5 @@ ALTER EVENT TRIGGER "pgrst_drop_watch" OWNER TO "supabase_admin";
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ZkSm6bZBcoEWuBrecA9hN8N7UAjL3eizYN80wQ1JqgIye6mGbd3uCemA3LcCzlv
+\unrestrict Ds2OeGAw1zv9hmmnMpQc1a3dcMroIabNAh36wbhUJv1vlMgFpaBmpKiC6WHNceY
 

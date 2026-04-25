@@ -14,6 +14,7 @@ export default function BaseCard({
   onSelect,
   showCheckbox = false,
   className = '',
+  style,
   highlighted = false,
   highlightColor,
   children,
@@ -74,7 +75,7 @@ export default function BaseCard({
         onClick={handleClick}
         role={role}
         aria-label={ariaLabel}
-        style={highlighted && highlightColor ? { borderLeftColor: highlightColor } : undefined}
+        style={{ ...(highlighted && highlightColor ? { borderLeftColor: highlightColor } : {}), ...style }}
       >
         {showCheckbox && onSelect && (
           <td className="px-4 py-3 w-12">
@@ -102,7 +103,7 @@ export default function BaseCard({
       onClick={handleClick}
       role={role}
       aria-label={ariaLabel}
-      style={highlighted && highlightColor ? { borderLeftColor: highlightColor } : undefined}
+      style={{ ...(highlighted && highlightColor ? { borderLeftColor: highlightColor } : {}), ...style }}
     >
       {showCheckbox && onSelect && (
         <div className="absolute top-4 left-4 z-10">
