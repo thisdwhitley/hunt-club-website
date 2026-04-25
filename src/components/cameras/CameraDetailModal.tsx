@@ -23,10 +23,11 @@ import type { CameraWithStatus } from '@/lib/cameras/types'
 // Hunting club color constants
 const HUNTING_COLORS = {
   forestGreen: '#566E3D',
-  forestShadow: '#2D3E1F', 
+  forestShadow: '#2D3E1F',
   burntOrange: '#FA7921',
   darkTeal: '#0C4767',
-  morningMist: '#E8E6E0'
+  morningMist: '#E8E6E0',
+  clayEarth: '#A0653A',
 }
 
 interface CameraDetailModalProps {
@@ -128,11 +129,11 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
           <div className="p-6 space-y-6">
             {/* Status Alert */}
             {alertStatus.status !== 'good' && (
-              <div 
+              <div
                 className="p-4 rounded-lg border-l-4 flex items-center gap-3"
-                style={{ 
+                style={{
                   backgroundColor: `${alertStatus.color}10`,
-                  borderLeftColor: alertStatus.color 
+                  borderLeftColor: alertStatus.color
                 }}
               >
                 <AlertTriangleIcon size={20} style={{ color: alertStatus.color }} />
@@ -145,6 +146,26 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
                       {camera.latest_report.alert_reason}
                     </p>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* Stale check-in warning */}
+            {camera.latest_report?.is_check_in_stale && (
+              <div
+                className="p-4 rounded-lg border-l-4 flex items-start gap-3"
+                style={{ backgroundColor: `${HUNTING_COLORS.clayEarth}12`, borderLeftColor: HUNTING_COLORS.clayEarth }}
+              >
+                <AlertTriangleIcon size={20} className="flex-shrink-0 mt-0.5" style={{ color: HUNTING_COLORS.clayEarth }} />
+                <div>
+                  <h3 className="font-semibold" style={{ color: HUNTING_COLORS.clayEarth }}>
+                    Camera MIA — data may be stale
+                  </h3>
+                  <p className="text-sm mt-0.5 text-weathered-wood">
+                    {camera.latest_report.cuddeback_last_checkin_at
+                      ? `Last check-in was ${Math.floor((Date.now() - new Date(camera.latest_report.cuddeback_last_checkin_at).getTime()) / 86400000)} days ago (${formatDateTime(camera.latest_report.cuddeback_last_checkin_at)}). Battery, signal, and SD data shown below are from that report.`
+                      : 'No check-in recorded. Battery, signal, and SD data shown below may not reflect current conditions.'}
+                  </p>
                 </div>
               </div>
             )}
