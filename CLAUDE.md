@@ -467,11 +467,19 @@ See `docs/refactoring/CARD_SYSTEM_V2_FINAL.md` for full implementation reference
 ### Camera Data Model
 The camera system is split into two separate concepts — never conflate them:
 
-- **`camera_hardware`** — the physical device. Persists forever. Fields: `device_id`, `brand`, `model`, `battery_type`, `condition`, `active`.
+- **`camera_hardware`** — the physical device. Persists forever. Fields: `device_id`, `brand`, `model`, `battery_type`, `condition`, `active`, `cuddeback_name`.
 - **`camera_deployments`** — where the device is deployed this season. Seasonal. Fields: `hardware_id` (FK), `location_name`, `latitude`, `longitude`, `season_year`, `has_solar_panel`, `solar_panel_id`, `active`.
-- **`camera_status_reports`** — automated daily status from sync. Fields: `battery_status`, `signal_level`, `sd_images_count`, etc.
+- **`camera_status_reports`** — automated daily status from sync. Fields: `battery_status`, `signal_level`, `sd_images_count`, `cuddeback_last_checkin_at`, `is_check_in_stale`, etc.
 
 When a camera is pulled from the field, its **deployment** is deactivated (`active=false`) — the hardware record is untouched. Historical deployments are preserved for every season.
+
+**Camera display name:** Always prefer `camera.hardware.cuddeback_name` over `camera.deployment?.location_name` when rendering camera names in cards or lists. The sync script overwrites `cuddeback_name` each run (Title Case) from the Cuddeback Health tab — it is the authoritative short name that matches the physical label on the device.
+
+**MIA / stale check-in:** `is_check_in_stale` is set `true` by the sync script when `cuddeback_last_checkin_at` is more than 2 days ago (threshold: `STALE_THRESHOLD_DAYS` constant in `scripts/sync-cuddeback-cameras.js`). Only active deployments are ever written. Cards use this flag to show the MIA chip, left-border + tint treatment, and an alert message inside the Report Data box. Do not alert on inactive cameras.
+
+**Cuddeback sync — active-only rule:** The sync script fetches `camera_deployments` with `active = true` before processing. Any Cuddeback camera number with no matching active deployment is skipped entirely — no DB writes for inactive or unknown devices.
+
+**`BaseCard` background colors:** Pass alert background colors via the `style` prop (`style={{ backgroundColor: 'rgba(...)' }}`), not via Tailwind `className`. `getModeStyles()` sets `bg-white` which wins over any class-based background due to Tailwind stylesheet ordering. Inline styles always override class-based styles.
 
 ### Cameras Management Page — UX Defaults
 
