@@ -477,6 +477,8 @@ When a camera is pulled from the field, its **deployment** is deactivated (`acti
 
 **MIA / stale check-in:** `is_check_in_stale` is set `true` by the sync script when `cuddeback_last_checkin_at` is more than 2 days ago (threshold: `STALE_THRESHOLD_DAYS` constant in `scripts/sync-cuddeback-cameras.js`). Only active deployments are ever written. Cards use this flag to show the MIA chip, left-border + tint treatment, and an alert message inside the Report Data box. Do not alert on inactive cameras.
 
+**Canonical "has alerts" definition:** A camera has an alert if any of these are true: `latest_report?.needs_attention || latest_report?.is_check_in_stale || deployment?.is_missing`. This definition lives in `getCameraAlerts()` (`src/lib/cameras/database.ts`) and must be kept in sync with the `has_alerts` filter logic in `useCameras` (`src/lib/cameras/hooks.ts`) and the DB-layer filter in `getCameraDeployments` (`src/lib/cameras/database.ts`). Never add a new alert condition to one place without updating all three.
+
 **Cuddeback sync — active-only rule:** The sync script fetches `camera_deployments` with `active = true` before processing. Any Cuddeback camera number with no matching active deployment is skipped entirely — no DB writes for inactive or unknown devices.
 
 **`BaseCard` background colors:** Pass alert background colors via the `style` prop (`style={{ backgroundColor: 'rgba(...)' }}`), not via Tailwind `className`. `getModeStyles()` sets `bg-white` which wins over any class-based background due to Tailwind stylesheet ordering. Inline styles always override class-based styles.
@@ -493,6 +495,8 @@ These defaults are intentional — do not change them without good reason:
 - **`DEFAULT_FILTERS` constant:** Used for initialization, reset (`clearFilters`), and computing the active-filter count badge. Always update this constant if a new filter is added — never hardcode default values in multiple places.
 
 **Toolbar layout (left → right):** Search input → Sort select + direction toggle → Filters button → View mode toggle → Stats
+
+**Stats bar:** Shows `{cameras.length} cameras` — a plain count of whatever the current filters return. Do not use a "X of Y" fraction: all filtering is server-side so filtered and total are always the same number, making the fraction meaningless. The filter badge on the Filters button already signals when results are narrowed.
 
 **Sticky toolbar pattern:** Use `sticky top-[68px] z-10` — NOT `top-16`. The nav is `h-16` (64px) plus a 4px burnt-orange accent border (`h-1`), making the true nav height 68px. Using `top-16` causes a visible 4px jump when scrolling starts. The wrapper needs no background or shadow — just `sticky top-[68px] z-10`. The white card inside provides its own `shadow-sm border`. Content below lives in a separate `<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">`.
 
