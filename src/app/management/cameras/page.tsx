@@ -465,14 +465,6 @@ Type "${deviceId}" to confirm deletion:`
     }
   }
 
-  const handleNavigateToCamera = (camera: CameraWithStatus) => {
-    if (camera.deployment?.latitude && camera.deployment?.longitude) {
-      const url = `https://maps.google.com/?q=${camera.deployment.latitude},${camera.deployment.longitude}`
-      window.open(url, '_blank')
-    } else {
-      alert('No coordinates available for this camera')
-    }
-  }
 
   const handleCreateCamera = () => {
     setEditingCamera(null)
@@ -930,7 +922,6 @@ Type "${deviceId}" to confirm deletion:`
             setViewingCamera(null)
           }}
           onEdit={handleEditCamera}
-          onNavigate={handleNavigateToCamera}
         />
       )}
 

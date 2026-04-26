@@ -15,7 +15,6 @@ const SignalIcon = getIcon('signal')
 const HardDriveIcon = getIcon('hardDrive')
 const ImagesIcon = getIcon('images')
 const AlertTriangleIcon = getIcon('alert')
-const NavigationIcon = getIcon('navigation')
 const EditIcon = getIcon('edit')
 import { formatDate, parseDBDate } from '@/lib/utils/date'
 import type { CameraWithStatus } from '@/lib/cameras/types'
@@ -34,10 +33,9 @@ interface CameraDetailModalProps {
   camera: CameraWithStatus
   onClose: () => void
   onEdit?: (camera: CameraWithStatus) => void
-  onNavigate?: (camera: CameraWithStatus) => void
 }
 
-export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: CameraDetailModalProps) {
+export function CameraDetailModal({ camera, onClose, onEdit }: CameraDetailModalProps) {
   // Helper functions
   // const formatDate = (dateString: string | null): string => {
   //   if (!dateString) return 'Not set'
@@ -100,18 +98,6 @@ export function CameraDetailModal({ camera, onClose, onEdit, onNavigate }: Camer
               >
                 <EditIcon size={18} />
                 <span className="hidden sm:inline">Edit</span>
-              </button>
-            )}
-            
-            {/* Navigate Button */}
-            {onNavigate && camera.deployment?.latitude && camera.deployment?.longitude && (
-              <button
-                onClick={() => onNavigate(camera)}
-                className="p-2 hover:bg-pine-needle rounded-lg transition-colors flex items-center gap-2"
-                title="Navigate to Camera"
-              >
-                <NavigationIcon size={18} />
-                <span className="hidden sm:inline">Navigate</span>
               </button>
             )}
             
