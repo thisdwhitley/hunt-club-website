@@ -292,10 +292,11 @@ export async function getCameraDeployments(
 
     if (filters?.has_alerts !== undefined) {
       transformedData = transformedData.filter(camera => {
-        const hasAlerts = camera.latest_report?.needs_attention || 
-                         camera.deployment?.is_missing ||
-                         (camera.days_since_last_report !== null && camera.days_since_last_report > 1);
-        return filters.has_alerts ? hasAlerts : !hasAlerts;
+        const hasAlerts =
+          camera.latest_report?.needs_attention ||
+          camera.latest_report?.is_check_in_stale ||
+          camera.deployment?.is_missing;
+        return filters.has_alerts ? !!hasAlerts : !hasAlerts;
       });
     }
 

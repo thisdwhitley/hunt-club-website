@@ -653,11 +653,15 @@ export function useCameraFilters() {
       });
     }
 
-    // Alerts filter
+    // Alerts filter — must match getCameraAlerts criteria
     if (filters.has_alerts !== undefined) {
-      filtered = filtered.filter(camera => 
-        (camera.latest_report?.needs_attention === true) === filters.has_alerts
-      );
+      filtered = filtered.filter(camera => {
+        const hasAlert =
+          camera.latest_report?.needs_attention === true ||
+          camera.latest_report?.is_check_in_stale === true ||
+          camera.deployment?.is_missing === true;
+        return hasAlert === filters.has_alerts;
+      });
     }
 
     // Apply sorting
