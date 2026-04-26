@@ -13,7 +13,7 @@ const UploadIcon = getIcon('upload')
 const ViewGridIcon = getIcon('viewGrid')
 const ViewCompactIcon = getIcon('viewCompact')
 const ViewListIcon = getIcon('viewList')
-import { useCameras, useCameraAlerts, useCameraHardware, useCameraStats } from '@/lib/cameras/hooks'
+import { useCameras, useCameraAlerts, useCameraHardware } from '@/lib/cameras/hooks'
 import CameraCardV2 from '@/components/cameras/CameraCardV2'
 import { CameraForm } from '@/components/cameras/CameraForms'
 import { CameraDetailModal } from '@/components/cameras/CameraDetailModal'
@@ -195,7 +195,6 @@ export default function CameraManagementPage() {
 
   const { cameras, loading, error, refresh: refreshCameras } = useCameras(cameraFilters)
   const { alerts, loading: alertsLoading } = useCameraAlerts()
-  const { stats } = useCameraStats()
   const { createHardware, updateHardware } = useCameraHardware()
 
   // Collapse banner if alerts are resolved
@@ -690,7 +689,7 @@ Type "${deviceId}" to confirm deletion:`
             <div className="hidden sm:flex items-center gap-3 text-sm text-weathered-wood shrink-0">
               <div className="flex items-center gap-1">
                 <div className="w-2.5 h-2.5 bg-olive-green rounded-full" />
-                <span>{filteredCameras.length} of {stats?.active_deployments ?? cameras.length} cameras</span>
+                <span>{cameras.length} cameras</span>
               </div>
               {!alertsLoading && alerts.length > 0 && (
                 <button
