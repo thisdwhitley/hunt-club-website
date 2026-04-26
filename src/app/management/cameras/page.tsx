@@ -7,7 +7,6 @@ const CameraIcon = getIcon('camera')
 const SearchIcon = getIcon('search')
 const FilterIcon = getIcon('filter')
 const PlusIcon = getIcon('plus')
-const MapPinIcon = getIcon('mapPin')
 const AlertCircleIcon = getIcon('alertCircle')
 const WarningIcon = getIcon('warning')
 const UploadIcon = getIcon('upload')
@@ -27,9 +26,7 @@ import type { CameraWithStatus, CameraFilters, CameraHardwareFormData, CameraDep
 export interface CameraManagementFilters {
   search: string
   status: string
-  brand: string
   alerts: string
-  hasCoordinates: string
   season: string
 }
 
@@ -58,9 +55,7 @@ interface CameraImportData {
 const DEFAULT_FILTERS: CameraManagementFilters = {
   search: '',
   status: 'active',
-  brand: 'all',
   alerts: 'all',
-  hasCoordinates: 'all',
   season: 'all',
 }
 
@@ -94,22 +89,6 @@ function CameraFilters({ filters, onFiltersChange }: CameraFiltersProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
-        <select
-          value={filters.brand}
-          onChange={(e) => updateFilter('brand', e.target.value)}
-          className="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-        >
-          <option value="all">All Brands</option>
-          <option value="Reconyx">Reconyx</option>
-          <option value="Stealth Cam">Stealth Cam</option>
-          <option value="Moultrie">Moultrie</option>
-          <option value="Bushnell">Bushnell</option>
-          <option value="Spypoint">Spypoint</option>
-        </select>
-      </div>
-
-      <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Alerts</label>
         <select
           value={filters.alerts}
@@ -119,19 +98,6 @@ function CameraFilters({ filters, onFiltersChange }: CameraFiltersProps) {
           <option value="all">All Cameras</option>
           <option value="has-alerts">Has Alerts</option>
           <option value="no-alerts">No Alerts</option>
-        </select>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-        <select
-          value={filters.hasCoordinates}
-          onChange={(e) => updateFilter('hasCoordinates', e.target.value)}
-          className="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-        >
-          <option value="all">All</option>
-          <option value="mapped">Mapped</option>
-          <option value="unmapped">Unmapped</option>
         </select>
       </div>
 
@@ -205,7 +171,7 @@ export default function CameraManagementPage() {
   const [alertBannerOpen, setAlertBannerOpen] = useState(false)
 
   // Sorting state
-  const [sortBy, setSortBy] = useState<'location_name' | 'device_id' | 'last_seen' | 'battery_status' | 'brand'>('device_id')
+  const [sortBy, setSortBy] = useState<'location_name' | 'device_id' | 'last_seen' | 'battery_status'>('device_id')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
   // Load data using your hooks with proper filtering
@@ -215,9 +181,7 @@ export default function CameraManagementPage() {
     // Convert UI filters to database filters
     if (filters.status === 'active') filterObj.active = true
     if (filters.status === 'inactive') filterObj.active = false
-    
-    if (filters.brand !== 'all') filterObj.brand = [filters.brand]
-    
+
     if (filters.alerts === 'has-alerts') filterObj.has_alerts = true
     if (filters.alerts === 'no-alerts') filterObj.has_alerts = false
     
@@ -238,20 +202,8 @@ export default function CameraManagementPage() {
 
   // Filter cameras based on coordinate availability and apply sorting
   const filteredCameras = useMemo(() => {
-    let filtered = cameras
-
-    // Apply coordinates filter (this can't be done efficiently in database)
-    if (filters.hasCoordinates !== 'all') {
-      filtered = filtered.filter(camera => {
-        const hasCoords = camera.deployment?.latitude && camera.deployment?.longitude
-        if (filters.hasCoordinates === 'mapped') return hasCoords
-        if (filters.hasCoordinates === 'unmapped') return !hasCoords
-        return true
-      })
-    }
-
     // Apply sorting
-    const sorted = [...filtered].sort((a, b) => {
+    const sorted = [...cameras].sort((a, b) => {
       // When showing all statuses, always group active cameras before inactive
       if (filters.status === 'all') {
         const aActive = a.deployment?.active ?? false
@@ -293,10 +245,6 @@ export default function CameraManagementPage() {
           aValue = batteryPriority(a.latest_report?.battery_status ?? null)
           bValue = batteryPriority(b.latest_report?.battery_status ?? null)
           break
-        case 'brand':
-          aValue = a.hardware?.brand || ''
-          bValue = b.hardware?.brand || ''
-          break
         default:
           aValue = a.deployment?.location_name || ''
           bValue = b.deployment?.location_name || ''
@@ -316,7 +264,7 @@ export default function CameraManagementPage() {
     })
 
     return sorted
-  }, [cameras, filters.hasCoordinates, filters.status, sortBy, sortDirection])
+  }, [cameras, filters.status, sortBy, sortDirection])
 
   const clearFilters = () => setFilters(DEFAULT_FILTERS)
 
@@ -656,12 +604,11 @@ Type "${deviceId}" to confirm deletion:`
               <label className="hidden sm:block text-sm font-medium text-gray-700 whitespace-nowrap">Sort:</label>
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'location_name' | 'device_id' | 'last_seen' | 'battery_status' | 'brand')}
+                onChange={(e) => setSortBy(e.target.value as 'location_name' | 'device_id' | 'last_seen' | 'battery_status')}
                 className="text-sm text-gray-900 border border-gray-300 rounded-md px-2 sm:px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
               >
                 <option value="location_name">Location</option>
                 <option value="device_id">Device ID</option>
-                <option value="brand">Brand</option>
                 <option value="last_seen">Last Seen</option>
                 <option value="battery_status">Battery</option>
               </select>
@@ -742,11 +689,7 @@ Type "${deviceId}" to confirm deletion:`
             <div className="hidden sm:flex items-center gap-3 text-sm text-weathered-wood shrink-0">
               <div className="flex items-center gap-1">
                 <div className="w-2.5 h-2.5 bg-olive-green rounded-full" />
-                <span>{filteredCameras.length} of {cameras.length}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <MapPinIcon size={14} />
-                <span>{filteredCameras.filter(c => c.deployment?.latitude && c.deployment?.longitude).length} mapped</span>
+                <span>{filteredCameras.length} of {cameras.length} cameras</span>
               </div>
               {!alertsLoading && alerts.length > 0 && (
                 <button
