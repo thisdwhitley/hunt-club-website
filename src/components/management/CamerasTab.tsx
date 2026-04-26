@@ -4,7 +4,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { getIcon } from '@/lib/shared/icons'
 import { ManagementHubToolbar } from '@/components/shared/ManagementHubToolbar'
 import type { TabConfig } from '@/components/shared/ManagementHubToolbar'
-import { useCameras, useCameraAlerts, useCameraHardware } from '@/lib/cameras/hooks'
+import { useCameras, useCameraAlerts, useCameraHardware, useSeasonYears } from '@/lib/cameras/hooks'
 import CameraCardV2 from '@/components/cameras/CameraCardV2'
 import { CameraForm } from '@/components/cameras/CameraForms'
 import { CameraDetailModal } from '@/components/cameras/CameraDetailModal'
@@ -68,9 +68,10 @@ const DEFAULT_FILTERS: CameraManagementFilters = {
 interface CameraFiltersProps {
   filters: CameraManagementFilters
   onFiltersChange: (filters: CameraManagementFilters) => void
+  seasonYears: number[]
 }
 
-function CameraFilters({ filters, onFiltersChange }: CameraFiltersProps) {
+function CameraFilters({ filters, onFiltersChange, seasonYears }: CameraFiltersProps) {
   const updateFilter = (key: keyof CameraManagementFilters, value: string) => {
     onFiltersChange({ ...filters, [key]: value })
   }
@@ -115,9 +116,9 @@ function CameraFilters({ filters, onFiltersChange }: CameraFiltersProps) {
           className="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
         >
           <option value="all">All Seasons</option>
-          <option value="2025">2025 Season</option>
-          <option value="2024">2024 Season</option>
-          <option value="2023">2023 Season</option>
+          {seasonYears.map(year => (
+            <option key={year} value={String(year)}>{year} Season</option>
+          ))}
         </select>
       </div>
 
@@ -195,6 +196,7 @@ export function CamerasTab({ tabs, activeTab, onTabChange }: CamerasTabProps) {
   const { cameras, loading, error, refresh: refreshCameras } = useCameras(cameraFilters)
   const { alerts, loading: alertsLoading } = useCameraAlerts()
   const { createHardware, updateHardware } = useCameraHardware()
+  const { seasonYears: availableSeasons } = useSeasonYears()
 
   useEffect(() => { if (alerts.length === 0) setAlertBannerOpen(false) }, [alerts.length])
 
@@ -608,7 +610,7 @@ export function CamerasTab({ tabs, activeTab, onTabChange }: CamerasTabProps) {
       {/* Expandable filter panel */}
       {showFilters && (
         <div className="mt-4 pt-4 border-t border-gray-200">
-          <CameraFilters filters={filters} onFiltersChange={setFilters} />
+          <CameraFilters filters={filters} onFiltersChange={setFilters} seasonYears={availableSeasons} />
         </div>
       )}
     </>

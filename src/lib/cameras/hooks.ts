@@ -32,7 +32,8 @@ import {
   detectMissingCameras,
   getCameraStats,
   isDeviceIdAvailable,
-  getAvailableHardware
+  getAvailableHardware,
+  getSeasonYears
 } from './database';
 
 // ============================================================================
@@ -231,6 +232,25 @@ export function useAvailableHardware() {
     error,
     refresh: loadAvailableHardware
   };
+}
+
+export function useSeasonYears() {
+  const [seasonYears, setSeasonYears] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const result = await getSeasonYears();
+      if (result.success) setSeasonYears(result.data || []);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  return { seasonYears, loading };
 }
 
 // ============================================================================

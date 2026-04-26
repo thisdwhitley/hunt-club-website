@@ -1038,3 +1038,21 @@ export async function importDeployments(
 
   return { success: true, data: results };
 }
+
+export async function getSeasonYears(): Promise<CameraAPIResponse<number[]>> {
+  try {
+    const { data, error } = await supabase
+      .from('camera_deployments')
+      .select('season_year')
+      .not('season_year', 'is', null)
+      .order('season_year', { ascending: false });
+
+    if (error) throw error;
+
+    const years = [...new Set((data || []).map(r => r.season_year as number))];
+    return { success: true, data: years };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to fetch season years';
+    return { success: false, error: message };
+  }
+}

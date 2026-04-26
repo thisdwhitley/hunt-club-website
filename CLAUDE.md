@@ -506,6 +506,8 @@ These defaults are intentional — do not change them without good reason:
 
 **SD free space parsing:** The sync script (`scripts/sync-cuddeback-cameras.js`) uses `parseStorageMB()` to parse Cuddeback's storage strings (e.g. `"28.8 GB"`) into MB for `sd_free_space_mb`. Never use `parseIntSafe()` for storage fields — it strips the decimal and ignores the unit, causing a ~1000x error for GB values and false low-storage alerts.
 
+**Season year dropdown — always fetch independently:** Never derive season year options from the currently-loaded camera list. The default filter is "Active Only", so a cameras-derived list would only show the current season and hide past seasons from the dropdown. Instead, use `useSeasonYears()` (`src/lib/cameras/hooks.ts`), which calls `getSeasonYears()` (`src/lib/cameras/database.ts`) — a standalone `SELECT DISTINCT season_year` query that fires once on mount regardless of active filters. Current data: 2026 = 8 active deployments, 2025 = 17 inactive deployments.
+
 ### Working with Forms
 - Use `react-hook-form` for form state management
 - Use `zod` for validation schemas
