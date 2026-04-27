@@ -435,6 +435,11 @@ export default function StandCardV2({
               <div className="flex items-center gap-1.5">
                 <span className="text-weathered-wood italic">Prior season</span>
                 <span className="text-xs text-weathered-wood/70">({formatDate(displayLastActivity.date)})</span>
+                {displayLastActivity.timeOfDay && (
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ${getHuntTypeBadge(displayLastActivity.timeOfDay).className}`}>
+                    {getHuntTypeBadge(displayLastActivity.timeOfDay).label}
+                  </span>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-1.5">
@@ -646,6 +651,9 @@ export default function StandCardV2({
                 <>
                   <span className="italic">Prior season</span>
                   <span className="text-weathered-wood/70"> ({formatDate(displayLastActivity.date)})</span>
+                  {displayLastActivity.timeOfDay && (
+                    <span> - {displayLastActivity.timeOfDay}</span>
+                  )}
                 </>
               ) : (
                 <>

@@ -7,7 +7,14 @@ import React, { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { X, Save, MapPin, Info, Calendar, BarChart3 } from 'lucide-react'
+import { getIcon } from '@/lib/shared/icons'
+
+const XIcon = getIcon('close')
+const SaveIcon = getIcon('save')
+const MapPinIcon = getIcon('mapPin')
+const InfoIcon = getIcon('info')
+const CalendarIcon = getIcon('calendar')
+const ChartBarIcon = getIcon('chartBar')
 import { StandService } from '@/lib/database/stands'
 
 // Stand type from your database schema
@@ -219,10 +226,10 @@ export default function StandFormModal({ stand, onClose, onSubmit }: StandFormMo
   }
 
   const tabs = [
-    { id: 'basic', label: 'Basic Info', icon: Info },
-    { id: 'location', label: 'Location', icon: MapPin },
-    { id: 'features', label: 'Features', icon: Calendar },
-    { id: 'stats', label: 'Statistics', icon: BarChart3 }
+    { id: 'basic', label: 'Basic Info', icon: InfoIcon },
+    { id: 'location', label: 'Location', icon: MapPinIcon },
+    { id: 'features', label: 'Features', icon: CalendarIcon },
+    { id: 'stats', label: 'Statistics', icon: ChartBarIcon }
   ]
 
   return (
@@ -237,7 +244,7 @@ export default function StandFormModal({ stand, onClose, onSubmit }: StandFormMo
             onClick={onClose}
             className="p-1 hover:bg-pine-needle rounded transition-colors"
           >
-            <X size={24} />
+            <XIcon size={24} />
           </button>
         </div>
 
@@ -630,7 +637,7 @@ export default function StandFormModal({ stand, onClose, onSubmit }: StandFormMo
               </>
             ) : (
               <>
-                <Save size={16} />
+                <SaveIcon size={16} />
                 {isEditing ? 'Update Stand' : 'Create Stand'}
               </>
             )}

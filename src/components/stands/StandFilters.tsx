@@ -4,7 +4,10 @@
 // Advanced filtering component for stand management
 
 import React from 'react'
-import { X, Filter } from 'lucide-react'
+import { getIcon } from '@/lib/shared/icons'
+
+const XIcon = getIcon('close')
+const FilterIcon = getIcon('filter')
 
 export interface StandFilters {
   search: string
@@ -46,14 +49,14 @@ export default function StandFilters({ filters, onFiltersChange, onClose }: Stan
       {/* Header */}
       <div className="bg-olive-green text-white px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Filter size={20} />
+          <FilterIcon size={20} />
           <h3 className="font-medium">Filter Stands</h3>
         </div>
         <button
           onClick={onClose}
           className="p-1 hover:bg-pine-needle rounded transition-colors"
         >
-          <X size={18} />
+          <XIcon size={18} />
         </button>
       </div>
 

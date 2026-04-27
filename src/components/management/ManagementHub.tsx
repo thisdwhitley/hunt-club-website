@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { getIcon } from '@/lib/shared/icons'
 import { ManagementHubToolbar } from '@/components/shared/ManagementHubToolbar'
 import { CamerasTab } from './CamerasTab'
+import { StandsTab } from './StandsTab'
 import type { TabConfig } from '@/components/shared/ManagementHubToolbar'
 
 const TABS: TabConfig[] = [
@@ -56,14 +57,7 @@ export default function ManagementHub() {
   }
 
   if (activeTab === 'stands') {
-    return (
-      <TabPlaceholder
-        tabs={TABS}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        label="Stands"
-      />
-    )
+    return <StandsTab tabs={TABS} activeTab={activeTab} onTabChange={handleTabChange} />
   }
 
   return (

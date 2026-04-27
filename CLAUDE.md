@@ -508,6 +508,23 @@ These defaults are intentional — do not change them without good reason:
 
 **Season year dropdown — always fetch independently:** Never derive season year options from the currently-loaded camera list. The default filter is "Active Only", so a cameras-derived list would only show the current season and hide past seasons from the dropdown. Instead, use `useSeasonYears()` (`src/lib/cameras/hooks.ts`), which calls `getSeasonYears()` (`src/lib/cameras/database.ts`) — a standalone `SELECT DISTINCT season_year` query that fires once on mount regardless of active filters. Current data: 2026 = 8 active deployments, 2025 = 17 inactive deployments.
 
+### Stands Management Page — Card Design Pattern
+
+**Two-section card layout (mirrors camera card pattern):**
+- **Top section:** Stand identity and attributes — name, type, location, features. These are the things you *manage* (edit, toggle active, update).
+- **Darker bottom section ("HISTORY" bar):** Read-only context pulled live from `hunt_logs` — last hunted date/time-of-day, hunts this season, total harvests. You are not managing hunt logs from the stand card; you are viewing a utilization summary, exactly like the camera card shows battery/signal from `camera_status_reports` without managing those reports.
+
+**Why live query instead of denormalized stand fields:**
+`Stand` records have `total_hunts` and `last_used_date` but nothing automatically updates them when a new hunt is logged (no sync script equivalent). A single `hunt_logs` query on tab load — grouped by `stand_id` — feeds all cards accurately. Revisit denormalization only if performance becomes a real issue.
+
+**Where deeper stand history lives:**
+- Card: summary snapshot (3 stats — total harvests, season hunts, all-time hunts)
+- Detail modal: season-by-season breakdown (drill-down for one specific stand)
+- Dashboard (issue #24): cross-stand analytics, comparative patterns
+
+**Sightings data not yet available:**
+`hunt_logs` tracks `harvest_count` and `had_harvest` but has no `sighting_count` field. Deer sighting patterns (e.g. "8 deer seen at Creek Stand on AM hunts") require issue #23 schema work first. Do not build UI for sightings until that column exists.
+
 ### Working with Forms
 - Use `react-hook-form` for form state management
 - Use `zod` for validation schemas

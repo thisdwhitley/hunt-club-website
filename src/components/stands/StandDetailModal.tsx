@@ -4,11 +4,17 @@
 'use client'
 
 import React from 'react'
-import { X, MapPin, Edit3, Users, Eye, Calendar } from 'lucide-react'
 import { formatDate, parseDBDate } from '@/lib/utils/date'
 import { getIcon } from '@/lib/shared/icons'
 import type { IconName } from '@/lib/shared/icons'
 import type { Stand } from '@/lib/database/stands'
+
+const XIcon = getIcon('close')
+const MapPinIcon = getIcon('mapPin')
+const EditIcon = getIcon('edit')
+const UsersIcon = getIcon('users')
+const EyeIcon = getIcon('eye')
+const CalendarIcon = getIcon('calendar')
 
 // Stand type mappings
 const STAND_TYPES = {
@@ -77,7 +83,7 @@ export function StandDetailModal({
                 className="p-2 hover:bg-pine-needle rounded-lg transition-colors flex items-center gap-2"
                 title="Edit Stand"
               >
-                <Edit3 size={18} />
+                <EditIcon size={18} />
                 <span className="hidden sm:inline">Edit</span>
               </button>
             )}
@@ -87,7 +93,7 @@ export function StandDetailModal({
               onClick={onClose}
               className="p-2 hover:bg-pine-needle rounded-lg transition-colors"
             >
-              <X size={20} />
+              <XIcon size={20} />
             </button>
           </div>
         </div>
@@ -104,7 +110,7 @@ export function StandDetailModal({
             {/* Stand Details */}
             <div className="bg-gray-50 rounded-lg p-6">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-olive-green">
-                <MapPin size={20} />
+                <MapPinIcon size={20} />
                 Stand Details
               </h3>
 
@@ -114,7 +120,7 @@ export function StandDetailModal({
                   <div>
                     <label className="text-sm font-medium text-gray-600">Capacity</label>
                     <p className="text-gray-900 flex items-center gap-2">
-                      <Users size={16} className="text-olive-green" />
+                      <UsersIcon size={16} className="text-olive-green" />
                       {stand.capacity} {stand.capacity === 1 ? 'person' : 'people'}
                     </p>
                   </div>
@@ -145,7 +151,7 @@ export function StandDetailModal({
                   <div>
                     <label className="text-sm font-medium text-gray-600">View Distance</label>
                     <p className="text-gray-900 flex items-center gap-2">
-                      <Eye size={16} className="text-dark-teal" />
+                      <EyeIcon size={16} className="text-dark-teal" />
                       {stand.view_distance_yards} yards
                     </p>
                   </div>
@@ -216,7 +222,7 @@ export function StandDetailModal({
                   <div className="md:col-span-2">
                     <label className="text-sm font-medium text-gray-600">GPS Coordinates</label>
                     <p className="text-gray-900 flex items-center gap-2">
-                      <MapPin size={16} className="text-dark-teal" />
+                      <MapPinIcon size={16} className="text-dark-teal" />
                       {stand.latitude.toFixed(6)}, {stand.longitude.toFixed(6)}
                     </p>
                   </div>
@@ -252,7 +258,7 @@ export function StandDetailModal({
               {(lastActivity || stand.last_used_date) && (
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <div className="flex items-center justify-center gap-2 text-sm text-gray-700">
-                    <Calendar size={16} />
+                    <CalendarIcon size={16} />
                     <strong>Last Hunted:</strong>
                     {lastActivity ? (
                       isPriorSeason(lastActivity.date) ? (
