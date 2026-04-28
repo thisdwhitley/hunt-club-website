@@ -17,6 +17,7 @@ import {
   Calendar,
   MapPin,
   Target,
+  LocateFixed,
   Camera,
   ClipboardList,
   Settings,
@@ -186,7 +187,7 @@ export const ICONS: IconRegistry = {
   // Core Features
   calendar: Calendar,
   map: MapPin,
-  stands: Target,
+  stands: LocateFixed,
   cameras: Camera,
   hunts: ClipboardList,
   management: Settings,
