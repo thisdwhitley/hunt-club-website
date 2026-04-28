@@ -37,6 +37,7 @@ interface StandHuntStats {
   totalHunts: number
   totalHarvests: number
   seasonHunts: number
+  seasonHarvests: number
   lastHuntDate: string | null
   lastHuntType: string | null
 }
@@ -159,6 +160,7 @@ export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
             totalHunts: 0,
             totalHarvests: 0,
             seasonHunts: 0,
+            seasonHarvests: 0,
             lastHuntDate: null,
             lastHuntType: null,
           }
@@ -166,7 +168,10 @@ export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
         const s = statsMap[hunt.stand_id]
         s.totalHunts++
         s.totalHarvests += hunt.harvest_count || 0
-        if (hunt.season === currentSeason) s.seasonHunts++
+        if (hunt.season === currentSeason) {
+          s.seasonHunts++
+          s.seasonHarvests += hunt.harvest_count || 0
+        }
         if (!s.lastHuntDate || hunt.hunt_date > s.lastHuntDate) {
           s.lastHuntDate = hunt.hunt_date
           s.lastHuntType = hunt.hunt_type
@@ -276,14 +281,14 @@ export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
 
   const getCardHistoryProps = (stand: Stand) => {
     const stats = huntStats[stand.id]
-    if (!stats) return {}
     return {
       historyStats: [
-        { label: 'Total Harvests', value: stats.totalHarvests, color: 'text-burnt-orange' },
-        { label: `${new Date().getFullYear()} Hunts`, value: stats.seasonHunts, color: 'text-muted-gold' },
-        { label: 'All-Time Hunts', value: stats.totalHunts, color: 'text-olive-green' },
+        { label: 'Hunts', value: stats?.seasonHunts ?? 0, color: 'text-muted-gold', type: 'season' as const },
+        { label: 'Harvests', value: stats?.seasonHarvests ?? 0, color: 'text-burnt-orange', type: 'season' as const },
+        { label: 'Hunts', value: stats?.totalHunts ?? 0, color: 'text-olive-green', type: 'alltime' as const },
+        { label: 'Harvests', value: stats?.totalHarvests ?? 0, color: 'text-burnt-orange', type: 'alltime' as const },
       ],
-      lastActivity: stats.lastHuntDate
+      lastActivity: stats?.lastHuntDate
         ? { date: stats.lastHuntDate, timeOfDay: stats.lastHuntType ?? undefined, label: 'Last Hunted' }
         : undefined,
     }

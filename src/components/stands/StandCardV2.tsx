@@ -5,7 +5,7 @@
 // Drop-in replacement for StandCard.tsx
 
 import React from 'react'
-import { BaseCard, CardHeader } from '@/components/shared/cards'
+import { BaseCard } from '@/components/shared/cards'
 import { formatDate, getHuntTypeBadge, parseDBDate } from '@/lib/utils/date'
 import { getIcon } from '@/lib/shared/icons'
 import type { IconName } from '@/lib/shared/icons'
@@ -25,6 +25,7 @@ interface HistoryStat {
   label: string
   value: number | string
   color: string // Tailwind color class like 'text-burnt-orange'
+  type?: 'season' | 'alltime'
 }
 
 // Last activity info (flexible for different contexts)
@@ -56,7 +57,7 @@ export default function StandCardV2({
   onClick,
   onEdit,
   onDelete,
-  showLocation = true,
+  showLocation: _showLocation = true,
   showStats = true,
   showActions = true,
   className = '',
@@ -113,32 +114,10 @@ export default function StandCardV2({
 
   const displayLastActivity = lastActivity || defaultLastActivity
 
-  // Get badges for compact/list modes (NO badges in full mode)
-  const getBadges = () => {
-    const badges = []
-
-    // Only show badges in compact/list modes, NOT in full mode
-    if (mode === 'full') {
-      return []
-    }
-
-    if (stand.time_of_day) {
-      badges.push({
-        label: stand.time_of_day,
-        className: 'bg-bright-orange text-white'
-      })
-    }
-
-    if (stand.total_harvests && stand.total_harvests > 0) {
-      badges.push({
-        label: `${stand.total_harvests} Harvests`,
-        icon: getIcon('target'),
-        className: 'bg-olive-green/10 text-olive-green'
-      })
-    }
-
-    return badges
-  }
+  // Split history stats into season vs all-time for visual distinction
+  const seasonStats = displayHistoryStats.filter(s => s.type === 'season')
+  const allTimeStats = displayHistoryStats.filter(s => s.type !== 'season')
+  const hasTypedStats = seasonStats.length > 0 && allTimeStats.length > 0
 
   // Get features for the thin-bordered box (ALL stand details combined)
   // Order: Seats and Walk first, Camera last
@@ -212,8 +191,8 @@ export default function StandCardV2({
         key: 'water',
         icon: WaterIcon,
         iconColor: '#0C4767',
-        label: 'Near water source',
-        value: null
+        label: 'Water:',
+        value: 'nearby'
       })
     }
 
@@ -239,8 +218,8 @@ export default function StandCardV2({
         key: 'archery',
         icon: ArcheryIcon,
         iconColor: '#FA7921',
-        label: 'Good for archery season',
-        value: null
+        label: 'Archery:',
+        value: 'suitable'
       })
     }
 
@@ -346,20 +325,32 @@ export default function StandCardV2({
   if (mode === 'list') {
     return (
       <tr className={`hover:bg-morning-mist transition-colors ${className}`}>
-        {/* Name column - Icon + Stand name */}
+        {/* Name column - Icon + Stand name + walk time chip */}
         <td className="px-4 py-3">
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
             <div
-              className="p-1 rounded flex-shrink-0 mr-2"
+              className="p-1 rounded flex-shrink-0"
               style={{ backgroundColor: `${standType.iconColor}20` }}
             >
               <StandIcon size={16} style={{ color: standType.iconColor }} />
             </div>
-            <div>
-              <div className="text-sm text-forest-shadow font-medium">
-                {stand.name}
-              </div>
-            </div>
+            <span className="text-sm text-forest-shadow font-medium">{stand.name}</span>
+            {stand.walking_time_minutes && (
+              <span
+                title={`${stand.walking_time_minutes} minute walk`}
+                className="inline-flex items-center gap-0.5 rounded-full flex-shrink-0 font-semibold"
+                style={{
+                  fontSize: '10px',
+                  backgroundColor: '#566E3D18',
+                  color: '#566E3D',
+                  border: '1px solid #566E3D30',
+                  padding: '1px 6px',
+                }}
+              >
+                {React.createElement(getIcon('walking'), { size: 9 })}
+                {stand.walking_time_minutes}m
+              </span>
+            )}
           </div>
         </td>
 
@@ -371,14 +362,6 @@ export default function StandCardV2({
               <span className="flex items-center gap-1 whitespace-nowrap text-forest-shadow">
                 {React.createElement(getIcon('users'), { size: 12, className: 'text-olive-green' })}
                 {stand.capacity}
-              </span>
-            )}
-
-            {/* Walking Time */}
-            {stand.walking_time_minutes && (
-              <span className="flex items-center gap-1 whitespace-nowrap text-forest-shadow">
-                {React.createElement(getIcon('walking'), { size: 12, className: 'text-olive-green' })}
-                {stand.walking_time_minutes}m
               </span>
             )}
 
@@ -434,7 +417,7 @@ export default function StandCardV2({
             isPriorSeason(displayLastActivity.date) ? (
               <div className="flex items-center gap-1.5">
                 <span className="text-weathered-wood italic">Prior season</span>
-                <span className="text-xs text-weathered-wood/70">({formatDate(displayLastActivity.date)})</span>
+                <span className="text-weathered-wood/70">({formatDate(displayLastActivity.date)})</span>
                 {displayLastActivity.timeOfDay && (
                   <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ${getHuntTypeBadge(displayLastActivity.timeOfDay).className}`}>
                     {getHuntTypeBadge(displayLastActivity.timeOfDay).label}
@@ -455,7 +438,7 @@ export default function StandCardV2({
             isPriorSeason(stand.last_used_date) ? (
               <div className="flex items-center gap-1.5">
                 <span className="text-weathered-wood italic">Prior season</span>
-                <span className="text-xs text-weathered-wood/70">({formatDate(stand.last_used_date)})</span>
+                <span className="text-weathered-wood/70">({formatDate(stand.last_used_date)})</span>
               </div>
             ) : (
               <div className="whitespace-nowrap">{formatDate(stand.last_used_date)}</div>
@@ -521,7 +504,7 @@ export default function StandCardV2({
       mode={mode}
       onClick={onClick ? () => onClick(stand) : undefined}
       clickable={!!onClick}
-      className={className}
+      className={`${!stand.active ? 'opacity-60' : ''} ${className}`}
     >
       {/* Compact Mode - Simple title + feature icons */}
       {mode === 'compact' && (
@@ -536,12 +519,31 @@ export default function StandCardV2({
 
           {/* Title and Feature Icons */}
           <div className="flex-1 min-w-0">
-            <h3
-              className="font-bold text-base truncate mb-1"
-              style={{ color: standType.titleColor }}
-            >
-              {stand.name}
-            </h3>
+            {/* Name row with walk time chip */}
+            <div className="flex items-center gap-1.5 mb-1 min-w-0">
+              <h3
+                className="font-bold text-base truncate"
+                style={{ color: standType.titleColor }}
+              >
+                {stand.name}
+              </h3>
+              {stand.walking_time_minutes && (
+                <span
+                  title={`${stand.walking_time_minutes} minute walk`}
+                  className="inline-flex items-center gap-0.5 rounded-full flex-shrink-0 font-semibold"
+                  style={{
+                    fontSize: '10px',
+                    backgroundColor: '#566E3D18',
+                    color: '#566E3D',
+                    border: '1px solid #566E3D30',
+                    padding: '1px 6px',
+                  }}
+                >
+                  {React.createElement(getIcon('walking'), { size: 9 })}
+                  {stand.walking_time_minutes}m
+                </span>
+              )}
+            </div>
 
             {/* Feature Icons Row */}
             <div className="flex items-center gap-2 flex-wrap">
@@ -581,19 +583,60 @@ export default function StandCardV2({
         </div>
       )}
 
-      {/* Full Mode - Complete header with badges and actions */}
+      {/* Full Mode - Inline header (matches camera card pattern for vertical centering) */}
       {mode === 'full' && (
-        <CardHeader
-          icon={StandIcon}
-          iconColor={standType.iconColor}
-          titleColor={standType.titleColor}
-          iconBgColor={`${standType.iconColor}20`}
-          title={stand.name}
-          subtitle={undefined} // No subtitle in full mode
-          badges={getBadges()}
-          actions={showActions ? getActions() : []}
-          showActions={showActions}
-        />
+        <div className="flex items-center gap-3 mb-3">
+          <div
+            className="p-2 rounded-lg flex-shrink-0"
+            style={{ backgroundColor: `${standType.iconColor}20` }}
+          >
+            <StandIcon size={24} style={{ color: standType.iconColor }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <h3 className="font-bold text-lg truncate" style={{ color: standType.titleColor }}>
+                  {stand.name}
+                </h3>
+                {!stand.active && (
+                  <span
+                    className="flex-shrink-0 text-xs font-bold px-2 py-0.5 rounded-full"
+                    style={{
+                      backgroundColor: '#8B735520',
+                      color: '#8B7355',
+                      border: '1px solid #8B735540',
+                    }}
+                  >
+                    Inactive
+                  </span>
+                )}
+              </div>
+              {showActions && (
+                <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+                  {getActions().map((action, index) => {
+                    const ActionIcon = action.icon
+                    const variantStyles: Record<string, string> = {
+                      view: 'text-dark-teal hover:text-dark-teal/80 hover:bg-dark-teal/10',
+                      edit: 'text-olive-green hover:text-pine-needle hover:bg-olive-green/10',
+                      delete: 'text-clay-earth hover:text-clay-earth/80 hover:bg-clay-earth/10',
+                      navigate: 'text-gray-600 hover:text-dark-teal hover:bg-dark-teal/10',
+                    }
+                    return (
+                      <button
+                        key={index}
+                        onClick={(e) => { e.stopPropagation(); action.onClick() }}
+                        className={`p-2 rounded-md transition-colors ${variantStyles[action.variant || 'edit']}`}
+                        title={action.label}
+                      >
+                        <ActionIcon size={16} />
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Description */}
@@ -612,10 +655,15 @@ export default function StandCardV2({
           <div className="grid grid-cols-2 gap-2 text-xs">
             {getFeatures().map((feature) => {
               const FeatureIcon = feature.icon
+              const isCamera = feature.key === 'camera'
               return (
-                <div key={feature.key} className="flex items-center gap-2">
-                  <FeatureIcon size={14} style={{ color: feature.iconColor }} />
-                  <span className="text-forest-shadow">
+                <div
+                  key={feature.key}
+                  className={`flex items-center gap-2${isCamera ? ' col-span-2 rounded px-1 py-0.5' : ''}`}
+                  style={isCamera ? { backgroundColor: '#0C476710' } : undefined}
+                >
+                  <FeatureIcon size={14} style={{ color: isCamera ? '#0C4767' : feature.iconColor }} />
+                  <span style={{ color: isCamera ? '#0C4767' : '#2D3E1F' }}>
                     <strong>{feature.label}</strong> {feature.value}
                   </span>
                 </div>
@@ -625,58 +673,75 @@ export default function StandCardV2({
         </div>
       )}
 
-      {/* History Section - Flexible for different card types */}
+      {/* History Section */}
       {mode === 'full' && showStats && displayHistoryStats.length > 0 && (
         <div className="bg-morning-mist border border-weathered-wood/20 rounded-md p-2 mb-1">
           <div className="flex items-center gap-1 mb-2 text-xs font-medium">
             {React.createElement(getIcon('chartBar'), { size: 12, style: { color: '#566E3D' } })}
             <span style={{ color: '#566E3D', fontWeight: 'bold' }}>HISTORY</span>
+            {hasTypedStats && (
+              <span className="ml-1 font-normal" style={{ color: '#8B735570', fontSize: '9px' }}>
+                • {currentYear} Season / All Time
+              </span>
+            )}
           </div>
 
-          <div className="grid gap-2 text-center text-xs" style={{ gridTemplateColumns: `repeat(${displayHistoryStats.length}, minmax(0, 1fr))` }}>
-            {displayHistoryStats.map((stat, index) => (
-              <div key={index}>
-                <div className={`text-base font-bold ${stat.color}`}>
-                  {stat.value}
-                </div>
-                <div className="text-weathered-wood text-[10px]">{stat.label}</div>
+          {hasTypedStats ? (
+            <div className="flex items-stretch gap-0 text-center text-xs">
+              {/* Season stats — prominent */}
+              <div className="flex-1 grid grid-cols-2 gap-x-2">
+                {seasonStats.map((stat, index) => (
+                  <div key={index}>
+                    <div className={`text-base font-bold ${stat.color}`}>{stat.value}</div>
+                    <div className="text-weathered-wood text-[10px]">{stat.label}</div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+              {/* Vertical divider */}
+              <div className="w-px bg-weathered-wood/30 mx-2 self-stretch" />
+              {/* All-time stats — smaller / muted */}
+              <div className="flex-1 grid grid-cols-2 gap-x-2">
+                {allTimeStats.map((stat, index) => (
+                  <div key={index}>
+                    <div className={`text-sm font-semibold opacity-70 ${stat.color}`}>{stat.value}</div>
+                    <div className="text-weathered-wood text-[10px]">{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* Fallback: no type distinction */
+            <div className="grid gap-2 text-center text-xs" style={{ gridTemplateColumns: `repeat(${displayHistoryStats.length}, minmax(0, 1fr))` }}>
+              {displayHistoryStats.map((stat, index) => (
+                <div key={index}>
+                  <div className={`text-base font-bold ${stat.color}`}>{stat.value}</div>
+                  <div className="text-weathered-wood text-[10px]">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {displayLastActivity && (
-            <div className="text-xs text-weathered-wood mt-2 pt-2 border-t border-weathered-wood/20 text-center">
-              <strong className="text-forest-shadow">{displayLastActivity.label || 'Last Activity'}:</strong>{' '}
+            <div className="text-xs text-weathered-wood mt-2 pt-2 border-t border-weathered-wood/20 flex items-center justify-center gap-1.5 flex-wrap">
+              <strong className="text-forest-shadow">{displayLastActivity.label || 'Last Activity'}:</strong>
               {isPriorSeason(displayLastActivity.date) ? (
                 <>
                   <span className="italic">Prior season</span>
-                  <span className="text-weathered-wood/70"> ({formatDate(displayLastActivity.date)})</span>
-                  {displayLastActivity.timeOfDay && (
-                    <span> - {displayLastActivity.timeOfDay}</span>
-                  )}
+                  <span className="text-weathered-wood/70">({formatDate(displayLastActivity.date)})</span>
                 </>
               ) : (
-                <>
-                  {formatDate(displayLastActivity.date)}
-                  {displayLastActivity.timeOfDay && (
-                    <span> - {displayLastActivity.timeOfDay}</span>
-                  )}
-                </>
+                <span>{formatDate(displayLastActivity.date)}</span>
+              )}
+              {displayLastActivity.timeOfDay && (
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ${getHuntTypeBadge(displayLastActivity.timeOfDay).className}`}>
+                  {getHuntTypeBadge(displayLastActivity.timeOfDay).label}
+                </span>
               )}
             </div>
           )}
         </div>
       )}
 
-      {/* Location */}
-      {showLocation && stand.latitude && stand.longitude && mode === 'full' && (
-        <div className="flex justify-center gap-1 text-xs text-dark-teal mt-2">
-          {React.createElement(getIcon('mapPin'), { size: 12 })}
-          <span>
-            {stand.latitude.toFixed(4)}, {stand.longitude.toFixed(4)}
-          </span>
-        </div>
-      )}
     </BaseCard>
   )
 }

@@ -522,6 +522,9 @@ These defaults are intentional — do not change them without good reason:
 - Detail modal: season-by-season breakdown (drill-down for one specific stand)
 - Dashboard (issue #24): cross-stand analytics, comparative patterns
 
+**`src/lib/stands/constants.ts` still uses direct lucide-react imports (intentional):**
+The `STAND_TYPES`, `TIME_OF_DAY_OPTIONS`, and `FEATURE_ICONS` constants store `LucideIcon` component references as values (e.g. `icon: LadderIcon`). Converting these to icon name strings requires changing the type and all consumers. This file is only imported by `useStands.ts` (for `DEFAULTS`/`PERFORMANCE_THRESHOLDS` — not the icon constants). Tracked under issue #33. Do not attempt to fix mid-task.
+
 **Sightings data not yet available:**
 `hunt_logs` tracks `harvest_count` and `had_harvest` but has no `sighting_count` field. Deer sighting patterns (e.g. "8 deer seen at Creek Stand on AM hunts") require issue #23 schema work first. Do not build UI for sightings until that column exists.
 
