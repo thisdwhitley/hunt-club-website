@@ -533,6 +533,20 @@ The `STAND_TYPES`, `TIME_OF_DAY_OPTIONS`, and `FEATURE_ICONS` constants store `L
 - Use `zod` for validation schemas
 - Follow pattern in `src/components/hunt-logging/` for reference
 
+**Zod + HTML select empty-string trap:**
+HTML `<select>` elements return `""` (empty string) when the "not set" option is chosen. Zod's `.nullable()` accepts `null` but NOT `""`, so a schema like `z.enum([...]).nullable()` will silently fail validation when the user leaves a select blank — the form never calls the save function, and no error is visible if that field is on a different tab than the one currently shown.
+
+Fix pattern for optional enum selects:
+```typescript
+// Schema — accept "", null, or a valid enum value
+field: z.union([z.enum(['A', 'B']), z.literal(''), z.null()]).optional(),
+
+// Submit handler — coerce '' to null before writing to DB
+field: (data.field === '' ? null : (data.field ?? null)) as 'A' | 'B' | null,
+```
+
+Do NOT use `z.preprocess` for this — it changes the inferred input type to `unknown`, which breaks react-hook-form's TypeScript types.
+
 ## Session Workflow Skills
 
 Two slash commands are available to keep sessions focused:
