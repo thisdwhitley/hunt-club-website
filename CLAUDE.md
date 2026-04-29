@@ -528,6 +528,22 @@ The `STAND_TYPES`, `TIME_OF_DAY_OPTIONS`, and `FEATURE_ICONS` constants store `L
 **Sightings data not yet available:**
 `hunt_logs` tracks `harvest_count` and `had_harvest` but has no `sighting_count` field. Deer sighting patterns (e.g. "8 deer seen at Creek Stand on AM hunts") require issue #23 schema work first. Do not build UI for sightings until that column exists.
 
+### HuntsTab — Season Filtering
+
+**Two separate "season" fields exist on `hunt_logs` — never conflate them:**
+
+- **`hunting_season`** (varchar, nullable) — the *type* of hunting season (archery, blackpowder, gun, all_seasons). Optional, user-supplied. As of 2026-04-29 this is null on all records because the hunt entry form doesn't expose it yet (issue #107).
+- **`season`** (varchar, NOT NULL, default `'2025'`) — the *year* of the hunting season. Has a hardcoded DB default that will become wrong each year (issue #108). Not exposed by the `hunt_logs_with_temperature` view.
+
+**Always derive season year from `hunt_date`, not from either column:**
+```typescript
+// ✅ CORRECT — always accurate, no dependency on unpopulated fields
+data.map(h => h.hunt_date.substring(0, 4))  // derive season options
+h.hunt_date.startsWith(filters.season)       // filter by season
+```
+
+**Why:** `hunting_season` is null for all existing records. `season` has a hardcoded default and is not in the view. `hunt_date` is always populated and correct.
+
 ### Working with Forms
 - Use `react-hook-form` for form state management
 - Use `zod` for validation schemas
