@@ -331,6 +331,7 @@ export default function StandCardV2({
             <div
               className="p-1 rounded flex-shrink-0"
               style={{ backgroundColor: `${standType.iconColor}20` }}
+              title={standType.label}
             >
               <StandIcon size={16} style={{ color: standType.iconColor }} />
             </div>
@@ -513,6 +514,7 @@ export default function StandCardV2({
           <div
             className="p-2 rounded-lg flex-shrink-0"
             style={{ backgroundColor: `${standType.iconColor}20` }}
+            title={standType.label}
           >
             <StandIcon size={24} style={{ color: standType.iconColor }} />
           </div>
@@ -589,6 +591,7 @@ export default function StandCardV2({
           <div
             className="p-2 rounded-lg flex-shrink-0"
             style={{ backgroundColor: `${standType.iconColor}20` }}
+            title={standType.label}
           >
             <StandIcon size={24} style={{ color: standType.iconColor }} />
           </div>

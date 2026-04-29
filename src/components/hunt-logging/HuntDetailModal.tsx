@@ -25,10 +25,6 @@ import {
   Binoculars,
 } from 'lucide-react'
 
-// suppress unused import warning — huntService is not used directly here but
-// kept so callers don't need a separate import for the type
-void huntService
-
 interface HuntDetailModalProps {
   hunt: HuntWithDetails | null
   isOpen: boolean

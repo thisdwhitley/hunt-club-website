@@ -757,6 +757,49 @@ export class HuntService {
       throw error
     }
   }
+
+  async getHuntSeasons(): Promise<string[]> {
+    try {
+      // Query the view (which aliases the column as 'hunting_season') not the base table
+      const { data, error } = await supabase
+        .from('hunt_logs_with_temperature')
+        .select('hunting_season')
+        .not('hunting_season', 'is', null)
+        .order('hunting_season', { ascending: false })
+      if (error) throw error
+      const unique = [...new Set((data ?? []).map(r => r.hunting_season as string))]
+      return unique
+    } catch (error) {
+      console.error('Error in getHuntSeasons:', error)
+      return []
+    }
+  }
+
+  async getHuntMembers(): Promise<Array<{ id: string; name: string }>> {
+    try {
+      const { data: huntData, error: huntError } = await supabase
+        .from('hunt_logs')
+        .select('member_id')
+        .not('member_id', 'is', null)
+      if (huntError) throw huntError
+
+      const memberIds = [...new Set((huntData ?? []).map(r => r.member_id as string))]
+      if (memberIds.length === 0) return []
+
+      const { data: memberData, error: memberError } = await supabase
+        .from('members')
+        .select('id, display_name, full_name')
+        .in('id', memberIds)
+      if (memberError) throw memberError
+
+      return (memberData ?? [])
+        .map(m => ({ id: m.id, name: m.display_name || m.full_name || 'Unknown' }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+    } catch (error) {
+      console.error('Error in getHuntMembers:', error)
+      return []
+    }
+  }
 }
 
 // Instantiate and export the service

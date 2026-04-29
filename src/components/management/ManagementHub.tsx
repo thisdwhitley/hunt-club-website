@@ -5,6 +5,7 @@ import { getIcon } from '@/lib/shared/icons'
 import { ManagementHubToolbar } from '@/components/shared/ManagementHubToolbar'
 import { CamerasTab } from './CamerasTab'
 import { StandsTab } from './StandsTab'
+import { HuntsTab } from './HuntsTab'
 import type { TabConfig } from '@/components/shared/ManagementHubToolbar'
 
 const TABS: TabConfig[] = [
@@ -58,6 +59,10 @@ export default function ManagementHub() {
 
   if (activeTab === 'stands') {
     return <StandsTab tabs={TABS} activeTab={activeTab} onTabChange={handleTabChange} />
+  }
+
+  if (activeTab === 'hunts') {
+    return <HuntsTab tabs={TABS} activeTab={activeTab} onTabChange={handleTabChange} />
   }
 
   return (
