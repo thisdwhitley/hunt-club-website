@@ -665,7 +665,7 @@ export default function StandCardV2({
                   className={`flex items-center gap-2${isCamera ? ' col-span-2 rounded px-1 py-0.5' : ''}`}
                   style={isCamera ? { backgroundColor: '#0C476710' } : undefined}
                 >
-                  <FeatureIcon size={14} style={{ color: isCamera ? '#0C4767' : feature.iconColor }} />
+                  <FeatureIcon size={14} style={{ color: isCamera ? '#0C4767' : '#566E3D' }} />
                   <span style={{ color: isCamera ? '#0C4767' : '#2D3E1F' }}>
                     <strong>{feature.label}</strong> {feature.value}
                   </span>
@@ -678,38 +678,39 @@ export default function StandCardV2({
 
       {/* History Section */}
       {mode === 'full' && showStats && displayHistoryStats.length > 0 && (
-        <div className="bg-morning-mist border border-weathered-wood/20 rounded-md p-2 mb-1">
+        <div className="rounded-md p-2 mb-1" style={{ background: '#F5F4F0', border: '1px solid #E8E6E0' }}>
           <div className="flex items-center gap-1 mb-2 text-xs font-medium">
             {React.createElement(getIcon('chartBar'), { size: 12, style: { color: '#566E3D' } })}
             <span style={{ color: '#566E3D', fontWeight: 'bold' }}>HISTORY</span>
-            {hasTypedStats && (
-              <span className="ml-1 font-normal" style={{ color: '#8B735570', fontSize: '9px' }}>
-                • {currentYear} Season / All Time
-              </span>
-            )}
           </div>
 
           {hasTypedStats ? (
             <div className="flex items-stretch gap-0 text-center text-xs">
-              {/* Season stats — prominent */}
-              <div className="flex-1 grid grid-cols-2 gap-x-2">
-                {seasonStats.map((stat, index) => (
-                  <div key={index}>
-                    <div className={`text-base font-bold ${stat.color}`}>{stat.value}</div>
-                    <div className="text-weathered-wood text-[10px]">{stat.label}</div>
-                  </div>
-                ))}
+              {/* Season stats */}
+              <div className="flex-1">
+                <div className="text-[9px] text-forest-shadow mb-1">{currentYear} Season</div>
+                <div className="grid grid-cols-2 gap-x-2">
+                  {seasonStats.map((stat, index) => (
+                    <div key={index}>
+                      <div className="text-base font-bold text-forest-shadow">{stat.value}</div>
+                      <div className="text-forest-shadow text-[10px]">{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
               {/* Vertical divider */}
               <div className="w-px bg-weathered-wood/30 mx-2 self-stretch" />
-              {/* All-time stats — smaller / muted */}
-              <div className="flex-1 grid grid-cols-2 gap-x-2">
-                {allTimeStats.map((stat, index) => (
-                  <div key={index}>
-                    <div className={`text-sm font-semibold opacity-70 ${stat.color}`}>{stat.value}</div>
-                    <div className="text-weathered-wood text-[10px]">{stat.label}</div>
-                  </div>
-                ))}
+              {/* All-time stats */}
+              <div className="flex-1">
+                <div className="text-[9px] text-forest-shadow mb-1">All Time</div>
+                <div className="grid grid-cols-2 gap-x-2">
+                  {allTimeStats.map((stat, index) => (
+                    <div key={index}>
+                      <div className="text-base font-bold text-forest-shadow opacity-70">{stat.value}</div>
+                      <div className="text-forest-shadow text-[10px] opacity-70">{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           ) : (
@@ -717,16 +718,16 @@ export default function StandCardV2({
             <div className="grid gap-2 text-center text-xs" style={{ gridTemplateColumns: `repeat(${displayHistoryStats.length}, minmax(0, 1fr))` }}>
               {displayHistoryStats.map((stat, index) => (
                 <div key={index}>
-                  <div className={`text-base font-bold ${stat.color}`}>{stat.value}</div>
-                  <div className="text-weathered-wood text-[10px]">{stat.label}</div>
+                  <div className="text-base font-bold text-forest-shadow">{stat.value}</div>
+                  <div className="text-forest-shadow text-[10px]">{stat.label}</div>
                 </div>
               ))}
             </div>
           )}
 
           {displayLastActivity && (
-            <div className="text-xs text-weathered-wood mt-2 pt-2 border-t border-weathered-wood/20 flex items-center justify-center gap-1.5 flex-wrap">
-              <strong className="text-forest-shadow">{displayLastActivity.label || 'Last Activity'}:</strong>
+            <div className="text-xs text-forest-shadow mt-2 pt-2 border-t border-weathered-wood/20 flex items-center justify-center gap-1.5 flex-wrap">
+              <strong>{displayLastActivity.label || 'Last Activity'}:</strong>
               {isPriorSeason(displayLastActivity.date) ? (
                 <>
                   <span className="italic">Prior season</span>
@@ -736,8 +737,8 @@ export default function StandCardV2({
                 <span>{formatDate(displayLastActivity.date)}</span>
               )}
               {displayLastActivity.timeOfDay && (
-                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ${getHuntTypeBadge(displayLastActivity.timeOfDay).className}`}>
-                  {getHuntTypeBadge(displayLastActivity.timeOfDay).label}
+                <span className="text-weathered-wood/80">
+                  · {getHuntTypeBadge(displayLastActivity.timeOfDay).label}
                 </span>
               )}
             </div>
