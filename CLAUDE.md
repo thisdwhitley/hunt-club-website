@@ -522,6 +522,24 @@ These defaults are intentional — do not change them without good reason:
 - Detail modal: season-by-season breakdown (drill-down for one specific stand)
 - Dashboard (issue #24): cross-stand analytics, comparative patterns
 
+**V2 card info-box visual standards — apply to all cards (cameras, stands, hunts):**
+
+The "report data" / "history" / info box at the bottom of full-mode cards must follow this standard, established by `CameraCardV2` and validated on `StandCardV2`:
+
+- **Background/border:** `style={{ background: '#F5F4F0', border: '1px solid #E8E6E0' }}` — do NOT use Tailwind `bg-morning-mist` (it's a noticeably darker beige)
+- **Icon color:** `#566E3D` (olive-green / `forestGreen`) for all informational icons inside the box
+- **Text color:** `#2D3E1F` (`forestShadow`) for all labels and values — no `text-weathered-wood` (brown) inside the box
+- **Section header label** (e.g. "HISTORY", "CAMERA REPORT DATA"): `#566E3D` bold
+- **Column group headers** (e.g. "2026 Season", "All Time"): small (`text-[9px]`), `forestShadow`, above the numbers — not floating next to the section title
+- **Secondary/muted group:** Use `opacity-70` on both numbers and labels — do not reduce font size
+- **Supplementary footnote text** (e.g. "· AM"): `text-weathered-wood/80` — the one place brown is acceptable inside the box
+- **Per-stat colors are decoration, not data** — only use color inside the box to signal actionable state (e.g. battery critical = clay-earth). Never use color just to differentiate stats that already have labels.
+
+**Icon color rules by view mode:**
+- **Full view:** Single uniform color (`#566E3D`) for all feature/attribute icons inside info boxes. Color without semantic meaning adds noise when labels are present.
+- **Compact view:** Per-feature colors are acceptable and useful — icons appear without labels, so color acts as a fast visual differentiator.
+- **Card header stand-type icon:** Burnt-orange (`#FA7921`) is intentional as a card identity marker — leave it alone.
+
 **`src/lib/stands/constants.ts` still uses direct lucide-react imports (intentional):**
 The `STAND_TYPES`, `TIME_OF_DAY_OPTIONS`, and `FEATURE_ICONS` constants store `LucideIcon` component references as values (e.g. `icon: LadderIcon`). Converting these to icon name strings requires changing the type and all consumers. This file is only imported by `useStands.ts` (for `DEFAULTS`/`PERFORMANCE_THRESHOLDS` — not the icon constants). Tracked under issue #33. Do not attempt to fix mid-task.
 
