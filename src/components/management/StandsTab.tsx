@@ -147,7 +147,7 @@ export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
       const currentSeason = String(new Date().getFullYear())
       const { data } = await supabase
         .from('hunt_logs')
-        .select('stand_id, harvest_count, hunt_type, hunt_date, season')
+        .select('stand_id, harvest_count, hunt_type, hunt_date')
         .not('stand_id', 'is', null)
 
       if (!data) return
@@ -168,7 +168,8 @@ export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
         const s = statsMap[hunt.stand_id]
         s.totalHunts++
         s.totalHarvests += hunt.harvest_count || 0
-        if (hunt.season === currentSeason) {
+        // Derive season year from hunt_date — never use the `season` column (hardcoded DB default)
+        if (hunt.hunt_date.substring(0, 4) === currentSeason) {
           s.seasonHunts++
           s.seasonHarvests += hunt.harvest_count || 0
         }

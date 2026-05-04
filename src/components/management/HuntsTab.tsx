@@ -245,6 +245,7 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
       if (editingHunt) {
         await huntService.updateHunt(editingHunt.id, {
           hunt_date: data.hunt_date,
+          season: data.hunt_date.substring(0, 4),
           stand_id: data.stand_id,
           start_time: data.start_time || null,
           end_time: data.end_time || null,
@@ -255,6 +256,7 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
         if (!data.member_id) throw new Error('Member is required to log a hunt')
         await huntService.createHunt({
           hunt_date: data.hunt_date,
+          season: data.hunt_date.substring(0, 4),
           stand_id: data.stand_id,
           member_id: data.member_id,
           start_time: data.start_time || null,

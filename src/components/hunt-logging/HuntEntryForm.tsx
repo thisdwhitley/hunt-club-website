@@ -186,7 +186,6 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
       const formData = {
         ...getValues(),
         member_id: selectedHunter,
-        season: String(new Date().getFullYear())
       }
       
     console.log('🎯 formData being sent to onSubmit:', formData)

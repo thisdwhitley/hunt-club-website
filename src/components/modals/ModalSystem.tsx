@@ -548,6 +548,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
         member_id: formData.member_id ? formData.member_id : user.id,
         stand_id: formData.stand_id,
         hunt_date: formData.hunt_date,
+        season: formData.hunt_date.substring(0, 4),
         start_time: formData.start_time || null,
         end_time: formData.end_time || null,
         harvest_count: formData.had_harvest ? 1 : 0,
