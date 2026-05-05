@@ -540,6 +540,13 @@ The "report data" / "history" / info box at the bottom of full-mode cards must f
 - **Compact view:** Per-feature colors are acceptable and useful — icons appear without labels, so color acts as a fast visual differentiator.
 - **Card header stand-type icon:** Burnt-orange (`#FA7921`) is intentional as a card identity marker — leave it alone.
 
+**HuntCardV2 full-mode header pattern:**
+The card header is a single non-wrapping flex row: `DateIcon` + weekday title + two `HuntChip`s + actions. Key rules:
+- **Title:** Use `formatHuntCardTitle()` — returns "Today" / "Yesterday" / full weekday name ("Wednesday"). Never include the numeric date in the title; `DateIcon` already shows day + month abbreviation.
+- **Chips:** Two label-only `HuntChip`s — season year (muted-gold) and AM/PM (bright-orange/clay-earth/olive). No icons in chips. Sizing: `px-1.5 py-px`, `fontSize: 10px`, `rounded-full`, inline `${color}18` background + `${color}30` border.
+- **Why no icons in chips:** Icons + label at 10px became unreadable and stole width from the title. DateIcon already encodes AM/PM via color; the chip label alone is sufficient.
+- **Title truncation:** `flex-1 truncate` on the `<h3>`, chips and actions are `flex-shrink-0`. "Wednesday" (9 chars) is the longest possible title.
+
 **`src/lib/stands/constants.ts` still uses direct lucide-react imports (intentional):**
 The `STAND_TYPES`, `TIME_OF_DAY_OPTIONS`, and `FEATURE_ICONS` constants store `LucideIcon` component references as values (e.g. `icon: LadderIcon`). Converting these to icon name strings requires changing the type and all consumers. This file is only imported by `useStands.ts` (for `DEFAULTS`/`PERFORMANCE_THRESHOLDS` — not the icon constants). Tracked under issue #33. Do not attempt to fix mid-task.
 
