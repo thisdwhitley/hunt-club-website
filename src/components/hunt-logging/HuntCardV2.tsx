@@ -4,7 +4,7 @@
 
 import React from 'react'
 import { BaseCard } from '@/components/shared/cards'
-import { formatHuntDate, formatHuntCardTitle, getHuntTypeBadge, parseDBDate } from '@/lib/utils/date'
+import { formatHuntDate, formatHuntCardTitle, parseDBDate } from '@/lib/utils/date'
 import { getIcon } from '@/lib/shared/icons'
 import type { IconName } from '@/lib/shared/icons'
 import { HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
@@ -48,38 +48,30 @@ interface HuntCardV2Props {
 }
 
 // Custom Date Icon Component - Shows dd/mmm with color based on AM/PM
-// Size matches Stand card icon: 40x40px (24px icon + 8px padding)
-const DateIcon = ({ hunt }: { hunt: HuntWithDetails }) => {
+const DateIcon = ({ hunt, small = false }: { hunt: HuntWithDetails; small?: boolean }) => {
   const date = parseDBDate(hunt.hunt_date)
   if (!date) return null
   const day = String(date.getDate()).padStart(2, '0')
-  const month = date.toLocaleDateString('en-US', { month: 'short' }) // 3-letter abbreviation
+  const month = date.toLocaleDateString('en-US', { month: 'short' })
 
-  // Determine color based on hunt type (AM/PM) - matching badge colors
   const getTextColor = () => {
-    if (hunt.hunt_type === 'AM') return '#FE9920' // bright-orange (matches AM badge)
-    if (hunt.hunt_type === 'PM') return '#A0653A' // clay-earth (matches PM badge)
-    return '#566E3D' // olive-green for All Day
+    if (hunt.hunt_type === 'AM') return '#FE9920'
+    if (hunt.hunt_type === 'PM') return '#A0653A'
+    return '#566E3D'
   }
 
   return (
     <div
-      className="p-2 rounded-lg flex-shrink-0"
-      style={{
-        backgroundColor: '#FA792120' // light orange background
-      }}
+      className={`${small ? 'p-1 rounded' : 'p-2 rounded-lg'} flex-shrink-0`}
+      style={{ backgroundColor: '#FA792120' }}
     >
       <div
         className="flex items-center justify-center"
-        style={{
-          width: '24px',
-          height: '24px',
-          color: getTextColor()
-        }}
+        style={{ width: small ? '16px' : '24px', height: small ? '16px' : '24px', color: getTextColor() }}
       >
         <div className="text-center leading-none">
-          <div style={{ fontSize: '16px', lineHeight: '16px', fontWeight: 'bold' }}>{day}</div>
-          <div style={{ fontSize: '7px', lineHeight: '8px', fontWeight: 'normal', marginTop: '1px' }}>{month}</div>
+          <div style={{ fontSize: small ? '11px' : '16px', lineHeight: small ? '11px' : '16px', fontWeight: 'bold' }}>{day}</div>
+          <div style={{ fontSize: small ? '5px' : '7px', lineHeight: small ? '6px' : '8px', fontWeight: 'normal', marginTop: '1px' }}>{month}</div>
         </div>
       </div>
     </div>
@@ -107,7 +99,6 @@ export default function HuntCardV2({
   className = ''
 }: HuntCardV2Props) {
 
-  const huntTypeBadge = getHuntTypeBadge(hunt.hunt_type)
   const tempContext = getTemperatureContext(hunt)
   const StandIcon = getIcon(getStandIcon(hunt.stand?.type) as IconName)
 
@@ -159,33 +150,43 @@ export default function HuntCardV2({
     const TrophyIcon = getIcon('trophy')
     const BinocularsIcon = getIcon('binoculars')
 
-    // Get sightings summary for hover tooltip
+    const hasHarvest = hunt.had_harvest || hunt.harvest_count > 0
+    const amPmColor = hunt.hunt_type === 'AM'
+      ? HUNTING_COLORS.brightOrange
+      : hunt.hunt_type === 'PM'
+        ? HUNTING_COLORS.clayEarth
+        : HUNTING_COLORS.oliveGreen
+    const amPmLabel = hunt.hunt_type === 'AM' ? 'AM' : hunt.hunt_type === 'PM' ? 'PM' : 'All'
     const sightingsSummary = hunt.sightings && hunt.sightings.length > 0
       ? hunt.sightings.map(s => `${s.count} ${s.animal_type}`).join(', ')
       : ''
 
     return (
-      <tr className={`border-b border-gray-200 hover:bg-morning-mist transition-colors ${(hunt.had_harvest || hunt.harvest_count > 0) ? 'border-l-[6px] border-l-bright-orange bg-bright-orange/5' : ''}`}>
-        {/* Date Column with AM/PM badge and result icons */}
+      <tr className={`border-b border-gray-200 hover:bg-morning-mist transition-colors ${hasHarvest ? 'border-l-4 border-l-bright-orange bg-bright-orange/5' : ''}`}>
+        {/* Date Column — DateIcon + date text + chips, all on one line */}
         <td className="px-4 py-3 text-sm">
           <div className="flex items-center gap-2 flex-wrap">
+            <DateIcon hunt={hunt} small />
             <span className="text-forest-shadow font-medium">{formatHuntDate(hunt.hunt_date)}</span>
-            {/* AM/PM Badge */}
-            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ${huntTypeBadge.className}`}>
-              {huntTypeBadge.label}
-            </span>
-            {/* Harvests icon */}
-            {(hunt.had_harvest || hunt.harvest_count > 0) && (
-              <span className="flex items-center gap-1 text-bright-orange font-semibold" title="Harvests">
-                <TrophyIcon size={12} />
-                <span className="text-xs">{hunt.harvest_count}</span>
+            <HuntChip label={amPmLabel} color={amPmColor} />
+            {hasHarvest && (
+              <span
+                className="inline-flex items-center gap-0.5 px-1 py-px rounded-full font-semibold"
+                style={{ fontSize: '10px', backgroundColor: `${HUNTING_COLORS.brightOrange}18`, color: HUNTING_COLORS.brightOrange, border: `1px solid ${HUNTING_COLORS.brightOrange}30` }}
+                title={`${hunt.harvest_count} harvest${hunt.harvest_count !== 1 ? 's' : ''}`}
+              >
+                <TrophyIcon size={10} />
+                <span>{hunt.harvest_count}</span>
               </span>
             )}
-            {/* Sightings icon with hover tooltip */}
             {hunt.sightings && hunt.sightings.length > 0 && (
-              <span className="flex items-center gap-1 text-dark-teal font-semibold" title={sightingsSummary}>
-                <BinocularsIcon size={12} />
-                <span className="text-xs">{hunt.sightings.length}</span>
+              <span
+                className="inline-flex items-center gap-0.5 px-1 py-px rounded-full font-semibold"
+                style={{ fontSize: '10px', backgroundColor: `${HUNTING_COLORS.darkTeal}18`, color: HUNTING_COLORS.darkTeal, border: `1px solid ${HUNTING_COLORS.darkTeal}30` }}
+                title={sightingsSummary}
+              >
+                <BinocularsIcon size={10} />
+                <span>{hunt.sightings.length}</span>
               </span>
             )}
           </div>
@@ -199,10 +200,10 @@ export default function HuntCardV2({
         {/* Stand Column */}
         <td className="px-4 py-3 text-sm">
           {hunt.stand ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" title={hunt.stand.name}>
               {React.createElement(getIcon(getStandIcon(hunt.stand.type) as IconName), {
                 size: 14,
-                className: 'text-weathered-wood'
+                style: { color: HUNTING_COLORS.weatheredWood }
               })}
               <span className="text-forest-shadow">{hunt.stand.name}</span>
             </div>
@@ -216,33 +217,33 @@ export default function HuntCardV2({
           <div className="flex items-center gap-2 text-xs text-forest-shadow flex-wrap">
             {tempContext.temperature !== null && (
               <span className="flex items-center gap-0.5" title={tempContext.fullDisplay}>
-                {React.createElement(getIcon('thermometer'), { size: 10, className: 'text-burnt-orange' })}
+                {React.createElement(getIcon('thermometer'), { size: 10, style: { color: HUNTING_COLORS.burntOrange } })}
                 {tempContext.temperature}° {tempContext.displayText}
               </span>
             )}
             {hunt.wind_speed !== null && (
               <span className="flex items-center gap-0.5" title={`Wind: ${hunt.wind_speed}mph${hunt.wind_direction ? ` ${hunt.wind_direction}` : ''}`}>
-                {React.createElement(getIcon('wind'), { size: 10, className: 'text-dark-teal' })}
+                {React.createElement(getIcon('wind'), { size: 10, style: { color: HUNTING_COLORS.darkTeal } })}
                 {hunt.wind_speed} mph
               </span>
             )}
             {hunt.moon_phase !== null && (
               <span className="flex items-center gap-0.5" title={getMoonPhaseDisplay(hunt.moon_phase) || undefined}>
-                {React.createElement(getIcon('moon'), { size: 10, className: 'text-muted-gold' })}
+                {React.createElement(getIcon('moon'), { size: 10, style: { color: HUNTING_COLORS.mutedGold } })}
                 {getMoonPhaseDisplay(hunt.moon_phase)}
               </span>
             )}
           </div>
         </td>
 
-        {/* Actions Column - matching Stand card style */}
+        {/* Actions Column */}
         {showActions && (
           <td className="px-4 py-3">
             <div className="flex items-center justify-end space-x-1">
               {onClick && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onClick(hunt) }}
-                  className="text-dark-teal hover:text-dark-teal/80 p-1 rounded hover:bg-dark-teal/10 transition-colors"
+                  className="text-dark-teal hover:text-dark-teal/80 p-1.5 rounded hover:bg-dark-teal/10 transition-colors"
                   title="View Details"
                 >
                   <EyeIcon size={16} />
@@ -251,7 +252,7 @@ export default function HuntCardV2({
               {onEdit && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onEdit(hunt) }}
-                  className="text-olive-green hover:text-pine-needle p-1 rounded hover:bg-olive-green/10 transition-colors"
+                  className="text-olive-green hover:text-pine-needle p-1.5 rounded hover:bg-olive-green/10 transition-colors"
                   title="Edit Hunt"
                 >
                   <EditIcon size={16} />
@@ -260,7 +261,7 @@ export default function HuntCardV2({
               {onDelete && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete(hunt.id) }}
-                  className="text-clay-earth hover:text-clay-earth/80 p-1 rounded hover:bg-clay-earth/10 transition-colors"
+                  className="text-clay-earth hover:text-clay-earth/80 p-1.5 rounded hover:bg-clay-earth/10 transition-colors"
                   title="Delete Hunt"
                 >
                   <DeleteIcon size={16} />
@@ -278,9 +279,14 @@ export default function HuntCardV2({
     const TrophyIcon = getIcon('trophy')
     const BinocularsIcon = getIcon('binoculars')
     const UserIcon = getIcon('user')
-    const ThermometerIcon = getIcon('thermometer')
 
-    // Get sightings summary for hover tooltip
+    const amPmColor = hunt.hunt_type === 'AM'
+      ? HUNTING_COLORS.brightOrange
+      : hunt.hunt_type === 'PM'
+        ? HUNTING_COLORS.clayEarth
+        : HUNTING_COLORS.oliveGreen
+    const amPmLabel = hunt.hunt_type === 'AM' ? 'AM' : hunt.hunt_type === 'PM' ? 'PM' : 'All'
+
     const sightingsSummary = hunt.sightings && hunt.sightings.length > 0
       ? hunt.sightings.map(s => `${s.count} ${s.animal_type}`).join(', ')
       : ''
@@ -290,66 +296,67 @@ export default function HuntCardV2({
         mode={mode}
         onClick={onClick ? () => onClick(hunt) : undefined}
         clickable={!!onClick}
-        className={`${(hunt.had_harvest || hunt.harvest_count > 0) ? 'border-l-4 border-bright-orange' : ''} ${className}`}
+        highlighted={hunt.had_harvest || hunt.harvest_count > 0}
+        highlightColor={HUNTING_COLORS.brightOrange}
+        className={className}
       >
         <div className="flex items-start gap-2.5">
-          {/* Custom Date Icon */}
           <DateIcon hunt={hunt} />
 
-          {/* Content */}
           <div className="flex-1 min-w-0">
-            {/* Title row with date and AM/PM badge */}
-            <div className="flex items-center gap-2 mb-0.5">
-              <h3 className="font-bold text-base truncate" style={{ color: '#566E3D' }}>
+            {/* Title row: weekday + temp chip + AM/PM chip */}
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <h3 className="font-bold text-base truncate flex-1" style={{ color: HUNTING_COLORS.oliveGreen }}>
                 {formatHuntCardTitle(hunt.hunt_date)}
               </h3>
-              {/* Hunt type badge */}
-              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ${huntTypeBadge.className}`}>
-                {huntTypeBadge.label}
-              </span>
+              {tempContext.temperature !== null && (
+                <HuntChip label={`${tempContext.temperature}°`} color={HUNTING_COLORS.mutedGold} />
+              )}
+              <HuntChip label={amPmLabel} color={amPmColor} />
             </div>
 
-            {/* Key info icons row */}
-            <div className="flex items-center gap-2.5 flex-wrap text-xs text-forest-shadow">
-              {/* Hunter */}
-              <div className="flex items-center gap-1" title="Hunter">
-                <UserIcon size={12} className="text-olive-green" />
-                <span className="truncate max-w-[100px]">
-                  {hunt.member?.display_name || hunt.member?.full_name || 'Unknown'}
-                </span>
+            {/* Info row: hunter · stand · result chips */}
+            <div className="flex items-center gap-2 text-xs text-forest-shadow min-w-0">
+              {/* Hunter — never truncated, names are short */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <UserIcon size={12} style={{ color: HUNTING_COLORS.oliveGreen }} />
+                <span>{hunt.member?.display_name || hunt.member?.full_name || '?'}</span>
               </div>
 
-              {/* Stand */}
+              {/* Stand — truncates if needed */}
               {hunt.stand && (
-                <div className="flex items-center gap-1" title="Stand">
-                  <StandIcon size={12} className="text-weathered-wood" />
-                  <span className="truncate max-w-[80px]">{hunt.stand.name}</span>
-                </div>
+                <>
+                  <span className="text-weathered-wood/40 flex-shrink-0">·</span>
+                  <div className="flex items-center gap-1 min-w-0 flex-1" title={hunt.stand.name}>
+                    <StandIcon size={12} style={{ color: HUNTING_COLORS.weatheredWood, flexShrink: 0 }} />
+                    <span className="truncate">{hunt.stand.name}</span>
+                  </div>
+                </>
               )}
 
-              {/* Temperature */}
-              {tempContext.temperature !== null && (
-                <div className="flex items-center gap-1" title={`Temperature: ${tempContext.fullDisplay}`}>
-                  <ThermometerIcon size={12} className="text-burnt-orange" />
-                  <span>{tempContext.temperature}°</span>
-                </div>
-              )}
-
-              {/* Harvests */}
-              {(hunt.had_harvest || hunt.harvest_count > 0) && (
-                <div className="flex items-center gap-1 text-bright-orange font-semibold" title="Harvests">
-                  <TrophyIcon size={12} />
-                  <span>{hunt.harvest_count}</span>
-                </div>
-              )}
-
-              {/* Sightings with hover tooltip */}
-              {hunt.sightings && hunt.sightings.length > 0 && (
-                <div className="flex items-center gap-1 text-dark-teal font-semibold" title={sightingsSummary}>
-                  <BinocularsIcon size={12} />
-                  <span>{hunt.sightings.length}</span>
-                </div>
-              )}
+              {/* Result chips — pushed to the right, never truncated */}
+              <div className="flex items-center gap-1 ml-auto flex-shrink-0">
+                {(hunt.had_harvest || hunt.harvest_count > 0) && (
+                  <span
+                    className="inline-flex items-center gap-0.5 px-1 py-px rounded-full font-semibold"
+                    style={{ fontSize: '10px', backgroundColor: `${HUNTING_COLORS.brightOrange}18`, color: HUNTING_COLORS.brightOrange, border: `1px solid ${HUNTING_COLORS.brightOrange}30` }}
+                    title={`${hunt.harvest_count} harvest${hunt.harvest_count !== 1 ? 's' : ''}`}
+                  >
+                    <TrophyIcon size={10} />
+                    <span>{hunt.harvest_count}</span>
+                  </span>
+                )}
+                {hunt.sightings && hunt.sightings.length > 0 && (
+                  <span
+                    className="inline-flex items-center gap-0.5 px-1 py-px rounded-full font-semibold"
+                    style={{ fontSize: '10px', backgroundColor: `${HUNTING_COLORS.darkTeal}18`, color: HUNTING_COLORS.darkTeal, border: `1px solid ${HUNTING_COLORS.darkTeal}30` }}
+                    title={sightingsSummary}
+                  >
+                    <BinocularsIcon size={10} />
+                    <span>{hunt.sightings.length}</span>
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -363,7 +370,9 @@ export default function HuntCardV2({
       mode={mode}
       onClick={onClick ? () => onClick(hunt) : undefined}
       clickable={!!onClick}
-      className={`${(hunt.had_harvest || hunt.harvest_count > 0) ? 'border-l-4 border-bright-orange' : ''} ${className}`}
+      highlighted={hunt.had_harvest || hunt.harvest_count > 0}
+      highlightColor={HUNTING_COLORS.brightOrange}
+      className={className}
     >
       {/* Header — DateIcon + title + season chip + AM/PM chip + actions, single row, never wraps */}
       <div className="flex items-center gap-3 mb-3">
