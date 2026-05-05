@@ -1,17 +1,41 @@
 // src/components/hunt-logging/HuntCardV2.tsx
-// PREVIEW ONLY - Hunt card using universal base components
-// This is a demonstration of how Hunt management could use the new card system
 
 'use client'
 
 import React from 'react'
 import { BaseCard } from '@/components/shared/cards'
-import { formatHuntDate, getHuntTypeBadge, parseDBDate } from '@/lib/utils/date'
+import { formatHuntDate, formatHuntCardTitle, getHuntTypeBadge, parseDBDate } from '@/lib/utils/date'
 import { getIcon } from '@/lib/shared/icons'
 import type { IconName } from '@/lib/shared/icons'
 import { HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
 import { getTemperatureContext } from '@/lib/hunt-logging/temperature-utils'
 import { getStandIcon } from '@/lib/utils/standUtils'
+
+const HUNTING_COLORS = {
+  oliveGreen: '#566E3D',
+  burntOrange: '#FA7921',
+  brightOrange: '#FE9920',
+  mutedGold: '#B9A44C',
+  darkTeal: '#0C4767',
+  forestShadow: '#2D3E1F',
+  weatheredWood: '#8B7355',
+  clayEarth: '#A0653A',
+}
+
+// Compact pill chip — matches CameraCardV2's PowerChip sizing
+const HuntChip = ({ label, color }: { label: string; color: string }) => (
+  <span
+    className="inline-flex items-center rounded-full font-semibold flex-shrink-0 px-1.5 py-px"
+    style={{
+      fontSize: '10px',
+      backgroundColor: `${color}18`,
+      color,
+      border: `1px solid ${color}30`,
+    }}
+  >
+    {label}
+  </span>
+)
 
 interface HuntCardV2Props {
   hunt: HuntWithDetails
@@ -91,46 +115,6 @@ export default function HuntCardV2({
   const formatTime = (time: string | null) => {
     if (!time) return 'N/A'
     return time.slice(0, 5)
-  }
-
-  interface HuntBadge {
-    label: string
-    className: string
-    icon?: ReturnType<typeof getIcon>
-    title?: string
-  }
-
-  // Get badges
-  const getBadges = () => {
-    const badges: HuntBadge[] = []
-
-    // Hunt type badge (AM/PM/All Day)
-    badges.push({
-      label: huntTypeBadge.label,
-      className: huntTypeBadge.className
-    })
-
-    // Harvest badge
-    if (hunt.had_harvest || hunt.harvest_count > 0) {
-      badges.push({
-        label: `${hunt.harvest_count} Harvest${hunt.harvest_count > 1 ? 's' : ''}`,
-        icon: getIcon('trophy'),
-        className: 'bg-bright-orange/10 text-bright-orange border border-bright-orange/30'
-      })
-    }
-
-    // Sightings badge with hover tooltip showing animals seen
-    if (hunt.sightings && hunt.sightings.length > 0) {
-      const sightingsSummary = hunt.sightings.map(s => `${s.count} ${s.animal_type}`).join(', ')
-      badges.push({
-        label: `${hunt.sightings.length} Sighting${hunt.sightings.length > 1 ? 's' : ''}`,
-        icon: getIcon('binoculars'),
-        className: 'bg-dark-teal/10 text-dark-teal border border-dark-teal/30',
-        title: sightingsSummary // This will be used for hover tooltip
-      })
-    }
-
-    return badges
   }
 
   // Get actions
@@ -317,7 +301,7 @@ export default function HuntCardV2({
             {/* Title row with date and AM/PM badge */}
             <div className="flex items-center gap-2 mb-0.5">
               <h3 className="font-bold text-base truncate" style={{ color: '#566E3D' }}>
-                {formatHuntDate(hunt.hunt_date)}
+                {formatHuntCardTitle(hunt.hunt_date)}
               </h3>
               {/* Hunt type badge */}
               <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ${huntTypeBadge.className}`}>
@@ -381,40 +365,22 @@ export default function HuntCardV2({
       clickable={!!onClick}
       className={`${(hunt.had_harvest || hunt.harvest_count > 0) ? 'border-l-4 border-bright-orange' : ''} ${className}`}
     >
-      {/* Header - Date icon and title with badges */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          {/* Custom Date Icon */}
-          <DateIcon hunt={hunt} />
-
-          {/* Title and Badges */}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-bold text-lg text-forest-shadow" style={{ color: '#566E3D' }}>
-                {formatHuntDate(hunt.hunt_date)}
-              </h3>
-
-              {/* Badges */}
-              {getBadges().map((badge, index) => {
-                const BadgeIcon = badge.icon
-                return (
-                  <span
-                    key={index}
-                    className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold ${badge.className}`}
-                    title={badge.title} // Hover tooltip for sightings
-                  >
-                    {BadgeIcon && <BadgeIcon size={12} className="mr-1" />}
-                    {badge.label}
-                  </span>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
+      {/* Header — DateIcon + title + season chip + AM/PM chip + actions, single row, never wraps */}
+      <div className="flex items-center gap-3 mb-3">
+        <DateIcon hunt={hunt} />
+        <h3 className="font-bold text-lg truncate flex-1" style={{ color: HUNTING_COLORS.oliveGreen }}>
+          {formatHuntCardTitle(hunt.hunt_date)}
+        </h3>
+        <HuntChip
+          label={hunt.hunt_date.substring(0, 4)}
+          color={HUNTING_COLORS.mutedGold}
+        />
+        <HuntChip
+          label={hunt.hunt_type === 'AM' ? 'AM' : hunt.hunt_type === 'PM' ? 'PM' : 'All'}
+          color={hunt.hunt_type === 'AM' ? HUNTING_COLORS.brightOrange : hunt.hunt_type === 'PM' ? HUNTING_COLORS.clayEarth : HUNTING_COLORS.oliveGreen}
+        />
         {showActions && getActions().length > 0 && (
-          <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+          <div className="flex items-center gap-1 flex-shrink-0">
             {getActions().map((action, index) => {
               const ActionIcon = action.icon
               const variantStyles = {
@@ -423,17 +389,11 @@ export default function HuntCardV2({
                 delete: 'text-clay-earth hover:text-clay-earth/80 hover:bg-clay-earth/10',
                 navigate: 'text-gray-600 hover:text-dark-teal hover:bg-dark-teal/10'
               }
-
               return (
                 <button
                   key={index}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    action.onClick()
-                  }}
-                  className={`p-2 rounded-md transition-colors ${
-                    variantStyles[action.variant || 'edit']
-                  }`}
+                  onClick={(e) => { e.stopPropagation(); action.onClick() }}
+                  className={`p-2 rounded-md transition-colors ${variantStyles[action.variant || 'edit']}`}
                   title={action.label}
                   aria-label={action.label}
                 >
@@ -445,163 +405,158 @@ export default function HuntCardV2({
         )}
       </div>
 
-      {/* Hunt Details Section - Like Stand Features (thin dark-teal border) */}
-      <div className="mb-3 p-2 rounded-md border" style={{ borderColor: '#0C4767', borderWidth: '1px' }}>
+      {/* Hunt Details Section */}
+      <div className="mb-3 p-2 rounded-md border" style={{ borderColor: HUNTING_COLORS.darkTeal, borderWidth: '1px' }}>
         <div className="grid grid-cols-2 gap-2 text-xs">
-          {/* Hunter */}
-          <div className="flex items-center gap-1.5">
-            {React.createElement(getIcon('user'), { size: 14, style: { color: '#566E3D' } })}
-            <span className="text-forest-shadow">
+
+          {/* Row 1: Hunter (col 1) | Sunrise or Sunset (col 2, always occupies the slot) */}
+          <div className="flex items-start gap-1.5">
+            {React.createElement(getIcon('user'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
+            <span style={{ color: HUNTING_COLORS.forestShadow }}>
               <strong>Hunter:</strong> {hunt.member?.display_name || hunt.member?.full_name || 'Unknown'}
             </span>
           </div>
-
-          {/* Stand */}
-          {hunt.stand && (
-            <div className="flex items-center gap-1.5">
-              <StandIcon size={14} className="text-weathered-wood" />
-              <span className="text-forest-shadow">
-                <strong>Stand:</strong> {hunt.stand.name}
+          {hunt.hunt_type === 'AM' && hunt.sunrise_time ? (
+            <div className="flex items-start gap-1.5">
+              {React.createElement(getIcon('sunrise'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
+              <span style={{ color: HUNTING_COLORS.forestShadow }}>
+                <strong>Sunrise:</strong> {formatTime(hunt.sunrise_time)}
               </span>
             </div>
-          )}
+          ) : hunt.hunt_type === 'PM' && hunt.sunset_time ? (
+            <div className="flex items-start gap-1.5">
+              {React.createElement(getIcon('sunset'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
+              <span style={{ color: HUNTING_COLORS.forestShadow }}>
+                <strong>Sunset:</strong> {formatTime(hunt.sunset_time)}
+              </span>
+            </div>
+          ) : <div />}
 
-          {/* Start Time */}
+          {/* Row 2: Start (col 1) | End (col 2) */}
           {hunt.start_time && (
-            <div className="flex items-center gap-1.5">
-              {React.createElement(getIcon('clock'), { size: 14, style: { color: '#0C4767' } })}
-              <span className="text-forest-shadow">
+            <div className="flex items-start gap-1.5">
+              {React.createElement(getIcon('clock'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
+              <span style={{ color: HUNTING_COLORS.forestShadow }}>
                 <strong>Start:</strong> {formatTime(hunt.start_time)}
               </span>
             </div>
           )}
-
-          {/* End Time */}
           {hunt.end_time && (
-            <div className="flex items-center gap-1.5">
-              {React.createElement(getIcon('clock'), { size: 14, style: { color: '#0C4767' } })}
-              <span className="text-forest-shadow">
+            <div className="flex items-start gap-1.5">
+              {React.createElement(getIcon('clock'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
+              <span style={{ color: HUNTING_COLORS.forestShadow }}>
                 <strong>End:</strong> {formatTime(hunt.end_time)}
               </span>
             </div>
           )}
 
-          {/* Duration */}
+          {/* Duration (col 1, standalone if present) */}
           {hunt.hunt_duration_minutes && (
-            <div className="flex items-center gap-1.5">
-              {React.createElement(getIcon('timer'), { size: 14, style: { color: '#0C4767' } })}
-              <span className="text-forest-shadow">
+            <div className="flex items-start gap-1.5">
+              {React.createElement(getIcon('timer'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
+              <span style={{ color: HUNTING_COLORS.forestShadow }}>
                 <strong>Duration:</strong> {Math.floor(hunt.hunt_duration_minutes / 60)}h {hunt.hunt_duration_minutes % 60}m
               </span>
             </div>
           )}
 
-          {/* Sunrise Time (for AM hunts) */}
-          {hunt.hunt_type === 'AM' && hunt.sunrise_time && (
-            <div className="flex items-center gap-1.5">
-              {React.createElement(getIcon('sunrise'), { size: 14, style: { color: '#FE9920' } })}
-              <span className="text-forest-shadow">
-                <strong>Sunrise:</strong> {formatTime(hunt.sunrise_time)}
-              </span>
+          {/* Stand — col-span-2, no background, same colors as other rows */}
+          <div className="col-span-2 flex items-start gap-1.5">
+            {hunt.stand ? (
+              <>
+                <StandIcon size={14} style={{ color: HUNTING_COLORS.oliveGreen }} />
+                <span style={{ color: HUNTING_COLORS.forestShadow }}>
+                  <strong>Stand:</strong> {hunt.stand.name}
+                </span>
+              </>
+            ) : (
+              <>
+                {React.createElement(getIcon('mapPin'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
+                <span style={{ color: HUNTING_COLORS.weatheredWood }}>No stand selected</span>
+              </>
+            )}
+          </div>
+
+          {/* Results — col-span-2, centered chips row; only rendered if present */}
+          {(hunt.had_harvest || hunt.harvest_count > 0 || (hunt.sightings && hunt.sightings.length > 0)) && (
+            <div className="col-span-2 flex items-center justify-center gap-1.5 pt-1 border-t border-weathered-wood/20">
+              {(hunt.had_harvest || hunt.harvest_count > 0) && (
+                <span
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold bg-bright-orange/10 text-bright-orange border border-bright-orange/30"
+                  title={`${hunt.harvest_count} Harvest${hunt.harvest_count > 1 ? 's' : ''}`}
+                >
+                  {React.createElement(getIcon('trophy'), { size: 11 })}
+                  <span>{hunt.harvest_count} Harvest{hunt.harvest_count > 1 ? 's' : ''}</span>
+                </span>
+              )}
+              {hunt.sightings && hunt.sightings.length > 0 && (
+                <span
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold bg-dark-teal/10 text-dark-teal border border-dark-teal/30"
+                  title={hunt.sightings.map(s => `${s.count} ${s.animal_type}`).join(', ')}
+                >
+                  {React.createElement(getIcon('binoculars'), { size: 11 })}
+                  <span>{hunt.sightings.length} Sighting{hunt.sightings.length > 1 ? 's' : ''}</span>
+                </span>
+              )}
             </div>
           )}
 
-          {/* Sunset Time (for PM hunts) */}
-          {hunt.hunt_type === 'PM' && hunt.sunset_time && (
-            <div className="flex items-center gap-1.5">
-              {React.createElement(getIcon('sunset'), { size: 14, style: { color: '#B9A44C' } })}
-              <span className="text-forest-shadow">
-                <strong>Sunset:</strong> {formatTime(hunt.sunset_time)}
-              </span>
-            </div>
-          )}
-
-          {/* Legal Shooting Time (for AM hunts - 30 min before sunrise) */}
-          {hunt.hunt_type === 'AM' && hunt.sunrise_time && (() => {
-            const [hours, mins] = formatTime(hunt.sunrise_time).split(':').map(Number)
-            const totalMins = hours * 60 + mins - 30
-            const newHours = Math.floor(totalMins / 60)
-            const newMins = totalMins % 60
-            return (
-              <div className="flex items-center gap-1.5">
-                {React.createElement(getIcon('target'), { size: 14, style: { color: '#FA7921' } })}
-                <span className="text-forest-shadow">
-                  <strong>Legal Start:</strong> {`${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`}
-                </span>
-              </div>
-            )
-          })()}
-
-          {/* Legal Shooting Time (for PM hunts - 30 min after sunset) */}
-          {hunt.hunt_type === 'PM' && hunt.sunset_time && (() => {
-            const [hours, mins] = formatTime(hunt.sunset_time).split(':').map(Number)
-            const totalMins = hours * 60 + mins + 30
-            const newHours = Math.floor(totalMins / 60)
-            const newMins = totalMins % 60
-            return (
-              <div className="flex items-center gap-1.5">
-                {React.createElement(getIcon('target'), { size: 14, style: { color: '#FA7921' } })}
-                <span className="text-forest-shadow">
-                  <strong>Legal End:</strong> {`${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`}
-                </span>
-              </div>
-            )
-          })()}
         </div>
       </div>
 
       {/* Weather Conditions Section */}
       {(tempContext.temperature !== null || hunt.wind_speed !== null || hunt.moon_phase !== null || hunt.precipitation !== null) && (
-        <div className="mb-3 p-2 rounded-md border border-weathered-wood/20 bg-morning-mist">
-          <div className="flex items-center gap-1 mb-2 text-xs font-medium">
-            {React.createElement(getIcon('cloudSun'), { size: 12, style: { color: '#566E3D' } })}
-            <span style={{ color: '#566E3D', fontWeight: 'bold' }}>WEATHER CONDITIONS</span>
+        <div className="mb-3 p-2 rounded-md" style={{ background: '#F5F4F0', border: '1px solid #E8E6E0' }}>
+          <div className="flex items-center gap-1 mb-2">
+            {React.createElement(getIcon('cloudSun'), { size: 12, style: { color: HUNTING_COLORS.oliveGreen } })}
+            <span style={{ color: HUNTING_COLORS.oliveGreen, fontWeight: 'bold', fontSize: '12px' }}>WEATHER CONDITIONS</span>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            {/* Temperature */}
+          <div className="grid grid-cols-2 gap-2 text-xs">
             {tempContext.temperature !== null && (
-              <div className="flex items-center font-medium">
-                {React.createElement(getIcon('thermometer'), { size: 14, className: 'text-burnt-orange mr-1' })}
-                <span className="text-burnt-orange">{tempContext.fullDisplay}</span>
+              <div className="flex items-start gap-1.5">
+                {React.createElement(getIcon('thermometer'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
+                <span style={{ color: HUNTING_COLORS.forestShadow }}>
+                  <strong>Temp:</strong> {tempContext.fullDisplay}
+                </span>
               </div>
             )}
-
-            {/* Wind */}
             {hunt.wind_speed !== null && (
-              <div className="flex items-center">
-                {React.createElement(getIcon('wind'), { size: 14, className: 'text-dark-teal mr-1' })}
-                <span className="text-forest-shadow">{hunt.wind_speed} mph</span>
+              <div className="flex items-start gap-1.5">
+                {React.createElement(getIcon('wind'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
+                <span style={{ color: HUNTING_COLORS.forestShadow }}>
+                  <strong>Wind:</strong> {hunt.wind_speed} mph{hunt.wind_direction ? ` ${hunt.wind_direction}` : ''}
+                </span>
               </div>
             )}
-
-            {/* Humidity */}
             {hunt.weather_conditions && typeof hunt.weather_conditions === 'object' && !Array.isArray(hunt.weather_conditions) && 'humidity' in hunt.weather_conditions && typeof hunt.weather_conditions.humidity === 'number' && (
-              <div className="flex items-center">
-                {React.createElement(getIcon('droplets'), { size: 14, className: 'text-dark-teal mr-1' })}
-                <span className="text-forest-shadow">{hunt.weather_conditions.humidity}% humidity</span>
+              <div className="flex items-start gap-1.5">
+                {React.createElement(getIcon('droplets'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
+                <span style={{ color: HUNTING_COLORS.forestShadow }}>
+                  <strong>Humidity:</strong> {hunt.weather_conditions.humidity}%
+                </span>
               </div>
             )}
-
-            {/* Precipitation */}
             {hunt.precipitation !== null && hunt.precipitation > 0 && (
-              <div className="flex items-center">
-                {React.createElement(getIcon('rain'), { size: 14, className: 'text-dark-teal mr-1' })}
-                <span className="text-forest-shadow">{hunt.precipitation}&quot; rain</span>
+              <div className="flex items-start gap-1.5">
+                {React.createElement(getIcon('rain'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
+                <span style={{ color: HUNTING_COLORS.forestShadow }}>
+                  <strong>Precip:</strong> {hunt.precipitation}&quot; rain
+                </span>
               </div>
             )}
-
-            {/* Moon Phase - Show phase name instead of percentage */}
             {hunt.moon_phase !== null && getMoonPhaseDisplay(hunt.moon_phase) && (
-              <div className="flex items-center">
-                {React.createElement(getIcon('moon'), { size: 14, className: 'text-muted-gold mr-1' })}
-                <span className="text-forest-shadow">{getMoonPhaseDisplay(hunt.moon_phase)}</span>
+              <div className="flex items-start gap-1.5">
+                {React.createElement(getIcon('moon'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
+                <span style={{ color: HUNTING_COLORS.forestShadow }}>
+                  <strong>Moon:</strong> {getMoonPhaseDisplay(hunt.moon_phase)}
+                </span>
               </div>
             )}
           </div>
-          {/* Show temperature range as additional context */}
           {hunt.daily_low !== null && hunt.daily_high !== null && tempContext.context !== 'average' && (
-            <div className="text-xs text-weathered-wood mt-2 border-t border-weathered-wood/20 pt-2">
-              Daily range: {hunt.daily_low}°F - {hunt.daily_high}°F
+            <div className="text-xs text-weathered-wood mt-2 pt-2 border-t border-weathered-wood/20 text-center">
+              <strong className="text-forest-shadow">Daily Range:</strong>{' '}
+              {hunt.daily_low}°F – {hunt.daily_high}°F
             </div>
           )}
         </div>
@@ -609,12 +564,12 @@ export default function HuntCardV2({
 
       {/* Notes */}
       {hunt.notes && (
-        <div className="text-sm text-gray-700 p-2 bg-gray-50 rounded border border-gray-200">
-          <div className="flex items-center gap-1 mb-1 text-xs font-medium">
-            {React.createElement(getIcon('fileText'), { size: 12, style: { color: '#566E3D' } })}
-            <span style={{ color: '#566E3D', fontWeight: 'bold' }}>NOTES</span>
+        <div className="p-2 rounded-md" style={{ background: '#F5F4F0', border: '1px solid #E8E6E0' }}>
+          <div className="flex items-center gap-1 mb-1">
+            {React.createElement(getIcon('fileText'), { size: 12, style: { color: HUNTING_COLORS.oliveGreen } })}
+            <span style={{ color: HUNTING_COLORS.oliveGreen, fontWeight: 'bold', fontSize: '12px' }}>NOTES</span>
           </div>
-          <p className="text-xs italic">&quot;{hunt.notes}&quot;</p>
+          <p className="text-xs italic" style={{ color: HUNTING_COLORS.forestShadow }}>&quot;{hunt.notes}&quot;</p>
         </div>
       )}
     </BaseCard>

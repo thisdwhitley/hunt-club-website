@@ -509,8 +509,7 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
                       <th className="px-4 py-3 text-left text-xs font-semibold text-forest-shadow uppercase tracking-wide">Date</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-forest-shadow uppercase tracking-wide">Member</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-forest-shadow uppercase tracking-wide">Stand</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-forest-shadow uppercase tracking-wide">Time</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-forest-shadow uppercase tracking-wide">Harvest</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-forest-shadow uppercase tracking-wide">Weather</th>
                       <th className="px-4 py-3 text-right text-xs font-semibold text-forest-shadow uppercase tracking-wide">Actions</th>
                     </tr>
                   </thead>

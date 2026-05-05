@@ -120,6 +120,25 @@ export function formatHuntDate(dateString: string | null): string {
 }
 
 /**
+ * Format a hunt date for card titles — concise, no year, no parenthetical.
+ * "Today" / "Yesterday" / "Mon, May 4"
+ * DateIcon already shows the numeric date, so the title just needs the
+ * day-of-week + relative context, never the year.
+ */
+export function formatHuntCardTitle(dateString: string | null): string {
+  const date = parseDBDate(dateString)
+  if (!date) return 'Invalid date'
+
+  const now = new Date()
+  const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+
+  if (diffInDays === 0) return 'Today'
+  if (diffInDays === 1) return 'Yesterday'
+
+  return date.toLocaleDateString('en-US', { weekday: 'long' })
+}
+
+/**
  * Format a date for HTML input fields (YYYY-MM-DD format)
  * 
  * @param date - Date object, date string, or null
