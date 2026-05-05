@@ -547,6 +547,27 @@ The card header is a single non-wrapping flex row: `DateIcon` + weekday title + 
 - **Why no icons in chips:** Icons + label at 10px became unreadable and stole width from the title. DateIcon already encodes AM/PM via color; the chip label alone is sufficient.
 - **Title truncation:** `flex-1 truncate` on the `<h3>`, chips and actions are `flex-shrink-0`. "Wednesday" (9 chars) is the longest possible title.
 
+**HuntCardV2 compact-mode chip color assignments:**
+Each chip color is unique across the compact title row — never reuse a color that's already claimed:
+- AM/PM: brightOrange / clayEarth / oliveGreen
+- Temperature: mutedGold (neutral, distinct from AM/PM and results)
+- Harvest: brightOrange (matches AM, acceptable — harvest IS the result of an AM/PM hunt)
+- Sightings: darkTeal
+
+**HuntCardV2 — `DateIcon` sizing:**
+`DateIcon` accepts a `small` boolean prop. Default (false) is 40×40px for full/compact cards. `small={true}` renders 24×24px for list-mode table rows. Always use `<DateIcon hunt={hunt} small />` in list mode.
+
+**HuntCardV2 — harvest left-border via `BaseCard` props:**
+Do NOT use `border-{color}` via `className` to add a harvest highlight border. `BaseCard` sets `border-gray-200` in its base styles, which wins over any Tailwind color class added via `className` (Tailwind stylesheet order). Instead, use:
+```tsx
+<BaseCard
+  highlighted={hunt.had_harvest || hunt.harvest_count > 0}
+  highlightColor={HUNTING_COLORS.brightOrange}
+  ...
+>
+```
+`BaseCard` applies `highlightColor` as an inline `style={{ borderLeftColor: ... }}` which always beats class-based styles.
+
 **`src/lib/stands/constants.ts` still uses direct lucide-react imports (intentional):**
 The `STAND_TYPES`, `TIME_OF_DAY_OPTIONS`, and `FEATURE_ICONS` constants store `LucideIcon` component references as values (e.g. `icon: LadderIcon`). Converting these to icon name strings requires changing the type and all consumers. This file is only imported by `useStands.ts` (for `DEFAULTS`/`PERFORMANCE_THRESHOLDS` — not the icon constants). Tracked under issue #33. Do not attempt to fix mid-task.
 
