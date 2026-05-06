@@ -19,10 +19,9 @@ const navigationItems = [
 ]
 
 const managementItems = [
-  { name: 'Hunt Data', href: '/management/hunts', icon: 'hunts' as const },
-  { name: 'Stands', href: '/management/stands', icon: 'stands' as const },
-  { name: 'Trail Cameras', href: '/management/cameras', icon: 'cameras' as const },
-  { name: 'Reports', href: '/management/reports', icon: 'analytics' as const },
+  { name: 'Hunt Data', href: '/management?tab=hunts', icon: 'hunts' as const },
+  { name: 'Stands', href: '/management?tab=stands', icon: 'stands' as const },
+  { name: 'Trail Cameras', href: '/management?tab=cameras', icon: 'cameras' as const },
 ]
 
 export default function Navigation() {
@@ -94,7 +93,8 @@ export default function Navigation() {
   // Helper functions
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
-    return pathname.startsWith(href)
+    const hrefPath = href.split('?')[0]
+    return pathname.startsWith(hrefPath)
   }
 
   const closeMenu = () => {

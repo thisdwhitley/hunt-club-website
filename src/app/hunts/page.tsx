@@ -1,5 +1,5 @@
 // src/app/hunts/page.tsx
-// Redirect to /management/hunts for consistent management interface
+// Redirect to /management?tab=hunts
 
 'use client'
 
@@ -10,8 +10,7 @@ export default function HuntsRedirectPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Redirect to the new management location
-    router.replace('/management/hunts')
+    router.replace('/management?tab=hunts')
   }, [router])
 
   return (
