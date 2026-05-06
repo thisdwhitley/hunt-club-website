@@ -642,13 +642,6 @@ export default function StandCardV2({
         </div>
       )}
 
-      {/* Description */}
-      {stand.description && mode === 'full' && (
-        <p className="text-sm text-gray-700 mb-3 line-clamp-2">
-          {stand.description}
-        </p>
-      )}
-
       {/* Features Section (thin teal border box) - ALL details in one place */}
       {mode === 'full' && getFeatures().length > 0 && (
         <div
@@ -662,11 +655,10 @@ export default function StandCardV2({
               return (
                 <div
                   key={feature.key}
-                  className={`flex items-center gap-2${isCamera ? ' col-span-2 rounded px-1 py-0.5' : ''}`}
-                  style={isCamera ? { backgroundColor: '#0C476710' } : undefined}
+                  className={`flex items-center gap-2${isCamera ? ' col-span-2' : ''}`}
                 >
-                  <FeatureIcon size={14} style={{ color: isCamera ? '#0C4767' : '#566E3D' }} />
-                  <span style={{ color: isCamera ? '#0C4767' : '#2D3E1F' }}>
+                  <FeatureIcon size={14} style={{ color: '#566E3D' }} />
+                  <span style={{ color: '#2D3E1F' }}>
                     <strong>{feature.label}</strong> {feature.value}
                   </span>
                 </div>
@@ -744,6 +736,13 @@ export default function StandCardV2({
             </div>
           )}
         </div>
+      )}
+
+      {/* Description */}
+      {stand.description && mode === 'full' && (
+        <p className="text-sm text-gray-700 mt-2 line-clamp-2">
+          {stand.description}
+        </p>
       )}
 
     </BaseCard>
