@@ -738,11 +738,15 @@ export default function StandCardV2({
         </div>
       )}
 
-      {/* Description */}
+      {/* Notes */}
       {stand.description && mode === 'full' && (
-        <p className="text-sm text-gray-700 mt-2 line-clamp-2">
-          {stand.description}
-        </p>
+        <div className="mt-2 p-2 rounded-md" style={{ background: '#F5F4F0', border: '1px solid #E8E6E0' }}>
+          <div className="flex items-center gap-1 mb-1">
+            {React.createElement(getIcon('fileText'), { size: 12, style: { color: '#566E3D' } })}
+            <span style={{ color: '#566E3D', fontWeight: 'bold', fontSize: '12px' }}>NOTES</span>
+          </div>
+          <p className="text-xs italic" style={{ color: '#2D3E1F' }}>&quot;{stand.description}&quot;</p>
+        </div>
       )}
 
     </BaseCard>
