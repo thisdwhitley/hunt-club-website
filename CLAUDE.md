@@ -508,6 +508,22 @@ These defaults are intentional — do not change them without good reason:
 
 **Season year dropdown — always fetch independently:** Never derive season year options from the currently-loaded camera list. The default filter is "Active Only", so a cameras-derived list would only show the current season and hide past seasons from the dropdown. Instead, use `useSeasonYears()` (`src/lib/cameras/hooks.ts`), which calls `getSeasonYears()` (`src/lib/cameras/database.ts`) — a standalone `SELECT DISTINCT season_year` query that fires once on mount regardless of active filters. Current data: 2026 = 8 active deployments, 2025 = 17 inactive deployments.
 
+### Property Map — Data Model
+
+All linear and polygon property features (trails, roads, fields, food plots, water, property boundary) are stored in a single `property_features` table with GeoJSON geometry. The old `property_boundaries` table is being replaced by this (issue #139).
+
+**Table:** `property_features` — `id`, `name`, `feature_type` (boundary | trail | road | field | food_plot | water), `geometry` (jsonb — GeoJSON), `color` (optional hex override), `notes`, `active`, `created_at`, `updated_at`
+
+**Why GeoJSON for geometry:**
+- `L.geoJSON()` reads it natively — no manual coordinate conversion needed
+- onX exports GeoJSON directly — import is a straight write
+- Clear upgrade path to PostGIS `geometry` column if spatial queries are ever needed
+- GeoJSON uses `[lng, lat]` order; `L.geoJSON()` handles this automatically (do not use `L.polyline()` / `L.polygon()` with GeoJSON data)
+
+**Import flow:** onX exports → GeoJSON or GPX file → import UI previews on map → user sets `feature_type` + `name` → saved to `property_features`. Replaces the old `gpx-test` SQL-generation approach.
+
+**Stands and cameras** remain as point features in their own tables (`stands`, `camera_deployments`) — do not add them to `property_features`.
+
 ### Stands Management Page — Card Design Pattern
 
 **Two-section card layout (mirrors camera card pattern):**
