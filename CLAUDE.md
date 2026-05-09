@@ -535,6 +535,19 @@ The "report data" / "history" / info box at the bottom of full-mode cards must f
 - **Supplementary footnote text** (e.g. "· AM"): `text-weathered-wood/80` — the one place brown is acceptable inside the box
 - **Per-stat colors are decoration, not data** — only use color inside the box to signal actionable state (e.g. battery critical = clay-earth). Never use color just to differentiate stats that already have labels.
 
+**Notes/description field — standard box treatment:**
+`hunt.notes` (HuntCardV2) and `stand.description` (StandCardV2) are semantically equivalent — both are free-text annotations. Both render identically in full mode using the standard info-box:
+```tsx
+<div className="mt-2 p-2 rounded-md" style={{ background: '#F5F4F0', border: '1px solid #E8E6E0' }}>
+  <div className="flex items-center gap-1 mb-1">
+    {React.createElement(getIcon('fileText'), { size: 12, style: { color: '#566E3D' } })}
+    <span style={{ color: '#566E3D', fontWeight: 'bold', fontSize: '12px' }}>NOTES</span>
+  </div>
+  <p className="text-xs italic" style={{ color: '#2D3E1F' }}>&quot;{text}&quot;</p>
+</div>
+```
+Never render notes/description as a bare `<p>` tag. Always use this box. Not shown in compact or list modes.
+
 **Icon color rules by view mode:**
 - **Full view:** Single uniform color (`#566E3D`) for all feature/attribute icons inside info boxes. Color without semantic meaning adds noise when labels are present.
 - **Compact view:** Per-feature colors are acceptable and useful — icons appear without labels, so color acts as a fast visual differentiator.
