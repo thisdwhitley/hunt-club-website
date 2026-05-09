@@ -14,7 +14,7 @@ import type { CardMode } from '@/components/shared/cards/types'
 
 // Hunting club color constants
 const HUNTING_COLORS = {
-  forestGreen: '#566E3D',
+  oliveGreen: '#566E3D',
   forestShadow: '#2D3E1F',
   burntOrange: '#FA7921',
   darkTeal: '#0C4767',
@@ -160,7 +160,7 @@ export default function CameraCardV2({
     }
 
     // Color coding based on age
-    if (reportAge <= 3) return HUNTING_COLORS.forestGreen // Green (good)
+    if (reportAge <= 3) return HUNTING_COLORS.oliveGreen // Green (good)
     if (reportAge <= 7) return HUNTING_COLORS.mutedGold // Yellow (warning)
     if (reportAge <= 30) return HUNTING_COLORS.burntOrange // Orange (concerning)
     return HUNTING_COLORS.clayEarth // Red (critical/stale)
@@ -255,7 +255,7 @@ export default function CameraCardV2({
               <div className="flex items-center gap-2 min-w-0">
                 <h3
                   className="font-bold text-lg truncate"
-                  style={{ color: HUNTING_COLORS.forestGreen }}
+                  style={{ color: HUNTING_COLORS.oliveGreen }}
                 >
                   {camera.hardware.cuddeback_name || camera.deployment?.location_name || 'Not Deployed'}
                 </h3>
@@ -280,10 +280,10 @@ export default function CameraCardV2({
                   {getActions().map((action, index) => {
                     const ActionIcon = action.icon
                     const variantStyles = {
-                      view: 'text-dark-teal hover:text-dark-teal/80 hover:bg-dark-teal/10',
-                      edit: 'text-olive-green hover:text-pine-needle hover:bg-olive-green/10',
-                      delete: 'text-clay-earth hover:text-clay-earth/80 hover:bg-clay-earth/10',
-                      navigate: 'text-gray-600 hover:text-dark-teal hover:bg-dark-teal/10'
+                      view: 'text-dark-teal hover:bg-dark-teal/10',
+                      edit: 'text-olive-green hover:bg-olive-green/10',
+                      delete: 'text-clay-earth hover:bg-clay-earth/10',
+                      navigate: 'text-gray-600 hover:bg-dark-teal/10'
                     }
 
                     return (
@@ -325,7 +325,7 @@ export default function CameraCardV2({
             {/* Camera Model */}
             {camera.hardware.brand && camera.hardware.model && (
               <div className="flex items-center gap-2">
-                {React.createElement(getIcon('camera'), { size: 14, style: { color: HUNTING_COLORS.darkTeal } })}
+                {React.createElement(getIcon('camera'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
               <span style={{ color: HUNTING_COLORS.forestShadow }}>
                 <strong>Model:</strong> {camera.hardware.brand} {camera.hardware.model}
               </span>
@@ -334,7 +334,7 @@ export default function CameraCardV2({
 
             {/* Power Source */}
             <div className="flex items-center gap-1.5 flex-wrap">
-              {React.createElement(getIcon('power'), { size: 14, style: { color: HUNTING_COLORS.darkTeal } })}
+              {React.createElement(getIcon('power'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
               <span style={{ color: HUNTING_COLORS.forestShadow }}><strong>Power:</strong></span>
               {getBatteryChip()}
               {getExternalChip()}
@@ -368,13 +368,13 @@ export default function CameraCardV2({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                color: HUNTING_COLORS.forestGreen,
+                color: HUNTING_COLORS.oliveGreen,
                 fontWeight: '600',
                 fontSize: '12px',
               }}
             >
-              {React.createElement(getIcon('camera'), { size: 14, style: { color: HUNTING_COLORS.forestGreen } })}
-              <span style={{ color: HUNTING_COLORS.forestGreen, fontWeight: 'bold' }}>CAMERA REPORT DATA</span>
+              {React.createElement(getIcon('camera'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
+              <span style={{ color: HUNTING_COLORS.oliveGreen, fontWeight: 'bold' }}>CAMERA REPORT DATA</span>
             </div>
 
             {/* Data freshness indicator */}
@@ -391,7 +391,7 @@ export default function CameraCardV2({
                 {/* Season */}
                 {camera.deployment?.season_year && (
                   <div className="flex items-center gap-2">
-                    {React.createElement(getIcon('season'), { size: 14, style: { color: HUNTING_COLORS.forestGreen } })}
+                    {React.createElement(getIcon('season'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
                     <span style={{ color: HUNTING_COLORS.forestShadow }}>
                       <strong>Season:</strong> {camera.deployment.season_year}
                     </span>
@@ -401,7 +401,7 @@ export default function CameraCardV2({
                 {/* Battery Status - highlight Low (warning) or Critical (error) */}
                 {camera.latest_report.battery_status && (
                   <div className="flex items-center gap-2">
-                    {React.createElement(getIcon('battery'), { size: 14, style: { color: HUNTING_COLORS.forestGreen } })}
+                    {React.createElement(getIcon('battery'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
                     <span style={{ color: HUNTING_COLORS.forestShadow }}>
                       <strong>Battery:</strong>{' '}
                       {camera.latest_report.battery_status.toUpperCase() === 'CRITICAL' ? (
@@ -424,7 +424,7 @@ export default function CameraCardV2({
                   camera.latest_report.sd_images_count !== undefined &&
                   camera.latest_report.sd_images_count > 0 && (
                     <div className="flex items-center gap-2">
-                      {React.createElement(getIcon('images'), { size: 14, style: { color: HUNTING_COLORS.forestGreen } })}
+                      {React.createElement(getIcon('images'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
                       <span style={{ color: HUNTING_COLORS.forestShadow }}>
                         <strong>Photos:</strong> {camera.latest_report.sd_images_count.toLocaleString()}
                       </span>
@@ -436,7 +436,7 @@ export default function CameraCardV2({
                   camera.latest_report.sd_free_space_mb !== undefined &&
                   camera.latest_report.sd_free_space_mb > 0 && (
                     <div className="flex items-center gap-2">
-                      {React.createElement(getIcon('hardDrive'), { size: 14, style: { color: HUNTING_COLORS.forestGreen } })}
+                      {React.createElement(getIcon('hardDrive'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
                       <span style={{ color: HUNTING_COLORS.forestShadow }}>
                         <strong>Storage:</strong> {formatStorageSpace(camera.latest_report.sd_free_space_mb)} free
                       </span>
@@ -446,7 +446,7 @@ export default function CameraCardV2({
                 {/* Signal Level - highlight if below 20% */}
                 {camera.latest_report.signal_level !== null && camera.latest_report.signal_level !== undefined && (
                   <div className="flex items-center gap-2">
-                    {React.createElement(getIcon('signal'), { size: 14, style: { color: HUNTING_COLORS.forestGreen } })}
+                    {React.createElement(getIcon('signal'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
                     <span style={{ color: HUNTING_COLORS.forestShadow }}>
                       <strong>Signal:</strong>{' '}
                       {camera.latest_report.signal_level < 20 ? (
@@ -465,7 +465,7 @@ export default function CameraCardV2({
                   camera.latest_report.network_links !== undefined &&
                   camera.latest_report.network_links > 0 && (
                     <div className="flex items-center gap-2">
-                      {React.createElement(getIcon('links'), { size: 14, style: { color: HUNTING_COLORS.forestGreen } })}
+                      {React.createElement(getIcon('links'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
                       <span style={{ color: HUNTING_COLORS.forestShadow }}>
                         <strong>Links:</strong>{' '}
                         {camera.latest_report.network_links > 1 ? (
@@ -484,7 +484,7 @@ export default function CameraCardV2({
                   camera.latest_report.image_queue !== undefined &&
                   camera.latest_report.image_queue > 0 && (
                     <div className="flex items-center gap-2">
-                      {React.createElement(getIcon('queue'), { size: 14, style: { color: HUNTING_COLORS.forestGreen } })}
+                      {React.createElement(getIcon('queue'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
                       <span style={{ color: HUNTING_COLORS.forestShadow }}>
                         <strong>Queue:</strong>{' '}
                         {camera.latest_report.image_queue > 5 ? (
@@ -551,7 +551,7 @@ export default function CameraCardV2({
           <div className="flex-1 min-w-0">
             {/* Title row with location and inactive badge */}
             <div className="flex items-center gap-2 mb-0.5">
-              <h3 className="font-bold text-base truncate" style={{ color: HUNTING_COLORS.forestGreen }}>
+              <h3 className="font-bold text-base truncate" style={{ color: HUNTING_COLORS.oliveGreen }}>
                 {camera.hardware.cuddeback_name || camera.deployment?.location_name || 'Not Deployed'}
               </h3>
               {isInactive && (
@@ -617,7 +617,7 @@ export default function CameraCardV2({
 
     return (
       <tr
-        className={`border-b border-gray-200 transition-colors ${isInactive ? 'opacity-60' : ''} ${isMIA ? 'border-l-4' : 'hover:bg-gray-50'}`}
+        className={`border-b border-gray-200 transition-colors ${isInactive ? 'opacity-60' : ''} ${isMIA ? 'border-l-4' : 'hover:bg-morning-mist'}`}
         style={isMIA ? { borderLeftColor: HUNTING_COLORS.clayEarth, backgroundColor: 'rgba(160,101,58,0.15)' } : undefined}
       >
         {/* Device Column - Icon only, no text */}
@@ -691,7 +691,7 @@ export default function CameraCardV2({
                   e.stopPropagation()
                   onClick(camera)
                 }}
-                className="p-1.5 rounded-md text-dark-teal hover:text-dark-teal/80 hover:bg-dark-teal/10 transition-colors"
+                className="p-1.5 rounded-md text-dark-teal hover:bg-dark-teal/10 transition-colors"
                 title="View camera details"
               >
                 {React.createElement(getIcon('eye'), { size: 16 })}
@@ -705,7 +705,7 @@ export default function CameraCardV2({
                   e.stopPropagation()
                   onEdit(camera)
                 }}
-                className="p-1.5 rounded-md text-olive-green hover:text-pine-needle hover:bg-olive-green/10 transition-colors"
+                className="p-1.5 rounded-md text-olive-green hover:bg-olive-green/10 transition-colors"
                 title="Edit camera"
               >
                 {React.createElement(getIcon('edit'), { size: 16 })}
@@ -719,7 +719,7 @@ export default function CameraCardV2({
                   e.stopPropagation()
                   onDelete(camera)
                 }}
-                className="p-1.5 rounded-md text-clay-earth hover:text-clay-earth/80 hover:bg-clay-earth/10 transition-colors"
+                className="p-1.5 rounded-md text-clay-earth hover:bg-clay-earth/10 transition-colors"
                 title="Delete camera"
               >
                 {React.createElement(getIcon('delete'), { size: 16 })}

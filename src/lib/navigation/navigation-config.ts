@@ -1,12 +1,13 @@
 // src/lib/navigation/navigation-config.ts
 // Centralized navigation configuration for Caswell County Yacht Club
 
-import { 
-  Home, 
-  MapPin, 
-  Target, 
-  Wrench, 
-  Camera, 
+import {
+  Home,
+  MapPin,
+  Target,
+  LocateFixed,
+  Wrench,
+  Camera,
   Calendar,
   CheckSquare,
   User,
@@ -40,7 +41,7 @@ export const navigationItems: NavigationItem[] = [
   {
     name: 'Stands',
     href: '/stands',
-    icon: Target,
+    icon: LocateFixed,
     description: 'Manage hunting stands'
   },
   {

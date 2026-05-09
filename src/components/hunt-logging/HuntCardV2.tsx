@@ -217,19 +217,19 @@ export default function HuntCardV2({
           <div className="flex items-center gap-2 text-xs text-forest-shadow flex-wrap">
             {tempContext.temperature !== null && (
               <span className="flex items-center gap-0.5" title={tempContext.fullDisplay}>
-                {React.createElement(getIcon('thermometer'), { size: 10, style: { color: HUNTING_COLORS.burntOrange } })}
+                {React.createElement(getIcon('thermometer'), { size: 16, style: { color: HUNTING_COLORS.burntOrange } })}
                 {tempContext.temperature}° {tempContext.displayText}
               </span>
             )}
             {hunt.wind_speed !== null && (
               <span className="flex items-center gap-0.5" title={`Wind: ${hunt.wind_speed}mph${hunt.wind_direction ? ` ${hunt.wind_direction}` : ''}`}>
-                {React.createElement(getIcon('wind'), { size: 10, style: { color: HUNTING_COLORS.darkTeal } })}
+                {React.createElement(getIcon('wind'), { size: 16, style: { color: HUNTING_COLORS.darkTeal } })}
                 {hunt.wind_speed} mph
               </span>
             )}
             {hunt.moon_phase !== null && (
               <span className="flex items-center gap-0.5" title={getMoonPhaseDisplay(hunt.moon_phase) || undefined}>
-                {React.createElement(getIcon('moon'), { size: 10, style: { color: HUNTING_COLORS.mutedGold } })}
+                {React.createElement(getIcon('moon'), { size: 16, style: { color: HUNTING_COLORS.mutedGold } })}
                 {getMoonPhaseDisplay(hunt.moon_phase)}
               </span>
             )}
@@ -243,7 +243,7 @@ export default function HuntCardV2({
               {onClick && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onClick(hunt) }}
-                  className="text-dark-teal hover:text-dark-teal/80 p-1.5 rounded hover:bg-dark-teal/10 transition-colors"
+                  className="text-dark-teal p-1.5 rounded hover:bg-dark-teal/10 transition-colors"
                   title="View Details"
                 >
                   <EyeIcon size={16} />
@@ -252,7 +252,7 @@ export default function HuntCardV2({
               {onEdit && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onEdit(hunt) }}
-                  className="text-olive-green hover:text-pine-needle p-1.5 rounded hover:bg-olive-green/10 transition-colors"
+                  className="text-olive-green p-1.5 rounded hover:bg-olive-green/10 transition-colors"
                   title="Edit Hunt"
                 >
                   <EditIcon size={16} />
@@ -261,7 +261,7 @@ export default function HuntCardV2({
               {onDelete && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete(hunt.id) }}
-                  className="text-clay-earth hover:text-clay-earth/80 p-1.5 rounded hover:bg-clay-earth/10 transition-colors"
+                  className="text-clay-earth p-1.5 rounded hover:bg-clay-earth/10 transition-colors"
                   title="Delete Hunt"
                 >
                   <DeleteIcon size={16} />
@@ -393,10 +393,10 @@ export default function HuntCardV2({
             {getActions().map((action, index) => {
               const ActionIcon = action.icon
               const variantStyles = {
-                view: 'text-dark-teal hover:text-dark-teal/80 hover:bg-dark-teal/10',
-                edit: 'text-olive-green hover:text-pine-needle hover:bg-olive-green/10',
-                delete: 'text-clay-earth hover:text-clay-earth/80 hover:bg-clay-earth/10',
-                navigate: 'text-gray-600 hover:text-dark-teal hover:bg-dark-teal/10'
+                view: 'text-dark-teal hover:bg-dark-teal/10',
+                edit: 'text-olive-green hover:bg-olive-green/10',
+                delete: 'text-clay-earth hover:bg-clay-earth/10',
+                navigate: 'text-gray-600 hover:bg-dark-teal/10'
               }
               return (
                 <button

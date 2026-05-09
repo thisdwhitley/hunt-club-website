@@ -11,13 +11,25 @@ import { getIcon } from '@/lib/shared/icons'
 import type { IconName } from '@/lib/shared/icons'
 import type { Stand } from '@/lib/database/stands'
 
+const HUNTING_COLORS = {
+  oliveGreen: '#566E3D',
+  burntOrange: '#FA7921',
+  brightOrange: '#FE9920',
+  mutedGold: '#B9A44C',
+  darkTeal: '#0C4767',
+  forestShadow: '#2D3E1F',
+  weatheredWood: '#8B7355',
+  morningMist: '#E8E6E0',
+  clayEarth: '#A0653A',
+}
+
 // Stand type mappings - orange icons, green titles
 const STAND_TYPES = {
-  ladder_stand: { label: 'Ladder Stand', iconName: 'ladderStand' as IconName, iconColor: '#FA7921', titleColor: '#566E3D' },
-  bale_blind: { label: 'Bale Blind', iconName: 'baleBlind' as IconName, iconColor: '#FA7921', titleColor: '#566E3D' },
-  box_stand: { label: 'Box Stand', iconName: 'boxStand' as IconName, iconColor: '#FA7921', titleColor: '#566E3D' },
-  tripod: { label: 'Tripod', iconName: 'tripodStand' as IconName, iconColor: '#FA7921', titleColor: '#566E3D' },
-  ground_blind: { label: 'Ground Blind', iconName: 'groundBlind' as IconName, iconColor: '#FA7921', titleColor: '#566E3D' }
+  ladder_stand: { label: 'Ladder Stand', iconName: 'ladderStand' as IconName, iconColor: HUNTING_COLORS.burntOrange, titleColor: HUNTING_COLORS.oliveGreen },
+  bale_blind: { label: 'Bale Blind', iconName: 'baleBlind' as IconName, iconColor: HUNTING_COLORS.burntOrange, titleColor: HUNTING_COLORS.oliveGreen },
+  box_stand: { label: 'Box Stand', iconName: 'boxStand' as IconName, iconColor: HUNTING_COLORS.burntOrange, titleColor: HUNTING_COLORS.oliveGreen },
+  tripod: { label: 'Tripod', iconName: 'tripodStand' as IconName, iconColor: HUNTING_COLORS.burntOrange, titleColor: HUNTING_COLORS.oliveGreen },
+  ground_blind: { label: 'Ground Blind', iconName: 'groundBlind' as IconName, iconColor: HUNTING_COLORS.burntOrange, titleColor: HUNTING_COLORS.oliveGreen }
 }
 
 // Flexible history stat for different card types
@@ -129,7 +141,7 @@ export default function StandCardV2({
       features.push({
         key: 'capacity',
         icon: getIcon('users'),
-        iconColor: '#566E3D',
+        iconColor: HUNTING_COLORS.oliveGreen,
         label: 'Seats:',
         value: stand.capacity
       })
@@ -140,7 +152,7 @@ export default function StandCardV2({
     features.push({
       key: 'walk',
       icon: WalkingIcon,
-      iconColor: '#566E3D',
+      iconColor: HUNTING_COLORS.oliveGreen,
       label: 'Walk:',
       value: stand.walking_time_minutes ? `${stand.walking_time_minutes} min` : '[unknown]'
     })
@@ -151,7 +163,7 @@ export default function StandCardV2({
       features.push({
         key: 'height',
         icon: HeightIcon,
-        iconColor: '#566E3D',
+        iconColor: HUNTING_COLORS.oliveGreen,
         label: 'Height:',
         value: `${stand.height_feet} ft`
       })
@@ -162,7 +174,7 @@ export default function StandCardV2({
       features.push({
         key: 'view',
         icon: getIcon('eye'),
-        iconColor: '#0C4767',
+        iconColor: HUNTING_COLORS.darkTeal,
         label: 'View:',
         value: `${stand.view_distance_yards} yards`
       })
@@ -171,8 +183,8 @@ export default function StandCardV2({
     // ROW 3: Time of day
     if (stand.time_of_day) {
       const timeLabels = { AM: 'Morning', PM: 'Evening', ALL: 'All Day' }
-      const timeIcons = { AM: 'sun', PM: 'moon', ALL: 'clock' }
-      const timeColors = { AM: '#FE9920', PM: '#B9A44C', ALL: '#566E3D' }
+      const timeIcons = { AM: 'sunrise', PM: 'sunset', ALL: 'clock' }
+      const timeColors = { AM: HUNTING_COLORS.brightOrange, PM: HUNTING_COLORS.mutedGold, ALL: HUNTING_COLORS.oliveGreen }
 
       const TimeIcon = getIcon(timeIcons[stand.time_of_day] as IconName)
       features.push({
@@ -190,7 +202,7 @@ export default function StandCardV2({
       features.push({
         key: 'water',
         icon: WaterIcon,
-        iconColor: '#0C4767',
+        iconColor: HUNTING_COLORS.darkTeal,
         label: 'Water:',
         value: 'nearby'
       })
@@ -205,7 +217,7 @@ export default function StandCardV2({
       features.push({
         key: 'food',
         icon: FoodIcon,
-        iconColor: '#B9A44C',
+        iconColor: HUNTING_COLORS.mutedGold,
         label: 'Food source:',
         value: foodLabels[stand.food_source]
       })
@@ -217,7 +229,7 @@ export default function StandCardV2({
       features.push({
         key: 'archery',
         icon: ArcheryIcon,
-        iconColor: '#FA7921',
+        iconColor: HUNTING_COLORS.burntOrange,
         label: 'Archery:',
         value: 'suitable'
       })
@@ -229,7 +241,7 @@ export default function StandCardV2({
       features.push({
         key: 'camera',
         icon: CameraIcon,
-        iconColor: '#566E3D',
+        iconColor: HUNTING_COLORS.oliveGreen,
         label: 'Camera:',
         value: stand.trail_camera_name
       })
@@ -245,7 +257,7 @@ export default function StandCardV2({
     if (stand.capacity) {
       stats.push({
         icon: getIcon('users'),
-        iconColor: '#566E3D',
+        iconColor: HUNTING_COLORS.oliveGreen,
         label: 'Capacity',
         value: stand.capacity
       })
@@ -254,7 +266,7 @@ export default function StandCardV2({
     if (stand.view_distance_yards) {
       stats.push({
         icon: getIcon('eye'),
-        iconColor: '#0C4767',
+        iconColor: HUNTING_COLORS.darkTeal,
         label: 'View',
         value: stand.view_distance_yards,
         unit: ' yards'
@@ -265,7 +277,7 @@ export default function StandCardV2({
       const WalkingIcon = getIcon('walking')
       stats.push({
         icon: WalkingIcon,
-        iconColor: '#566E3D',
+        iconColor: HUNTING_COLORS.oliveGreen,
         label: 'Walk',
         value: stand.walking_time_minutes,
         unit: ' min'
@@ -276,7 +288,7 @@ export default function StandCardV2({
       const HeightIcon = getIcon('height')
       stats.push({
         icon: HeightIcon,
-        iconColor: '#566E3D',
+        iconColor: HUNTING_COLORS.oliveGreen,
         label: 'Height',
         value: stand.height_feet,
         unit: ' ft'
@@ -324,7 +336,7 @@ export default function StandCardV2({
   // For list mode (table row) - matches Hunt log table structure
   if (mode === 'list') {
     return (
-      <tr className={`hover:bg-morning-mist transition-colors ${className}`}>
+      <tr className={`border-b border-gray-200 hover:bg-morning-mist transition-colors ${className}`}>
         {/* Name column - Icon + Stand name + walk time chip */}
         <td className="px-4 py-3">
           <div className="flex items-center gap-2">
@@ -342,9 +354,9 @@ export default function StandCardV2({
                 className="inline-flex items-center gap-0.5 rounded-full flex-shrink-0 font-semibold"
                 style={{
                   fontSize: '10px',
-                  backgroundColor: '#566E3D18',
-                  color: '#566E3D',
-                  border: '1px solid #566E3D30',
+                  backgroundColor: `${HUNTING_COLORS.oliveGreen}18`,
+                  color: HUNTING_COLORS.oliveGreen,
+                  border: `1px solid ${HUNTING_COLORS.oliveGreen}30`,
                   padding: '1px 6px',
                 }}
               >
@@ -378,10 +390,10 @@ export default function StandCardV2({
             {stand.time_of_day && (
               <span className="flex items-center gap-1" title={`Best time: ${stand.time_of_day === 'AM' ? 'Morning' : stand.time_of_day === 'PM' ? 'Evening' : 'All Day'}`}>
                 {React.createElement(getIcon(
-                  stand.time_of_day === 'AM' ? 'sun' : stand.time_of_day === 'PM' ? 'moon' : 'clock'
+                  stand.time_of_day === 'AM' ? 'sunrise' : stand.time_of_day === 'PM' ? 'sunset' : 'clock'
                 ), {
                   size: 12,
-                  className: stand.time_of_day === 'AM' ? 'text-bright-orange' : stand.time_of_day === 'PM' ? 'text-muted-gold' : 'text-olive-green'
+                  style: { color: stand.time_of_day === 'AM' ? HUNTING_COLORS.brightOrange : stand.time_of_day === 'PM' ? HUNTING_COLORS.mutedGold : HUNTING_COLORS.oliveGreen }
                 })}
               </span>
             )}
@@ -468,7 +480,7 @@ export default function StandCardV2({
               {onClick && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onClick(stand) }}
-                  className="text-dark-teal hover:text-dark-teal/80 p-1 rounded hover:bg-dark-teal/10 transition-colors"
+                  className="text-dark-teal p-1 rounded hover:bg-dark-teal/10 transition-colors"
                   title="View Details"
                 >
                   {React.createElement(getIcon('eye'), { size: 16 })}
@@ -477,7 +489,7 @@ export default function StandCardV2({
               {onEdit && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onEdit(stand) }}
-                  className="text-olive-green hover:text-pine-needle p-1 rounded hover:bg-olive-green/10 transition-colors"
+                  className="text-olive-green p-1 rounded hover:bg-olive-green/10 transition-colors"
                   title="Edit Stand"
                 >
                   {React.createElement(getIcon('edit'), { size: 16 })}
@@ -486,7 +498,7 @@ export default function StandCardV2({
               {onDelete && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete(stand) }}
-                  className="text-clay-earth hover:text-clay-earth/80 p-1 rounded hover:bg-clay-earth/10 transition-colors"
+                  className="text-clay-earth p-1 rounded hover:bg-clay-earth/10 transition-colors"
                   title="Delete Stand"
                 >
                   {React.createElement(getIcon('delete'), { size: 16 })}
@@ -535,9 +547,9 @@ export default function StandCardV2({
                   className="inline-flex items-center gap-0.5 rounded-full flex-shrink-0 font-semibold"
                   style={{
                     fontSize: '10px',
-                    backgroundColor: '#566E3D18',
-                    color: '#566E3D',
-                    border: '1px solid #566E3D30',
+                    backgroundColor: `${HUNTING_COLORS.oliveGreen}18`,
+                    color: HUNTING_COLORS.oliveGreen,
+                    border: `1px solid ${HUNTING_COLORS.oliveGreen}30`,
                     padding: '1px 6px',
                   }}
                 >
@@ -552,17 +564,17 @@ export default function StandCardV2({
               {stand.time_of_day && (
                 <div title={`Best time: ${stand.time_of_day === 'AM' ? 'Morning' : stand.time_of_day === 'PM' ? 'Evening' : 'All Day'}`}>
                   {React.createElement(getIcon(
-                    stand.time_of_day === 'AM' ? 'sun' : stand.time_of_day === 'PM' ? 'moon' : 'clock'
+                    stand.time_of_day === 'AM' ? 'sunrise' : stand.time_of_day === 'PM' ? 'sunset' : 'clock'
                   ), {
                     size: 14,
-                    style: { color: stand.time_of_day === 'AM' ? '#FE9920' : stand.time_of_day === 'PM' ? '#B9A44C' : '#566E3D' }
+                    style: { color: stand.time_of_day === 'AM' ? HUNTING_COLORS.brightOrange : stand.time_of_day === 'PM' ? HUNTING_COLORS.mutedGold : HUNTING_COLORS.oliveGreen }
                   })}
                 </div>
               )}
 
               {stand.nearby_water_source && (
                 <div title="Near water source">
-                  {React.createElement(getIcon('water'), { size: 14, style: { color: '#0C4767' } })}
+                  {React.createElement(getIcon('water'), { size: 14, style: { color: HUNTING_COLORS.darkTeal } })}
                 </div>
               )}
 
@@ -570,14 +582,14 @@ export default function StandCardV2({
                 <div title={`Food source: ${stand.food_source === 'field' ? 'Field' : 'Feeder'}`}>
                   {React.createElement(getIcon(stand.food_source === 'field' ? 'field' : 'feeder'), {
                     size: 14,
-                    style: { color: '#B9A44C' }
+                    style: { color: HUNTING_COLORS.mutedGold }
                   })}
                 </div>
               )}
 
               {stand.archery_season && (
                 <div title="Good for archery season">
-                  {React.createElement(getIcon('archery'), { size: 14, style: { color: '#FA7921' } })}
+                  {React.createElement(getIcon('archery'), { size: 14, style: { color: HUNTING_COLORS.burntOrange } })}
                 </div>
               )}
             </div>
@@ -605,9 +617,9 @@ export default function StandCardV2({
                   <span
                     className="flex-shrink-0 text-xs font-bold px-2 py-0.5 rounded-full"
                     style={{
-                      backgroundColor: '#8B735520',
-                      color: '#8B7355',
-                      border: '1px solid #8B735540',
+                      backgroundColor: `${HUNTING_COLORS.weatheredWood}20`,
+                      color: HUNTING_COLORS.weatheredWood,
+                      border: `1px solid ${HUNTING_COLORS.weatheredWood}40`,
                     }}
                   >
                     Inactive
@@ -619,10 +631,10 @@ export default function StandCardV2({
                   {getActions().map((action, index) => {
                     const ActionIcon = action.icon
                     const variantStyles: Record<string, string> = {
-                      view: 'text-dark-teal hover:text-dark-teal/80 hover:bg-dark-teal/10',
-                      edit: 'text-olive-green hover:text-pine-needle hover:bg-olive-green/10',
-                      delete: 'text-clay-earth hover:text-clay-earth/80 hover:bg-clay-earth/10',
-                      navigate: 'text-gray-600 hover:text-dark-teal hover:bg-dark-teal/10',
+                      view: 'text-dark-teal hover:bg-dark-teal/10',
+                      edit: 'text-olive-green hover:bg-olive-green/10',
+                      delete: 'text-clay-earth hover:bg-clay-earth/10',
+                      navigate: 'text-gray-600 hover:bg-dark-teal/10',
                     }
                     return (
                       <button
@@ -646,7 +658,7 @@ export default function StandCardV2({
       {mode === 'full' && getFeatures().length > 0 && (
         <div
           className="mb-3 p-2 rounded-md border"
-          style={{ borderColor: '#0C4767', borderWidth: '1px' }}
+          style={{ borderColor: HUNTING_COLORS.darkTeal, borderWidth: '1px' }}
         >
           <div className="grid grid-cols-2 gap-2 text-xs">
             {getFeatures().map((feature) => {
@@ -657,8 +669,8 @@ export default function StandCardV2({
                   key={feature.key}
                   className={`flex items-center gap-2${isCamera ? ' col-span-2' : ''}`}
                 >
-                  <FeatureIcon size={14} style={{ color: '#566E3D' }} />
-                  <span style={{ color: '#2D3E1F' }}>
+                  <FeatureIcon size={14} style={{ color: HUNTING_COLORS.oliveGreen }} />
+                  <span style={{ color: HUNTING_COLORS.forestShadow }}>
                     <strong>{feature.label}</strong> {feature.value}
                   </span>
                 </div>
@@ -672,8 +684,8 @@ export default function StandCardV2({
       {mode === 'full' && showStats && displayHistoryStats.length > 0 && (
         <div className="rounded-md p-2 mb-1" style={{ background: '#F5F4F0', border: '1px solid #E8E6E0' }}>
           <div className="flex items-center gap-1 mb-2 text-xs font-medium">
-            {React.createElement(getIcon('chartBar'), { size: 12, style: { color: '#566E3D' } })}
-            <span style={{ color: '#566E3D', fontWeight: 'bold' }}>HISTORY</span>
+            {React.createElement(getIcon('chartBar'), { size: 12, style: { color: HUNTING_COLORS.oliveGreen } })}
+            <span style={{ color: HUNTING_COLORS.oliveGreen, fontWeight: 'bold' }}>HISTORY</span>
           </div>
 
           {hasTypedStats ? (
@@ -742,10 +754,10 @@ export default function StandCardV2({
       {stand.description && mode === 'full' && (
         <div className="mt-2 p-2 rounded-md" style={{ background: '#F5F4F0', border: '1px solid #E8E6E0' }}>
           <div className="flex items-center gap-1 mb-1">
-            {React.createElement(getIcon('fileText'), { size: 12, style: { color: '#566E3D' } })}
-            <span style={{ color: '#566E3D', fontWeight: 'bold', fontSize: '12px' }}>NOTES</span>
+            {React.createElement(getIcon('fileText'), { size: 12, style: { color: HUNTING_COLORS.oliveGreen } })}
+            <span style={{ color: HUNTING_COLORS.oliveGreen, fontWeight: 'bold', fontSize: '12px' }}>NOTES</span>
           </div>
-          <p className="text-xs italic" style={{ color: '#2D3E1F' }}>&quot;{stand.description}&quot;</p>
+          <p className="text-xs italic" style={{ color: HUNTING_COLORS.forestShadow }}>&quot;{stand.description}&quot;</p>
         </div>
       )}
 
