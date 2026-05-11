@@ -597,6 +597,32 @@ Do NOT use `border-{color}` via `className` to add a harvest highlight border. `
 ```
 `BaseCard` applies `highlightColor` as an inline `style={{ borderLeftColor: ... }}` which always beats class-based styles.
 
+**HuntCardV2 — weather data model:**
+
+Weather on hunt cards comes entirely from `daily_weather_snapshots` — the hunt entry form captures none of it manually. Two triggers keep `hunt_logs` populated:
+1. `trigger_update_hunt_logs_weather` — fires on snapshot INSERT/UPDATE, fills matching hunt_logs rows where `weather_fetched_at IS NULL`
+2. `trigger_populate_hunt_weather_on_insert` — fires BEFORE INSERT on hunt_logs, pulls from an existing snapshot immediately
+
+If records are ever missing weather, run `SELECT * FROM backfill_hunt_weather_data()` in the Supabase SQL editor.
+
+**Moon illumination — `moon_illumination` is phase position, not percentage:**
+The `moon_illumination` field (and `moonphase` in `daily_weather_snapshots`) stores a 0–1 cycle position (0 = new moon, 0.5 = full moon), NOT illumination percentage. To display as illumination:
+```typescript
+const illumination = (1 - Math.cos(2 * Math.PI * phase)) / 2  // → 0–1
+`${Math.round(illumination * 100)}%`  // → "100%" at full moon
+```
+Never use `phase * 100` directly — that gives "50%" for a full moon.
+
+**Sky condition over raw precipitation:**
+Use `weather_conditions.summary` ("Clear", "Partly Cloudy", "Mostly Cloudy", "Overcast", "Rainy") for hunt card display instead of the raw `precipitation` inches. The summary is computed from cloud cover + precip by the weather trigger and stored in the JSONB blob. Extract with:
+```typescript
+const getSkyCondition = (conditions: unknown): string | null => {
+  if (!conditions || typeof conditions !== 'object' || Array.isArray(conditions)) return null
+  const c = conditions as Record<string, unknown>
+  return typeof c.summary === 'string' ? c.summary : null
+}
+```
+
 **`src/lib/stands/constants.ts` still uses direct lucide-react imports (intentional):**
 The `STAND_TYPES`, `TIME_OF_DAY_OPTIONS`, and `FEATURE_ICONS` constants store `LucideIcon` component references as values (e.g. `icon: LadderIcon`). Converting these to icon name strings requires changing the type and all consumers. This file is only imported by `useStands.ts` (for `DEFAULTS`/`PERFORMANCE_THRESHOLDS` — not the icon constants). Tracked under issue #33. Do not attempt to fix mid-task.
 
