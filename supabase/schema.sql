@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Ds2OeGAw1zv9hmmnMpQc1a3dcMroIabNAh36wbhUJv1vlMgFpaBmpKiC6WHNceY
+\restrict cQNLwtxofKDzGybBqtQgTilwCeEiuFewnr1TJpn8LedofCkUBaWitW2xeXwoNYI
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.9 (Debian 17.9-1.pgdg13+1)
@@ -568,6 +568,91 @@ $$;
 
 
 ALTER FUNCTION "public"."interpolate_dawn_dusk_temps"("sunrise_time" time without time zone, "sunset_time" time without time zone, "tempmin" numeric, "tempmax" numeric, "current_temp" numeric) OWNER TO "postgres";
+
+--
+-- Name: populate_hunt_weather_on_insert(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION "public"."populate_hunt_weather_on_insert"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  snap RECORD;
+  v_wind_direction_text TEXT;
+  v_moon_phase_name TEXT;
+  v_weather_conditions JSONB;
+BEGIN
+  -- Only populate if weather not already set
+  IF NEW.weather_fetched_at IS NOT NULL THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT * INTO snap FROM daily_weather_snapshots WHERE date = NEW.hunt_date LIMIT 1;
+
+  IF NOT FOUND THEN
+    RETURN NEW;
+  END IF;
+
+  -- Wind direction degrees → cardinal
+  CASE
+    WHEN snap.winddir IS NULL THEN v_wind_direction_text := NULL;
+    WHEN snap.winddir >= 337.5 OR snap.winddir < 22.5 THEN v_wind_direction_text := 'N';
+    WHEN snap.winddir >= 22.5 AND snap.winddir < 67.5 THEN v_wind_direction_text := 'NE';
+    WHEN snap.winddir >= 67.5 AND snap.winddir < 112.5 THEN v_wind_direction_text := 'E';
+    WHEN snap.winddir >= 112.5 AND snap.winddir < 157.5 THEN v_wind_direction_text := 'SE';
+    WHEN snap.winddir >= 157.5 AND snap.winddir < 202.5 THEN v_wind_direction_text := 'S';
+    WHEN snap.winddir >= 202.5 AND snap.winddir < 247.5 THEN v_wind_direction_text := 'SW';
+    WHEN snap.winddir >= 247.5 AND snap.winddir < 292.5 THEN v_wind_direction_text := 'W';
+    WHEN snap.winddir >= 292.5 AND snap.winddir < 337.5 THEN v_wind_direction_text := 'NW';
+    ELSE v_wind_direction_text := 'Variable';
+  END CASE;
+
+  -- Moon phase decimal → name
+  CASE
+    WHEN snap.moonphase IS NULL THEN v_moon_phase_name := NULL;
+    WHEN snap.moonphase < 0.125 THEN v_moon_phase_name := 'New Moon';
+    WHEN snap.moonphase < 0.25 THEN v_moon_phase_name := 'Waxing Crescent';
+    WHEN snap.moonphase < 0.375 THEN v_moon_phase_name := 'First Quarter';
+    WHEN snap.moonphase < 0.5 THEN v_moon_phase_name := 'Waxing Gibbous';
+    WHEN snap.moonphase < 0.625 THEN v_moon_phase_name := 'Full Moon';
+    WHEN snap.moonphase < 0.75 THEN v_moon_phase_name := 'Waning Gibbous';
+    WHEN snap.moonphase < 0.875 THEN v_moon_phase_name := 'Last Quarter';
+    ELSE v_moon_phase_name := 'Waning Crescent';
+  END CASE;
+
+  v_weather_conditions := jsonb_build_object(
+    'summary', CASE
+      WHEN snap.precip > 0.1 THEN 'Rainy'
+      WHEN snap.cloudcover > 80 THEN 'Overcast'
+      WHEN snap.cloudcover > 50 THEN 'Mostly Cloudy'
+      WHEN snap.cloudcover > 25 THEN 'Partly Cloudy'
+      ELSE 'Clear'
+    END,
+    'cloudcover', snap.cloudcover,
+    'humidity', snap.humidity,
+    'winddir_degrees', snap.winddir,
+    'data_source', 'daily_weather_snapshots'
+  );
+
+  NEW.weather_conditions  := v_weather_conditions;
+  NEW.temperature_high    := ROUND(snap.tempmax)::integer;
+  NEW.temperature_low     := ROUND(snap.tempmin)::integer;
+  NEW.wind_speed          := ROUND(snap.windspeed)::integer;
+  NEW.wind_direction      := v_wind_direction_text;
+  NEW.moon_illumination   := snap.moonphase;
+  NEW.moon_phase          := v_moon_phase_name;
+  NEW.sunrise_time        := snap.sunrise;
+  NEW.sunset_time         := snap.sunset;
+  NEW.precipitation       := snap.precip;
+  NEW.weather_fetched_at  := NOW();
+
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."populate_hunt_weather_on_insert"() OWNER TO "postgres";
 
 --
 -- Name: update_camera_alert_status(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -2132,6 +2217,13 @@ CREATE TRIGGER "trigger_camera_hardware_updated_at" BEFORE UPDATE ON "public"."c
 
 
 --
+-- Name: hunt_logs trigger_populate_hunt_weather_on_insert; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER "trigger_populate_hunt_weather_on_insert" BEFORE INSERT ON "public"."hunt_logs" FOR EACH ROW EXECUTE FUNCTION "public"."populate_hunt_weather_on_insert"();
+
+
+--
 -- Name: daily_weather_snapshots trigger_update_hunt_logs_weather; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -3377,6 +3469,15 @@ GRANT ALL ON FUNCTION "public"."interpolate_dawn_dusk_temps"("sunrise_time" time
 
 
 --
+-- Name: FUNCTION "populate_hunt_weather_on_insert"(); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION "public"."populate_hunt_weather_on_insert"() TO "anon";
+GRANT ALL ON FUNCTION "public"."populate_hunt_weather_on_insert"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."populate_hunt_weather_on_insert"() TO "service_role";
+
+
+--
 -- Name: FUNCTION "update_camera_alert_status"(); Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -3778,5 +3879,5 @@ ALTER EVENT TRIGGER "pgrst_drop_watch" OWNER TO "supabase_admin";
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Ds2OeGAw1zv9hmmnMpQc1a3dcMroIabNAh36wbhUJv1vlMgFpaBmpKiC6WHNceY
+\unrestrict cQNLwtxofKDzGybBqtQgTilwCeEiuFewnr1TJpn8LedofCkUBaWitW2xeXwoNYI
 

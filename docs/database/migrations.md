@@ -35,6 +35,37 @@
 
 ---
 
+### 2026-05-11: Auto-populate hunt weather on INSERT
+
+**Type**: Function Addition + Trigger Addition
+**Affected Tables**: hunt_logs (trigger), daily_weather_snapshots (read source)
+**Breaking Changes**: No
+**Rollback Available**: Yes (`DROP TRIGGER trigger_populate_hunt_weather_on_insert ON hunt_logs; DROP FUNCTION populate_hunt_weather_on_insert();`)
+
+**Purpose**: The existing `trigger_update_hunt_logs_weather` fires when a snapshot is *inserted or updated*, which populates weather for any existing hunt on that date. But when a hunt is logged on a date that already has a snapshot, no snapshot event fires — so that hunt gets no weather data. This trigger closes that gap by checking for an existing snapshot at hunt INSERT time and populating weather immediately if one exists.
+
+**Root cause identified during 2026-05-11 audit**: 26 of 50 hunt records had no weather data because they were logged on dates where snapshots already existed before the trigger was in place. `backfill_hunt_weather_data()` was run to fix the 26 bare records (all 50/50 now populated). The new trigger prevents regression.
+
+**Changes Made**:
+- Added function `public.populate_hunt_weather_on_insert()` — BEFORE INSERT trigger function that looks up `daily_weather_snapshots` for the hunt date and populates all weather fields if found
+- Added trigger `trigger_populate_hunt_weather_on_insert` — BEFORE INSERT on `hunt_logs`, fires per row
+
+**Migration SQL**:
+Applied via Supabase MCP `apply_migration`. See schema.sql for full function body.
+
+**Verification Steps**:
+- [x] `backfill_hunt_weather_data()` ran — updated 26 records, all 50/50 hunts now have weather + sunrise/sunset
+- [x] Trigger confirmed present in `information_schema.triggers`
+- [x] `supabase/schema.sql` re-exported
+
+**Files Modified**:
+- `supabase/schema.sql` (exported)
+- `docs/database/migrations.md` (this entry)
+
+**Claude Context**: Weather auto-population now happens in two directions: (1) snapshot INSERT/UPDATE → fills matching hunts via `trigger_update_hunt_logs_weather`, (2) hunt INSERT → fills from existing snapshot via `trigger_populate_hunt_weather_on_insert`. Both only write when `weather_fetched_at IS NULL`.
+
+---
+
 ### 2026-04-25: Add cuddeback_name and check-in staleness fields
 
 **Type**: Schema Addition

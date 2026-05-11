@@ -78,14 +78,20 @@ const DateIcon = ({ hunt, small = false }: { hunt: HuntWithDetails; small?: bool
   )
 }
 
-// Helper function to convert moon phase to phase name
-const getMoonPhaseDisplay = (phase: number | string | null) => {
+// Moon phase position (0–1 cycle) → illumination percentage string
+// Phase 0 = new moon, 0.5 = full moon, 1 = new moon again
+// Formula: illumination = (1 - cos(2π × phase)) / 2
+const getMoonIllumination = (phase: number | null): string | null => {
   if (phase === null || phase === undefined) return null
-  const numPhase = typeof phase === 'string' ? parseFloat(phase) : phase
-  if (isNaN(numPhase)) return null
-  const phaseNames = ['New', 'Waxing Crescent', 'First Quarter', 'Waxing Gibbous', 'Full', 'Waning Gibbous', 'Last Quarter', 'Waning Crescent']
-  const index = Math.round(numPhase * 8) % 8
-  return phaseNames[index]
+  const illumination = (1 - Math.cos(2 * Math.PI * Number(phase))) / 2
+  return `${Math.round(illumination * 100)}%`
+}
+
+// Extract sky condition summary string from weather_conditions JSONB
+const getSkyCondition = (conditions: unknown): string | null => {
+  if (!conditions || typeof conditions !== 'object' || Array.isArray(conditions)) return null
+  const c = conditions as Record<string, unknown>
+  return typeof c.summary === 'string' ? c.summary : null
 }
 
 
@@ -227,10 +233,16 @@ export default function HuntCardV2({
                 {hunt.wind_speed} mph
               </span>
             )}
-            {hunt.moon_phase !== null && (
-              <span className="flex items-center gap-0.5" title={getMoonPhaseDisplay(hunt.moon_phase) || undefined}>
+            {getSkyCondition(hunt.weather_conditions) && (
+              <span className="flex items-center gap-0.5">
+                {React.createElement(getIcon('cloudSun'), { size: 16, style: { color: HUNTING_COLORS.oliveGreen } })}
+                {getSkyCondition(hunt.weather_conditions)}
+              </span>
+            )}
+            {hunt.moon_illumination !== null && (
+              <span className="flex items-center gap-0.5" title={hunt.moon_phase ?? undefined}>
                 {React.createElement(getIcon('moon'), { size: 16, style: { color: HUNTING_COLORS.mutedGold } })}
-                {getMoonPhaseDisplay(hunt.moon_phase)}
+                {getMoonIllumination(hunt.moon_illumination)}
               </span>
             )}
           </div>
@@ -514,7 +526,16 @@ export default function HuntCardV2({
       </div>
 
       {/* Weather Conditions Section */}
-      {(tempContext.temperature !== null || hunt.wind_speed !== null || hunt.moon_phase !== null || hunt.precipitation !== null) && (
+      {!(tempContext.temperature !== null || hunt.wind_speed !== null || hunt.moon_illumination !== null || getSkyCondition(hunt.weather_conditions)) && hunt.weather_fetched_at === null && (
+        <div className="mb-3 p-2 rounded-md" style={{ background: '#F5F4F0', border: '1px solid #E8E6E0' }}>
+          <div className="flex items-center gap-1 mb-1">
+            {React.createElement(getIcon('cloudSun'), { size: 12, style: { color: HUNTING_COLORS.oliveGreen } })}
+            <span style={{ color: HUNTING_COLORS.oliveGreen, fontWeight: 'bold', fontSize: '12px' }}>WEATHER CONDITIONS</span>
+          </div>
+          <p className="text-xs" style={{ color: HUNTING_COLORS.weatheredWood }}>Weather data not recorded for this hunt.</p>
+        </div>
+      )}
+      {(tempContext.temperature !== null || hunt.wind_speed !== null || hunt.moon_illumination !== null || getSkyCondition(hunt.weather_conditions)) && (
         <div className="mb-3 p-2 rounded-md" style={{ background: '#F5F4F0', border: '1px solid #E8E6E0' }}>
           <div className="flex items-center gap-1 mb-2">
             {React.createElement(getIcon('cloudSun'), { size: 12, style: { color: HUNTING_COLORS.oliveGreen } })}
@@ -545,19 +566,19 @@ export default function HuntCardV2({
                 </span>
               </div>
             )}
-            {hunt.precipitation !== null && hunt.precipitation > 0 && (
+            {getSkyCondition(hunt.weather_conditions) && (
               <div className="flex items-start gap-1.5">
-                {React.createElement(getIcon('rain'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
+                {React.createElement(getIcon('cloudSun'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
                 <span style={{ color: HUNTING_COLORS.forestShadow }}>
-                  <strong>Precip:</strong> {hunt.precipitation}&quot; rain
+                  <strong>Sky:</strong> {getSkyCondition(hunt.weather_conditions)}
                 </span>
               </div>
             )}
-            {hunt.moon_phase !== null && getMoonPhaseDisplay(hunt.moon_phase) && (
-              <div className="flex items-start gap-1.5">
+            {hunt.moon_illumination !== null && (
+              <div className="flex items-start gap-1.5" title={hunt.moon_phase ?? undefined}>
                 {React.createElement(getIcon('moon'), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
                 <span style={{ color: HUNTING_COLORS.forestShadow }}>
-                  <strong>Moon:</strong> {getMoonPhaseDisplay(hunt.moon_phase)}
+                  <strong>Moon:</strong> {getMoonIllumination(hunt.moon_illumination)}
                 </span>
               </div>
             )}
