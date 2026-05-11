@@ -128,6 +128,20 @@ const supabase = await createServerSupabaseClient()
 const { data, error } = await supabase.from('table_name').select()
 ```
 
+**Which client to use for new service files:**
+- **Reference / slow-changing data** (season calendar, hardware lists): always use `createServerSupabaseClient`. These service functions live in `src/lib/[feature]/index.ts` with no `'use client'` directive and are called from Server Components or Server Actions only.
+- **User-interactive / filtered data** (cameras list, hunts list): existing services use the browser client — match that pattern for now. Migration to server-side is tracked in issues #151–#153.
+- **Never** create a module-level singleton `const supabase = createClient()` in new service files — create the client inside each function or accept it as a parameter (tracked in #151).
+
+**Season service — `src/lib/seasons/index.ts`:**
+The canonical example of the server-side service pattern. All functions use `createServerSupabaseClient`. Key functions:
+- `getCurrentSeason(species, date?)` — active season row or null (null = between seasons)
+- `getNextSeasonOpener(species, after?)` — next upcoming opener with `is_estimated` flag
+- `getSeasonForDate(huntDate, species)` — which season a specific hunt date falls in
+- `getSeasonType / getSeasonYear` — convenience wrappers over `getSeasonForDate`
+
+All queries use `zone = 'central' OR zone IS NULL` — central NC zone for deer, statewide for turkey. Date parameters must use `parseDBDate()` not `new Date(dbString)` to avoid the UTC-midnight timezone trap.
+
 **Authentication (use `useAuth` hook):**
 ```typescript
 import { useAuth } from '@/hooks/useAuth'
@@ -414,10 +428,10 @@ When removing a variable from a hook destructuring (e.g. `const { alerts } = use
 5. Use semantic color classes from design system
 
 ### Adding a Database Table
-1. Create table in Supabase dashboard with RLS policies
+1. Apply migration via Supabase MCP (`apply_migration`) or dashboard SQL editor
 2. Run `npm run db:export`
 3. Document in `docs/database/migrations.md`
-4. Create TypeScript types in `src/types/database.ts` or feature-specific types
+4. Add types to `src/types/database.ts` (hand-maintained for now; migration to generated types tracked in #150)
 5. Create service functions in `src/lib/[feature]/` directory
 6. Create custom hook if needed in `src/hooks/`
 7. Commit schema changes before implementing UI
