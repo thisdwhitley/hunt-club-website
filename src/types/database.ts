@@ -537,6 +537,47 @@ export interface Database {
           completed_at?: string | null
         }
       }
+      season_calendar: {
+        Row: {
+          id: string
+          season_year: number
+          species: string
+          season_type: string
+          zone: string | null
+          opens: string
+          closes: string
+          confidence: string
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          season_year: number
+          species: string
+          season_type: string
+          zone?: string | null
+          opens: string
+          closes: string
+          confidence?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          season_year?: number
+          species?: string
+          season_type?: string
+          zone?: string | null
+          opens?: string
+          closes?: string
+          confidence?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -574,6 +615,14 @@ export type HuntSightingUpdate = Database['public']['Tables']['hunt_sightings'][
 export type Member = Database['public']['Tables']['members']['Row']
 export type Stand = Database['public']['Tables']['stands']['Row']
 export type MaintenanceTask = Database['public']['Tables']['maintenance_tasks']['Row']
+
+export type SeasonCalendar = Database['public']['Tables']['season_calendar']['Row']
+export type SeasonCalendarInsert = Database['public']['Tables']['season_calendar']['Insert']
+export type SeasonCalendarUpdate = Database['public']['Tables']['season_calendar']['Update']
+
+export type SeasonSpecies = 'deer' | 'turkey'
+export type SeasonType = 'archery' | 'blackpowder' | 'gun' | 'turkey'
+export type SeasonConfidence = 'estimated' | 'tentative' | 'confirmed'
 
 // Hunt-specific enums for validation
 export type HuntType = 'AM' | 'PM' | 'All Day'

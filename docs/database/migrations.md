@@ -35,6 +35,48 @@
 
 ---
 
+### 2026-05-11: Create season_calendar table
+
+**Type**: Schema Addition
+**Affected Tables**: season_calendar (new)
+**Breaking Changes**: No
+**Rollback Available**: Yes (`DROP TABLE season_calendar CASCADE;`)
+
+**Purpose**: Single source of truth for "what season are we in?" — replaces scattered hardcoded year guesses in `getHuntStats()`, `StandCardV2`, and `HuntsTab`. Phase 1a of the Season Calendar System epic (#148).
+
+**Changes Made**:
+- Added table `season_calendar` with fields: `id`, `season_year`, `species`, `season_type`, `zone`, `opens`, `closes`, `confidence`, `notes`, `created_at`, `updated_at`
+- Unique constraint on `(season_year, species, season_type, zone)`
+- RLS: authenticated users can SELECT; no write policy (admin writes via Supabase MCP/dashboard until admin UI is built in #147)
+- Seeded 7 rows: 2025 deer (3 rows, confirmed), 2026 turkey (1 row, confirmed), 2026 deer (3 rows, estimated)
+
+**Seed data**:
+- 2025 deer archery: 2025-09-13 → 2025-10-31 (confirmed)
+- 2025 deer blackpowder: 2025-11-01 → 2025-11-14 (confirmed)
+- 2025 deer gun: 2025-11-15 → 2026-01-01 (confirmed)
+- 2026 turkey: 2026-04-11 → 2026-05-09 (confirmed)
+- 2026 deer archery: 2026-09-12 → 2026-10-31 (estimated — second Saturday of Sep)
+- 2026 deer blackpowder: 2026-11-01 → 2026-11-13 (estimated)
+- 2026 deer gun: 2026-11-14 → 2027-01-01 (estimated)
+
+**Confidence lifecycle**: estimated → tentative (when NCWRC publishes spring tentative dates) → confirmed (when final dates drop, typically July)
+
+**Migration SQL**: Applied via Supabase MCP `apply_migration` (migration name: `create_season_calendar`).
+
+**Verification Steps**:
+- [x] Table created with correct schema and unique constraint
+- [x] RLS policy set (read: authenticated)
+- [x] All 7 seed rows inserted and verified via SELECT
+- [x] `supabase/schema.sql` re-exported
+
+**Files Modified**:
+- `supabase/schema.sql` (exported)
+- `docs/database/migrations.md` (this entry)
+
+**Claude Context**: `season_calendar` is the authoritative source for season dates. Query it with `WHERE opens <= CURRENT_DATE AND closes >= CURRENT_DATE` to determine current season. `confidence` field tracks how reliable the dates are — treat 'estimated' rows as approximate until NCWRC publishes. Update estimated 2026 deer rows to 'tentative' in spring, 'confirmed' in July.
+
+---
+
 ### 2026-05-11: Auto-populate hunt weather on INSERT
 
 **Type**: Function Addition + Trigger Addition

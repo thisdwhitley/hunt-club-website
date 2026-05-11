@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict cQNLwtxofKDzGybBqtQgTilwCeEiuFewnr1TJpn8LedofCkUBaWitW2xeXwoNYI
+\restrict bFGce81BqlVxPI7pVQOarU5kYrhcgl6XgXvnMDxjZPd5T8euqQwRTyN1rhyeRnP
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.9 (Debian 17.9-1.pgdg13+1)
@@ -1543,6 +1543,27 @@ CREATE TABLE "public"."property_boundaries" (
 ALTER TABLE "public"."property_boundaries" OWNER TO "postgres";
 
 --
+-- Name: season_calendar; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE "public"."season_calendar" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "season_year" integer NOT NULL,
+    "species" character varying(50) NOT NULL,
+    "season_type" character varying(50) NOT NULL,
+    "zone" character varying(50),
+    "opens" "date" NOT NULL,
+    "closes" "date" NOT NULL,
+    "confidence" character varying(20) DEFAULT 'estimated'::character varying NOT NULL,
+    "notes" "text",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."season_calendar" OWNER TO "postgres";
+
+--
 -- Name: stands; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -1799,6 +1820,22 @@ ALTER TABLE ONLY "public"."members"
 
 ALTER TABLE ONLY "public"."property_boundaries"
     ADD CONSTRAINT "property_boundaries_pkey" PRIMARY KEY ("id");
+
+
+--
+-- Name: season_calendar season_calendar_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."season_calendar"
+    ADD CONSTRAINT "season_calendar_pkey" PRIMARY KEY ("id");
+
+
+--
+-- Name: season_calendar season_calendar_season_year_species_season_type_zone_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY "public"."season_calendar"
+    ADD CONSTRAINT "season_calendar_season_year_species_season_type_zone_key" UNIQUE ("season_year", "species", "season_type", "zone");
 
 
 --
@@ -2564,6 +2601,13 @@ CREATE POLICY "Authenticated users can insert sightings" ON "public"."hunt_sight
 
 
 --
+-- Name: season_calendar Authenticated users can read season_calendar; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Authenticated users can read season_calendar" ON "public"."season_calendar" FOR SELECT TO "authenticated" USING (true);
+
+
+--
 -- Name: camera_deployments Camera deployments accessible to authenticated users; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -2877,6 +2921,12 @@ CREATE POLICY "members_update_own" ON "public"."members" FOR UPDATE TO "authenti
 --
 
 ALTER TABLE "public"."property_boundaries" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: season_calendar; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE "public"."season_calendar" ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: stands; Type: ROW SECURITY; Schema: public; Owner: postgres
@@ -3718,6 +3768,15 @@ GRANT ALL ON TABLE "public"."property_boundaries" TO "service_role";
 
 
 --
+-- Name: TABLE "season_calendar"; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON TABLE "public"."season_calendar" TO "anon";
+GRANT ALL ON TABLE "public"."season_calendar" TO "authenticated";
+GRANT ALL ON TABLE "public"."season_calendar" TO "service_role";
+
+
+--
 -- Name: TABLE "stands"; Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -3879,5 +3938,5 @@ ALTER EVENT TRIGGER "pgrst_drop_watch" OWNER TO "supabase_admin";
 -- PostgreSQL database dump complete
 --
 
-\unrestrict cQNLwtxofKDzGybBqtQgTilwCeEiuFewnr1TJpn8LedofCkUBaWitW2xeXwoNYI
+\unrestrict bFGce81BqlVxPI7pVQOarU5kYrhcgl6XgXvnMDxjZPd5T8euqQwRTyN1rhyeRnP
 
