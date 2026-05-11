@@ -142,6 +142,43 @@ The canonical example of the server-side service pattern. All functions use `cre
 
 All queries use `zone = 'central' OR zone IS NULL` — central NC zone for deer, statewide for turkey. Date parameters must use `parseDBDate()` not `new Date(dbString)` to avoid the UTC-midnight timezone trap.
 
+**Server Actions — bridging client components to server-side services:**
+
+When a Client Component needs to call a server-side service function (e.g. `getSeasonType`, `getCurrentSeason`), create a thin Server Action wrapper in `src/app/actions/`.
+
+**Location:** `src/app/actions/season.ts` — the canonical example.
+
+```typescript
+// src/app/actions/season.ts
+'use server'
+
+import { getSeasonType } from '@/lib/seasons'
+import type { SeasonType } from '@/types/database'
+
+export async function lookupSeasonType(
+  huntDate: string,
+  species: 'deer' | 'turkey' = 'deer'
+): Promise<SeasonType | null> {
+  return getSeasonType(huntDate, species)
+}
+```
+
+**Usage in a Client Component:**
+```typescript
+import { lookupSeasonType } from '@/app/actions/season'
+
+// In a useEffect or event handler:
+lookupSeasonType(huntDate, 'deer').then(seasonType => {
+  setValue('hunting_season', seasonType ?? '')
+})
+```
+
+**Rules:**
+- Add new actions to the relevant file in `src/app/actions/` (group by domain: `season.ts`, not one file per function)
+- Keep actions thin — just call the service function and return. No business logic in actions.
+- Return `null` on error rather than throwing, so client components can handle gracefully
+- Use this pattern instead of API routes for simple server→client data fetches
+
 **Authentication (use `useAuth` hook):**
 ```typescript
 import { useAuth } from '@/hooks/useAuth'
