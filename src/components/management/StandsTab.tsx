@@ -112,6 +112,7 @@ interface StandsTabProps {
 export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
   const [stands, setStands] = useState<Stand[]>([])
   const [huntStats, setHuntStats] = useState<Record<string, StandHuntStats>>({})
+  const [effectiveSeasonYear, setEffectiveSeasonYear] = useState<number>(new Date().getFullYear())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -144,13 +145,19 @@ export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
 
   const loadHuntStats = useCallback(async () => {
     try {
-      const currentSeason = String(new Date().getFullYear())
       const { data } = await supabase
         .from('hunt_logs')
         .select('stand_id, harvest_count, hunt_type, hunt_date')
         .not('stand_id', 'is', null)
 
       if (!data) return
+
+      // Derive the most recent season year from actual data — never use calendar year
+      // (avoids showing "2026 Season: 0 hunts" during the off-season)
+      const allYears = data.map(h => parseInt(h.hunt_date.substring(0, 4))).filter(Boolean)
+      const latestDataYear = allYears.length > 0 ? Math.max(...allYears) : new Date().getFullYear()
+      setEffectiveSeasonYear(latestDataYear)
+      const currentSeason = String(latestDataYear)
 
       const statsMap: Record<string, StandHuntStats> = {}
       for (const hunt of data) {
@@ -168,7 +175,6 @@ export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
         const s = statsMap[hunt.stand_id]
         s.totalHunts++
         s.totalHarvests += hunt.harvest_count || 0
-        // Derive season year from hunt_date — never use the `season` column (hardcoded DB default)
         if (hunt.hunt_date.substring(0, 4) === currentSeason) {
           s.seasonHunts++
           s.seasonHarvests += hunt.harvest_count || 0
@@ -283,6 +289,7 @@ export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
   const getCardHistoryProps = (stand: Stand) => {
     const stats = huntStats[stand.id]
     return {
+      seasonYear: effectiveSeasonYear,
       historyStats: [
         { label: 'Hunts', value: stats?.seasonHunts ?? 0, color: 'text-muted-gold', type: 'season' as const },
         { label: 'Harvests', value: stats?.seasonHarvests ?? 0, color: 'text-burnt-orange', type: 'season' as const },

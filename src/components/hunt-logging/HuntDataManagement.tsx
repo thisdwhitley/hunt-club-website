@@ -702,6 +702,7 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
         end_time: data.end_time || null,
         hunt_type: data.hunt_type || null,
         notes: data.notes || null,
+        hunting_season: (data.hunting_season === '' ? null : (data.hunting_season ?? null)) as string | null,
       }
 
       await huntService.updateHunt(editingHunt.id, huntUpdates)

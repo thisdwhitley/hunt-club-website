@@ -61,6 +61,8 @@ interface StandCardV2Props {
   // Optional: Override default history stats (for flexibility with cameras, etc.)
   historyStats?: HistoryStat[]
   lastActivity?: LastActivityInfo
+  // Override calendar year for season stats label (pass from parent to avoid off-season confusion)
+  seasonYear?: number
 }
 
 export default function StandCardV2({
@@ -74,7 +76,8 @@ export default function StandCardV2({
   showActions = true,
   className = '',
   historyStats,
-  lastActivity
+  lastActivity,
+  seasonYear
 }: StandCardV2Props) {
 
   const standType = STAND_TYPES[stand.type] || STAND_TYPES.ladder_stand
@@ -88,8 +91,8 @@ export default function StandCardV2({
     return huntDate.getFullYear() < currentYear
   }
 
-  // Get current season year dynamically
-  const currentYear = new Date().getFullYear()
+  // Use provided season year or fall back to calendar year
+  const currentYear = seasonYear ?? new Date().getFullYear()
 
   // Default history stats for Stands (can be overridden via props)
   // TODO: These should be calculated from actual hunt_logs table data, not stand aggregates

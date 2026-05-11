@@ -10,6 +10,7 @@ import { Calendar, Check, Clock, MapPin, Target, Plus, ArrowLeft, ChevronDown, E
 import { useAuth } from '@/hooks/useAuth'
 import { HuntFormSchema, type HuntFormData } from '@/lib/hunt-logging/hunt-validation'
 import { createClient } from '@/lib/supabase/client'
+import { lookupSeasonType } from '@/app/actions/season'
 
 // ===========================================
 // TYPES & UTILS
@@ -68,6 +69,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
   const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState<FormStep>('basic')
   const [showExactTimes, setShowExactTimes] = useState(false)
+  const [seasonLookupPending, setSeasonLookupPending] = useState(false)
 
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [selectedHunter, setSelectedHunter] = useState(user?.id || '')
@@ -78,6 +80,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
     watch,
     control,
@@ -93,6 +96,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
       had_harvest: hunt.had_harvest || false,
       notes: hunt.notes || '',
       hunt_type: hunt.hunt_type || getCurrentTimePeriod(),
+      hunting_season: hunt.hunting_season ?? '',
       sightings: hunt.sightings || []
     } : {
       hunt_date: new Date().toISOString().split('T')[0], // Today
@@ -102,6 +106,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
       had_harvest: false,
       notes: '',
       hunt_type: getCurrentTimePeriod(),
+      hunting_season: '',
       sightings: []
     }
   })
@@ -159,6 +164,21 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
 
   const watchedValues = watch()
   const watchedHadHarvest = watch('had_harvest')
+
+  // Auto-populate hunting_season when hunt_date changes (create mode only)
+  useEffect(() => {
+    const huntDate = watchedValues.hunt_date
+    if (!huntDate || mode === 'edit') return
+    setSeasonLookupPending(true)
+    lookupSeasonType(huntDate, 'deer')
+      .then((seasonType) => {
+        setValue('hunting_season', seasonType ?? '')
+      })
+      .catch(() => { /* leave blank on error */ })
+      .finally(() => setSeasonLookupPending(false))
+  // watchedValues.hunt_date is the only dependency we care about
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedValues.hunt_date])
 
   // Add new sighting with default values
   const handleAddSighting = () => {
@@ -347,6 +367,28 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
           {errors.hunt_type && (
             <p className="text-xs text-clay-earth mt-1">{errors.hunt_type.message}</p>
           )}
+        </div>
+      </div>
+
+      {/* Season Type */}
+      <div>
+        <label className="block text-sm font-medium text-forest-shadow mb-2">
+          <Calendar className="inline w-4 h-4 mr-1" />
+          Season Type
+          {seasonLookupPending && <span className="ml-2 text-xs text-weathered-wood">detecting...</span>}
+        </label>
+        <div className="relative">
+          <select
+            {...register('hunting_season')}
+            className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green appearance-none text-sm h-10"
+          >
+            <option value="">Not set</option>
+            <option value="archery">Archery</option>
+            <option value="blackpowder">Black Powder</option>
+            <option value="gun">Gun</option>
+            <option value="turkey">Turkey</option>
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-weathered-wood pointer-events-none" />
         </div>
       </div>
 

@@ -11,6 +11,8 @@ import { huntService, type HuntWithDetails } from '@/lib/hunt-logging/hunt-servi
 import type { HuntFormData } from '@/lib/hunt-logging/hunt-validation'
 import { useStands } from '@/hooks/useStands'
 import { Download, X as XIcon } from 'lucide-react'
+import { lookupSeasonStatus, type SeasonStatus } from '@/app/actions/season'
+import { formatDate } from '@/lib/utils/date'
 
 const HuntsIcon = getIcon('hunts')
 const SearchIcon = getIcon('search')
@@ -126,6 +128,7 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
   const [showForm, setShowForm] = useState(false)
   const [editingHunt, setEditingHunt] = useState<HuntWithDetails | null>(null)
   const [formSubmitting, setFormSubmitting] = useState(false)
+  const [seasonStatus, setSeasonStatus] = useState<SeasonStatus | null>(null)
 
   const { stands } = useStands({ active: true })
 
@@ -167,6 +170,7 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
 
   useEffect(() => {
     loadAllHunts()
+    lookupSeasonStatus('deer').then(setSeasonStatus).catch(() => {})
   }, [loadAllHunts])
 
   const filteredHunts = useMemo(() => {
@@ -474,6 +478,23 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
                 Try again
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Off-season banner — shown when no active deer season */}
+        {!loading && seasonStatus?.status === 'off' && seasonStatus.opener && (
+          <div className="mb-4 px-4 py-3 rounded-lg flex items-center gap-3 text-sm"
+            style={{ background: '#F5F4F0', border: '1px solid #E8E6E0' }}>
+            <div className="w-2 h-2 rounded-full shrink-0" style={{ background: '#B9A44C' }} />
+            <span style={{ color: '#2D3E1F' }}>
+              <strong>{seasonStatus.opener.season_year} deer season</strong>
+              {' '}opens{' '}
+              {seasonStatus.opener.is_estimated ? '~' : ''}
+              {formatDate(seasonStatus.opener.opens, { style: 'short' })}
+              {seasonStatus.opener.is_estimated && (
+                <span style={{ color: '#8B7355' }}> (estimated — NCWRC hasn&apos;t published final dates)</span>
+              )}
+            </span>
           </div>
         )}
 

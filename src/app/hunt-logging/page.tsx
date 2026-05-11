@@ -186,6 +186,7 @@ export default function HuntLoggingPage() {
         harvest_count: formData.had_harvest ? 1 : 0,
         hunt_type: formData.hunt_type || 'AM',
         notes: formData.notes || null,
+        hunting_season: (formData.hunting_season === '' ? null : (formData.hunting_season ?? null)) as string | null,
       }
 
       const { data: huntLog, error: huntError } = await supabase

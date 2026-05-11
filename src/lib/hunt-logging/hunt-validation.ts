@@ -40,7 +40,7 @@ export const HuntEntrySchema = z.object({
   moon_illumination: z.number().min(0).max(100).optional(),
   sunrise_time: z.string().optional(),
   sunset_time: z.string().optional(),
-  hunting_season: z.string().max(50).optional(),
+  hunting_season: z.string().max(50).nullable().optional(),
   property_sector: z.string().max(50).optional(),
   hunt_duration_minutes: z.number().optional(),
   had_harvest: z.boolean().optional(),
@@ -114,6 +114,7 @@ export const HuntFormSchema = z.object({
   had_harvest: z.boolean().default(false),
   notes: z.string().max(1000, 'Notes must be under 1000 characters').optional(),
   hunt_type: z.enum(['AM', 'PM', 'All Day']).optional(),
+  hunting_season: z.union([z.enum(['archery', 'blackpowder', 'gun', 'turkey']), z.literal(''), z.null()]).optional(),
   sightings: z.array(SightingSchema.omit({ hunt_log_id: true })).optional(),
 }).refine((data) => {
   if (data.start_time && data.end_time && data.start_time !== '' && data.end_time !== '') {

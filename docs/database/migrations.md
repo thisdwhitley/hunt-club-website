@@ -35,6 +35,43 @@
 
 ---
 
+### 2026-05-11: Backfill hunt_logs hunting_season and season
+
+**Type**: Data Migration
+**Affected Tables**: hunt_logs
+**Breaking Changes**: No
+**Rollback Available**: Yes (UPDATE back to NULL / '2025')
+
+**Purpose**: One-time backfill to populate `hunting_season` (season type) and confirm `season` (season year) on all 50 existing hunt_log records using the `season_calendar` table as the authoritative source.
+
+**Changes Made**:
+- Set `hunting_season` from NULL → archery / blackpowder / gun based on `hunt_date BETWEEN opens AND closes` join against `season_calendar` (species=deer, zone=central or NULL)
+- Confirmed `season` = '2025' for all 50 records (correct — all hunts were in the 2025 deer season)
+
+**Result**: 19 archery, 10 blackpowder, 21 gun — 0 nulls remaining
+
+**Migration SQL**:
+```sql
+UPDATE hunt_logs hl
+SET
+  hunting_season = sc.season_type,
+  season = sc.season_year::text
+FROM season_calendar sc
+WHERE hl.hunt_date BETWEEN sc.opens AND sc.closes
+  AND sc.species = 'deer'
+  AND (sc.zone = 'central' OR sc.zone IS NULL);
+```
+
+**Verification Steps**:
+- [x] All 50 records have hunting_season populated (archery/blackpowder/gun)
+- [x] All 50 records have season = '2025'
+- [x] Counts match expected: 19 archery, 10 blackpowder, 21 gun
+
+**Files Modified**:
+- docs/database/migrations.md (this entry)
+
+---
+
 ### 2026-05-11: Create season_calendar table
 
 **Type**: Schema Addition
