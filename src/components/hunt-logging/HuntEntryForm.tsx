@@ -69,7 +69,6 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
   const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState<FormStep>('basic')
   const [showExactTimes, setShowExactTimes] = useState(false)
-  const [seasonLookupPending, setSeasonLookupPending] = useState(false)
 
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [selectedHunter, setSelectedHunter] = useState(user?.id || '')
@@ -165,18 +164,13 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
   const watchedValues = watch()
   const watchedHadHarvest = watch('had_harvest')
 
-  // Auto-populate hunting_season when hunt_date changes (create mode only)
+  // Silently auto-populate hunting_season when hunt_date changes (create mode only)
   useEffect(() => {
     const huntDate = watchedValues.hunt_date
     if (!huntDate || mode === 'edit') return
-    setSeasonLookupPending(true)
     lookupSeasonType(huntDate, 'deer')
-      .then((seasonType) => {
-        setValue('hunting_season', seasonType ?? '')
-      })
+      .then((seasonType) => { setValue('hunting_season', seasonType ?? '') })
       .catch(() => { /* leave blank on error */ })
-      .finally(() => setSeasonLookupPending(false))
-  // watchedValues.hunt_date is the only dependency we care about
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchedValues.hunt_date])
 
@@ -370,27 +364,28 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
         </div>
       </div>
 
-      {/* Season Type */}
-      <div>
-        <label className="block text-sm font-medium text-forest-shadow mb-2">
-          <Calendar className="inline w-4 h-4 mr-1" />
-          Season Type
-          {seasonLookupPending && <span className="ml-2 text-xs text-weathered-wood">detecting...</span>}
-        </label>
-        <div className="relative">
-          <select
-            {...register('hunting_season')}
-            className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green appearance-none text-sm h-10"
-          >
-            <option value="">Not set</option>
-            <option value="archery">Archery</option>
-            <option value="blackpowder">Black Powder</option>
-            <option value="gun">Gun</option>
-            <option value="turkey">Turkey</option>
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-weathered-wood pointer-events-none" />
+      {/* Season Type — edit mode only; auto-detected silently in create mode */}
+      {mode === 'edit' && (
+        <div>
+          <label className="block text-sm font-medium text-forest-shadow mb-2">
+            <Calendar className="inline w-4 h-4 mr-1" />
+            Season Type
+          </label>
+          <div className="relative">
+            <select
+              {...register('hunting_season')}
+              className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green appearance-none text-sm h-10"
+            >
+              <option value="">Not set</option>
+              <option value="archery">Archery</option>
+              <option value="blackpowder">Black Powder</option>
+              <option value="gun">Gun</option>
+              <option value="turkey">Turkey</option>
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-weathered-wood pointer-events-none" />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Stand Selection - REQUIRED */}
       <div>
