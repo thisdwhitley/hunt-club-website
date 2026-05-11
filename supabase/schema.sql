@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict bFGce81BqlVxPI7pVQOarU5kYrhcgl6XgXvnMDxjZPd5T8euqQwRTyN1rhyeRnP
+\restrict zjaRObLvasMcRGmCDTxR0eGBO0UHHPhGR5sXq6DN6bsRtMV2pJB4uss527wtLZM
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.9 (Debian 17.9-1.pgdg13+1)
@@ -1354,7 +1354,7 @@ CREATE TABLE "public"."hunt_logs" (
     "had_harvest" boolean DEFAULT false,
     "weather_fetched_at" timestamp with time zone,
     "stand_coordinates" "jsonb",
-    "season" character varying(10) DEFAULT '2025'::character varying NOT NULL,
+    "season" character varying(10),
     CONSTRAINT "hunt_logs_hunt_type_check" CHECK ((("hunt_type")::"text" = ANY (ARRAY[('AM'::character varying)::"text", ('PM'::character varying)::"text", ('All Day'::character varying)::"text"]))),
     CONSTRAINT "hunt_logs_moon_illumination_check" CHECK ((("moon_illumination" >= (0)::numeric) AND ("moon_illumination" <= (100)::numeric)))
 );
@@ -3938,5 +3938,5 @@ ALTER EVENT TRIGGER "pgrst_drop_watch" OWNER TO "supabase_admin";
 -- PostgreSQL database dump complete
 --
 
-\unrestrict bFGce81BqlVxPI7pVQOarU5kYrhcgl6XgXvnMDxjZPd5T8euqQwRTyN1rhyeRnP
+\unrestrict zjaRObLvasMcRGmCDTxR0eGBO0UHHPhGR5sXq6DN6bsRtMV2pJB4uss527wtLZM
 
