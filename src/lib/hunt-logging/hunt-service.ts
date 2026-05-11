@@ -280,57 +280,48 @@ export class HuntService {
     }
   }
 
-  async getHuntStats(season?: string): Promise<HuntStats> {
+  async getHuntStats(seasonYear?: number): Promise<HuntStats> {
     try {
-      const currentYear = new Date().getFullYear()
-      const currentSeason = season || String(currentYear)
+      const year = seasonYear ?? new Date().getFullYear()
+      const yearStart = `${year}-01-01`
+      const yearEnd = `${year + 1}-01-01`
 
-      // Build base queries with season filter
       const thisSeasonQuery = supabase
         .from('hunt_logs')
         .select('id, hunt_date, harvest_count')
-        .eq('season', currentSeason)
+        .gte('hunt_date', yearStart)
+        .lt('hunt_date', yearEnd)
 
       const allHuntsQuery = supabase
         .from('hunt_logs')
         .select('id, had_harvest, harvest_count')
-        .eq('season', currentSeason)
+        .gte('hunt_date', yearStart)
+        .lt('hunt_date', yearEnd)
 
       const standHuntCountsQuery = supabase
         .from('hunt_logs')
         .select('stand_id')
-        .eq('season', currentSeason)
+        .gte('hunt_date', yearStart)
+        .lt('hunt_date', yearEnd)
 
       const [huntsResult, allHuntsResult, sightingsResult, standsResult, standHuntCounts] = await Promise.all([
-        // This season's hunts filtered by season
         thisSeasonQuery,
-
-        // All hunts for this season (for harvest count)
         allHuntsQuery,
-
-        // Total deer sightings only (we'll sum the counts, not count records)
-        // Filter sightings to only those from hunts in the current season
         supabase
           .from('hunt_sightings')
-          .select('id, count, hunt_log_id, hunt_logs!inner(season)')
+          .select('id, count, hunt_log_id, hunt_logs!inner(hunt_date)')
           .eq('animal_type', 'Deer')
-          .eq('hunt_logs.season', currentSeason),
-
-        // Active stands
+          .gte('hunt_logs.hunt_date', yearStart)
+          .lt('hunt_logs.hunt_date', yearEnd),
         supabase.from('stands').select('id, name, type, active').eq('active', true),
-
-        // Get actual hunt counts per stand from hunt_logs (real-time, not cached)
         standHuntCountsQuery
       ])
 
       const totalHunts = huntsResult.data?.length || 0
-      // Count hunts that had a harvest (either had_harvest flag or harvest_count > 0)
       const totalHarvests = allHuntsResult.data?.filter(hunt => hunt.had_harvest || (hunt.harvest_count && hunt.harvest_count > 0)).length || 0
-      // Sum the counts from deer sighting records (not just count the records)
       const totalSightings = sightingsResult.data?.reduce((sum, sighting) => sum + (sighting.count || 0), 0) || 0
       const activeStands = standsResult.data?.length || 0
 
-      // Calculate actual hunt counts per stand from hunt_logs
       const huntCountsByStand = (standHuntCounts.data || []).reduce((acc, hunt) => {
         if (hunt.stand_id) {
           acc[hunt.stand_id] = (acc[hunt.stand_id] || 0) + 1
@@ -338,35 +329,19 @@ export class HuntService {
         return acc
       }, {} as Record<string, number>)
 
-      // Debug logging
-      console.log('📊 Hunt Stats Debug:')
-      console.log('  Season filter:', currentSeason)
-      console.log('  All hunts data:', allHuntsResult.data)
-      console.log('  Hunts with harvest:', allHuntsResult.data?.filter(hunt => hunt.had_harvest || (hunt.harvest_count && hunt.harvest_count > 0)))
-      console.log('  Total harvests count:', totalHarvests)
-      console.log('  Deer sightings raw:', sightingsResult.data)
-      console.log('  Deer sightings total (summed):', totalSightings)
-      console.log('  Hunt counts by stand:', huntCountsByStand)
-      console.log('  Stands data:', standsResult.data)
-
-      // Calculate this season stats
       const thisSeasonHunts = huntsResult.data?.length || 0
       const thisSeasonHarvests = huntsResult.data?.filter(hunt => hunt.harvest_count > 0).length || 0
 
-      // Top stands by hunt count (using real-time counts from hunt_logs)
       const topStands = (standsResult.data || [])
         .map(stand => ({
           ...stand,
           hunt_count: huntCountsByStand[stand.id] || 0,
-          total_hunts: huntCountsByStand[stand.id] || 0 // Keep for compatibility
+          total_hunts: huntCountsByStand[stand.id] || 0
         }))
         .filter(stand => stand.hunt_count > 0)
         .sort((a, b) => b.hunt_count - a.hunt_count)
         .slice(0, 5)
 
-      console.log('  Top stands (real-time):', topStands)
-
-      // Most hunted stand
       const mostHuntedStand = topStands.length > 0 ? {
         name: topStands[0].name,
         hunt_count: topStands[0].hunt_count

@@ -83,16 +83,15 @@ export default function StandCardV2({
   const standType = STAND_TYPES[stand.type] || STAND_TYPES.ladder_stand
   const StandIcon = getIcon(standType.iconName)
 
+  // Use provided season year or fall back to calendar year
+  const currentYear = seasonYear ?? new Date().getFullYear()
+
   // Helper to check if date is from prior season/year
   const isPriorSeason = (dateString: string): boolean => {
     const huntDate = parseDBDate(dateString)
     if (!huntDate) return false
-    const currentYear = new Date().getFullYear()
     return huntDate.getFullYear() < currentYear
   }
-
-  // Use provided season year or fall back to calendar year
-  const currentYear = seasonYear ?? new Date().getFullYear()
 
   // Default history stats for Stands (can be overridden via props)
   // TODO: These should be calculated from actual hunt_logs table data, not stand aggregates

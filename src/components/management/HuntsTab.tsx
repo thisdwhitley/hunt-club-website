@@ -155,10 +155,6 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
       })
       setMembers([...memberMap.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name)))
 
-      // Default season filter to most recent season with data
-      if (uniqueSeasons.length > 0) {
-        setFilters(prev => prev.season ? prev : { ...prev, season: uniqueSeasons[0] })
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load hunts')
     } finally {
@@ -172,6 +168,21 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
     loadAllHunts()
     lookupSeasonStatus('deer').then(setSeasonStatus).catch(() => {})
   }, [loadAllHunts])
+
+  // Set default season filter from season service once both data and status are ready.
+  // Active season: default to that season_year (e.g., '2025' during 2025-2026 season).
+  // Off-season: default to the most recent year with data so the list isn't empty.
+  useEffect(() => {
+    if (!seasonStatus || seasons.length === 0) return
+    setFilters(prev => {
+      if (prev.season) return prev
+      if (seasonStatus.status === 'active') {
+        const target = String(seasonStatus.season_year)
+        return { ...prev, season: seasons.includes(target) ? target : seasons[0] }
+      }
+      return { ...prev, season: seasons[0] }
+    })
+  }, [seasonStatus, seasons])
 
   const filteredHunts = useMemo(() => {
     let result = [...allHunts]

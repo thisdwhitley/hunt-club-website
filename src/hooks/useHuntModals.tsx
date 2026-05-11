@@ -145,10 +145,16 @@ export function useHuntStats() {
     try {
       setLoading(true)
       setError(null)
-      
-      // Import the service dynamically to avoid SSR issues
-      const { huntService } = await import('@/lib/hunt-logging/hunt-service')
-      const statsData = await huntService.getHuntStats()
+
+      const [{ huntService }, { lookupSeasonStatus }] = await Promise.all([
+        import('@/lib/hunt-logging/hunt-service'),
+        import('@/app/actions/season'),
+      ])
+      const seasonStatus = await lookupSeasonStatus('deer')
+      const seasonYear = seasonStatus.status === 'active'
+        ? seasonStatus.season_year
+        : (seasonStatus.opener?.season_year ?? new Date().getFullYear())
+      const statsData = await huntService.getHuntStats(seasonYear)
       setStats(statsData)
     } catch (err) {
       console.error('Error loading hunt stats:', err)

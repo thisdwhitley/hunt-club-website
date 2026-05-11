@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { lookupSeasonStatus } from '@/app/actions/season'
 import { getIcon } from '@/lib/shared/icons'
 import { ManagementHubToolbar } from '@/components/shared/ManagementHubToolbar'
 import type { TabConfig } from '@/components/shared/ManagementHubToolbar'
@@ -145,19 +146,28 @@ export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
 
   const loadHuntStats = useCallback(async () => {
     try {
-      const { data } = await supabase
-        .from('hunt_logs')
-        .select('stand_id, harvest_count, hunt_type, hunt_date')
-        .not('stand_id', 'is', null)
+      const [{ data }, seasonStatus] = await Promise.all([
+        supabase
+          .from('hunt_logs')
+          .select('stand_id, harvest_count, hunt_type, hunt_date')
+          .not('stand_id', 'is', null),
+        lookupSeasonStatus('deer'),
+      ])
 
       if (!data) return
 
-      // Derive the most recent season year from actual data — never use calendar year
-      // (avoids showing "2026 Season: 0 hunts" during the off-season)
-      const allYears = data.map(h => parseInt(h.hunt_date.substring(0, 4))).filter(Boolean)
-      const latestDataYear = allYears.length > 0 ? Math.max(...allYears) : new Date().getFullYear()
-      setEffectiveSeasonYear(latestDataYear)
-      const currentSeason = String(latestDataYear)
+      // Active season: use the season service year.
+      // Off-season: fall back to the most recent year with actual hunt data so stand
+      // history cards still show last season's utilization rather than zeroes.
+      let effectiveYear: number
+      if (seasonStatus.status === 'active') {
+        effectiveYear = seasonStatus.season_year
+      } else {
+        const allYears = data.map(h => parseInt(h.hunt_date.substring(0, 4))).filter(Boolean)
+        effectiveYear = allYears.length > 0 ? Math.max(...allYears) : new Date().getFullYear()
+      }
+      setEffectiveSeasonYear(effectiveYear)
+      const currentSeason = String(effectiveYear)
 
       const statsMap: Record<string, StandHuntStats> = {}
       for (const hunt of data) {
