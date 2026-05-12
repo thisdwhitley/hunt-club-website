@@ -281,11 +281,11 @@ export function HuntListModal({
 
                         {/* Success Indicators */}
                         <div className="flex items-center space-x-4">
-                          {hunt.harvest_count > 0 && (
+                          {(hunt.harvest_count ?? 0) > 0 && (
                             <div className="flex items-center space-x-1 bg-burnt-orange/10 text-burnt-orange px-2 py-1 rounded-full">
                               <Trophy className="w-4 h-4" />
                               <span className="text-sm font-medium">
-                                {hunt.harvest_count} harvest{hunt.harvest_count !== 1 ? 's' : ''}
+                                {hunt.harvest_count} harvest{(hunt.harvest_count ?? 0) !== 1 ? 's' : ''}
                               </span>
                             </div>
                           )}

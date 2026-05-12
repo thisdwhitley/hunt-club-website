@@ -167,7 +167,7 @@ export default function HuntsBadgeDemoPage() {
                               <span>{hunt.sightings?.length}</span>
                             </div>
                           )}
-                          {(hunt.had_harvest || hunt.harvest_count > 0) && (
+                          {(hunt.had_harvest || (hunt.harvest_count ?? 0) > 0) && (
                             <Trophy className="w-3 h-3 text-bright-orange" />
                           )}
                         </div>
@@ -252,7 +252,7 @@ export default function HuntsBadgeDemoPage() {
                               <span>{hunt.sightings?.length}</span>
                             </div>
                           )}
-                          {(hunt.had_harvest || hunt.harvest_count > 0) && (
+                          {(hunt.had_harvest || (hunt.harvest_count ?? 0) > 0) && (
                             <Trophy className="w-3 h-3 text-bright-orange" />
                           )}
                         </div>
@@ -313,7 +313,7 @@ export default function HuntsBadgeDemoPage() {
                               <span>{hunt.sightings?.length}</span>
                             </div>
                           )}
-                          {(hunt.had_harvest || hunt.harvest_count > 0) && (
+                          {(hunt.had_harvest || (hunt.harvest_count ?? 0) > 0) && (
                             <Trophy className="w-3 h-3 text-bright-orange" />
                           )}
                         </div>
@@ -399,7 +399,7 @@ export default function HuntsBadgeDemoPage() {
                               <span>{hunt.sightings?.length}</span>
                             </div>
                           )}
-                          {(hunt.had_harvest || hunt.harvest_count > 0) && (
+                          {(hunt.had_harvest || (hunt.harvest_count ?? 0) > 0) && (
                             <Trophy className="w-3 h-3 text-bright-orange" />
                           )}
                         </div>

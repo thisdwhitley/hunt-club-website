@@ -23,11 +23,15 @@ export interface ExtendedMember extends Partial<Member> {
 
 // UPDATED: Now extends HuntWithTemperature for smart temperature support
 export interface HuntWithDetails extends HuntWithTemperature {
+  // The underlying hunt_logs table guarantees these are always set;
+  // the View marks all columns nullable so we restore the invariant here.
+  id: string
+  hunt_date: string
+  member_id: string
   stand?: Stand
   member?: ExtendedMember
   harvests?: HuntHarvest[]
   sightings?: HuntSighting[]
-  // Note: weather data is now included directly in HuntWithTemperature
 }
 
 export interface HuntStats {

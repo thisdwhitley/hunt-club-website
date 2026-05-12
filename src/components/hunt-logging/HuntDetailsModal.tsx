@@ -180,8 +180,8 @@ export function HuntDetailsModal({ huntId, isOpen, onClose }: HuntDetailsModalPr
                     <div>
                       <p className="text-sm text-weathered-wood">Harvest</p>
                       <p className="font-medium text-forest-shadow">
-                        {hunt.harvest_count > 0 
-                          ? `${hunt.harvest_count} harvest${hunt.harvest_count !== 1 ? 's' : ''}`
+                        {(hunt.harvest_count ?? 0) > 0
+                          ? `${hunt.harvest_count} harvest${(hunt.harvest_count ?? 0) !== 1 ? 's' : ''}`
                           : 'No harvest'
                         }
                       </p>

@@ -468,7 +468,9 @@ When removing a variable from a hook destructuring (e.g. `const { alerts } = use
 1. Apply migration via Supabase MCP (`apply_migration`) or dashboard SQL editor
 2. Run `npm run db:export`
 3. Document in `docs/database/migrations.md`
-4. Add types to `src/types/database.ts` (hand-maintained for now; migration to generated types tracked in #150)
+4. Run `npm run db:sync` — this exports the schema AND regenerates `src/types/database.ts` in one step. The script preserves the hand-maintained utility aliases below the `// UTILITY TYPE ALIASES` delimiter. Then add a utility alias for any new table (e.g. `export type FooBar = Database["public"]["Tables"]["foo_bars"]["Row"]`).
+   - Views appear in `Database["public"]["Views"]`, not `Tables` — reference them accordingly.
+   - New nullable fields may require `?? 0` / `?? ''` guards at usage sites — run `npm run type-check` after regenerating.
 5. Create service functions in `src/lib/[feature]/` directory
 6. Create custom hook if needed in `src/hooks/`
 7. Commit schema changes before implementing UI
@@ -641,7 +643,7 @@ Each chip color is unique across the compact title row — never reuse a color t
 Do NOT use `border-{color}` via `className` to add a harvest highlight border. `BaseCard` sets `border-gray-200` in its base styles, which wins over any Tailwind color class added via `className` (Tailwind stylesheet order). Instead, use:
 ```tsx
 <BaseCard
-  highlighted={hunt.had_harvest || hunt.harvest_count > 0}
+  highlighted={hunt.had_harvest || (hunt.harvest_count ?? 0) > 0}
   highlightColor={HUNTING_COLORS.brightOrange}
   ...
 >
@@ -685,7 +687,7 @@ The `STAND_TYPES`, `TIME_OF_DAY_OPTIONS`, and `FEATURE_ICONS` constants store `L
 **Two separate "season" fields exist on `hunt_logs` — never conflate them:**
 
 - **`hunting_season`** (varchar, nullable) — the *type* of hunting season (archery, blackpowder, gun, all_seasons). Optional, user-supplied. As of 2026-04-29 this is null on all records because the hunt entry form doesn't expose it yet (issue #107).
-- **`season`** (varchar, NOT NULL, default `'2025'`) — the *year* of the hunting season. Has a hardcoded DB default that will become wrong each year (issue #108). Not exposed by the `hunt_logs_with_temperature` view.
+- **`season`** (varchar, nullable) — the *year* of the hunting season. Hardcoded DEFAULT '2025' was dropped in issue #108 (2026-05-12); column is now nullable. Not exposed by the `hunt_logs_with_temperature` view. Always derive season year from `hunt_date` instead.
 
 **Always derive season year from `hunt_date`, not from either column:**
 ```typescript

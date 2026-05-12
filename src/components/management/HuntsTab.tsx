@@ -189,8 +189,8 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
 
     if (filters.season) result = result.filter(h => h.hunt_date.startsWith(filters.season))
     if (filters.member !== 'all') result = result.filter(h => h.member_id === filters.member)
-    if (filters.harvest === 'yes') result = result.filter(h => h.had_harvest || h.harvest_count > 0)
-    if (filters.harvest === 'no') result = result.filter(h => !h.had_harvest && h.harvest_count === 0)
+    if (filters.harvest === 'yes') result = result.filter(h => h.had_harvest || (h.harvest_count ?? 0) > 0)
+    if (filters.harvest === 'no') result = result.filter(h => !h.had_harvest && (h.harvest_count ?? 0) === 0)
 
     if (filters.search.trim()) {
       const q = filters.search.toLowerCase()
@@ -227,7 +227,7 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
 
   const totalPages = Math.ceil(filteredHunts.length / PAGE_SIZE)
   const paginatedHunts = filteredHunts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
-  const filteredHarvestCount = filteredHunts.filter(h => h.had_harvest || h.harvest_count > 0).length
+  const filteredHarvestCount = filteredHunts.filter(h => h.had_harvest || (h.harvest_count ?? 0) > 0).length
 
   const handleViewHunt = (hunt: HuntWithDetails) => {
     setViewingHunt(hunt)

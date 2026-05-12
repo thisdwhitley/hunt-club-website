@@ -333,7 +333,7 @@ const HuntDetailsModal: React.FC<{
           </div>
 
           {/* Harvest Information */}
-          {(hunt.had_harvest || hunt.harvest_count > 0) && hunt.harvests && hunt.harvests.length > 0 && (
+          {(hunt.had_harvest || (hunt.harvest_count ?? 0) > 0) && hunt.harvests && hunt.harvests.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-lg font-medium text-forest-shadow border-b border-weathered-wood/20 pb-2 flex items-center">
                 <Trophy className="w-5 h-5 mr-2 text-bright-orange" />
@@ -549,8 +549,8 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
       gameType.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesFilter = filterHarvest === 'all' ||
-      (filterHarvest === 'harvest' && (hunt.had_harvest || hunt.harvest_count > 0)) ||
-      (filterHarvest === 'no-harvest' && (!hunt.had_harvest && hunt.harvest_count === 0))
+      (filterHarvest === 'harvest' && (hunt.had_harvest || (hunt.harvest_count ?? 0) > 0)) ||
+      (filterHarvest === 'no-harvest' && (!hunt.had_harvest && (hunt.harvest_count ?? 0) === 0))
 
     return matchesSearch && matchesFilter
   })
@@ -930,7 +930,7 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
                   <div className="flex items-center gap-1">
                     <Trophy className="w-4 h-4" />
                     <span>
-                      {sortedHunts.filter(h => h.had_harvest || h.harvest_count > 0).length} harvests
+                      {sortedHunts.filter(h => h.had_harvest || (h.harvest_count ?? 0) > 0).length} harvests
                     </span>
                   </div>
                 </div>

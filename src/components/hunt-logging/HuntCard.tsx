@@ -157,7 +157,7 @@ const HuntCard: React.FC<HuntCardProps> = ({
                   <span>{hunt.sightings?.length}</span>
                 </div>
               )}
-              {(hunt.had_harvest || hunt.harvest_count > 0) && (
+              {(hunt.had_harvest || (hunt.harvest_count ?? 0) > 0) && (
                 <Trophy className="w-3 h-3 text-bright-orange" />
               )}
             </div>
@@ -202,7 +202,7 @@ const HuntCard: React.FC<HuntCardProps> = ({
   // List mode for table-like display
   if (mode === 'list') {
     return (
-      <tr className={`hover:bg-morning-mist transition-colors ${isSelected ? 'bg-olive-green/10' : ''} ${(hunt.had_harvest || hunt.harvest_count > 0) ? 'border-l-4 border-bright-orange' : ''} ${className}`}>
+      <tr className={`hover:bg-morning-mist transition-colors ${isSelected ? 'bg-olive-green/10' : ''} ${(hunt.had_harvest || (hunt.harvest_count ?? 0) > 0) ? 'border-l-4 border-bright-orange' : ''} ${className}`}>
         <td className="px-4 py-3">
           {onSelect && (
             <input
@@ -220,7 +220,7 @@ const HuntCard: React.FC<HuntCardProps> = ({
               <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold ${huntTypeBadge.className}`}>
                 {huntTypeBadge.label}
               </span>
-              {(hunt.had_harvest || hunt.harvest_count > 0) && (
+              {(hunt.had_harvest || (hunt.harvest_count ?? 0) > 0) && (
                 <Trophy className="w-4 h-4 text-bright-orange flex-shrink-0" />
               )}
               <span className="whitespace-nowrap">{formatHuntDate(hunt.hunt_date)}</span>
@@ -345,7 +345,7 @@ const HuntCard: React.FC<HuntCardProps> = ({
               <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold ${huntTypeBadge.className}`}>
                 {huntTypeBadge.label}
               </span>
-              {(hunt.had_harvest || hunt.harvest_count > 0) && (
+              {(hunt.had_harvest || (hunt.harvest_count ?? 0) > 0) && (
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-bright-orange/10 text-bright-orange">
                   <Trophy className="w-3 h-3 mr-1" />
                   Harvest

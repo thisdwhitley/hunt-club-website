@@ -156,7 +156,7 @@ export default function HuntCardV2({
     const TrophyIcon = getIcon('trophy')
     const BinocularsIcon = getIcon('binoculars')
 
-    const hasHarvest = hunt.had_harvest || hunt.harvest_count > 0
+    const hasHarvest = hunt.had_harvest || (hunt.harvest_count ?? 0) > 0
     const amPmColor = hunt.hunt_type === 'AM'
       ? HUNTING_COLORS.brightOrange
       : hunt.hunt_type === 'PM'
@@ -308,7 +308,7 @@ export default function HuntCardV2({
         mode={mode}
         onClick={onClick ? () => onClick(hunt) : undefined}
         clickable={!!onClick}
-        highlighted={hunt.had_harvest || hunt.harvest_count > 0}
+        highlighted={hunt.had_harvest || (hunt.harvest_count ?? 0) > 0}
         highlightColor={HUNTING_COLORS.brightOrange}
         className={className}
       >
@@ -348,14 +348,14 @@ export default function HuntCardV2({
 
               {/* Result chips — pushed to the right, never truncated */}
               <div className="flex items-center gap-1 ml-auto flex-shrink-0">
-                {(hunt.had_harvest || hunt.harvest_count > 0) && (
+                {(hunt.had_harvest || (hunt.harvest_count ?? 0) > 0) && (
                   <span
                     className="inline-flex items-center gap-0.5 px-1 py-px rounded-full font-semibold"
                     style={{ fontSize: '10px', backgroundColor: `${HUNTING_COLORS.brightOrange}18`, color: HUNTING_COLORS.brightOrange, border: `1px solid ${HUNTING_COLORS.brightOrange}30` }}
-                    title={`${hunt.harvest_count} harvest${hunt.harvest_count !== 1 ? 's' : ''}`}
+                    title={`${hunt.harvest_count ?? 0} harvest${(hunt.harvest_count ?? 0) !== 1 ? 's' : ''}`}
                   >
                     <TrophyIcon size={10} />
-                    <span>{hunt.harvest_count}</span>
+                    <span>{hunt.harvest_count ?? 0}</span>
                   </span>
                 )}
                 {hunt.sightings && hunt.sightings.length > 0 && (
@@ -382,7 +382,7 @@ export default function HuntCardV2({
       mode={mode}
       onClick={onClick ? () => onClick(hunt) : undefined}
       clickable={!!onClick}
-      highlighted={hunt.had_harvest || hunt.harvest_count > 0}
+      highlighted={hunt.had_harvest || (hunt.harvest_count ?? 0) > 0}
       highlightColor={HUNTING_COLORS.brightOrange}
       className={className}
     >
@@ -499,15 +499,15 @@ export default function HuntCardV2({
           </div>
 
           {/* Results — col-span-2, centered chips row; only rendered if present */}
-          {(hunt.had_harvest || hunt.harvest_count > 0 || (hunt.sightings && hunt.sightings.length > 0)) && (
+          {(hunt.had_harvest || (hunt.harvest_count ?? 0) > 0 || (hunt.sightings && hunt.sightings.length > 0)) && (
             <div className="col-span-2 flex items-center justify-center gap-1.5 pt-1 border-t border-weathered-wood/20">
-              {(hunt.had_harvest || hunt.harvest_count > 0) && (
+              {(hunt.had_harvest || (hunt.harvest_count ?? 0) > 0) && (
                 <span
                   className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-bold bg-bright-orange/10 text-bright-orange border border-bright-orange/30"
-                  title={`${hunt.harvest_count} Harvest${hunt.harvest_count > 1 ? 's' : ''}`}
+                  title={`${hunt.harvest_count ?? 0} Harvest${(hunt.harvest_count ?? 0) > 1 ? 's' : ''}`}
                 >
                   {React.createElement(getIcon('trophy'), { size: 11 })}
-                  <span>{hunt.harvest_count} Harvest{hunt.harvest_count > 1 ? 's' : ''}</span>
+                  <span>{hunt.harvest_count ?? 0} Harvest{(hunt.harvest_count ?? 0) > 1 ? 's' : ''}</span>
                 </span>
               )}
               {hunt.sightings && hunt.sightings.length > 0 && (

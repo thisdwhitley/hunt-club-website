@@ -111,7 +111,7 @@ export default function HuntsComparePage() {
                                 {formatHuntDate(hunt.hunt_date)}
                               </span>
                             </div>
-                            {(hunt.had_harvest || hunt.harvest_count > 0) && (
+                            {(hunt.had_harvest || (hunt.harvest_count ?? 0) > 0) && (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-bright-orange/10 text-bright-orange">
                                 <Trophy className="w-3 h-3 mr-1" />
                                 Harvest
@@ -248,7 +248,7 @@ export default function HuntsComparePage() {
                               <span>{hunt.sightings?.length}</span>
                             </div>
                           )}
-                          {(hunt.had_harvest || hunt.harvest_count > 0) && (
+                          {(hunt.had_harvest || (hunt.harvest_count ?? 0) > 0) && (
                             <Trophy className="w-3 h-3 text-bright-orange" />
                           )}
                         </div>

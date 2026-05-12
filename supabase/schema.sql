@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict zjaRObLvasMcRGmCDTxR0eGBO0UHHPhGR5sXq6DN6bsRtMV2pJB4uss527wtLZM
+\restrict i2aUpqYtVedn6frEg8YakqQUICXqpd7H6IMDkwZKIn43z9YGRIdXIM8DNw7SExm
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.9 (Debian 17.9-1.pgdg13+1)
@@ -3938,5 +3938,5 @@ ALTER EVENT TRIGGER "pgrst_drop_watch" OWNER TO "supabase_admin";
 -- PostgreSQL database dump complete
 --
 
-\unrestrict zjaRObLvasMcRGmCDTxR0eGBO0UHHPhGR5sXq6DN6bsRtMV2pJB4uss527wtLZM
+\unrestrict i2aUpqYtVedn6frEg8YakqQUICXqpd7H6IMDkwZKIn43z9YGRIdXIM8DNw7SExm
 
