@@ -104,6 +104,16 @@ export const SightingSchema = z.object({
   photos: z.array(z.string()).optional(),
 })
 
+// Harvest form schema — subset of HarvestDetailsSchema exposed in the entry form
+export const HarvestFormSchema = z.object({
+  animal_type: z.string().min(1).default('Deer'),
+  gender: z.enum(['Buck', 'Doe', 'Jake', 'Jennie', 'Tom', 'Hen', 'Unknown']).nullable().optional(),
+  estimated_weight: z.number().positive().nullable().optional(),
+  shot_distance_yards: z.number().positive().nullable().optional(),
+  antler_points: z.number().min(0).int().nullable().optional(),
+  recovery_notes: z.string().max(500).optional(),
+})
+
 // Form schema for frontend (simplified for user input)
 export const HuntFormSchema = z.object({
   hunt_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Please select a valid date'),
@@ -112,6 +122,7 @@ export const HuntFormSchema = z.object({
   start_time: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal('')),
   end_time: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal('')),
   had_harvest: z.boolean().default(false),
+  harvest: HarvestFormSchema.optional(),
   notes: z.string().max(1000, 'Notes must be under 1000 characters').optional(),
   hunt_type: z.enum(['AM', 'PM', 'All Day']).optional(),
   hunting_season: z.union([z.enum(['archery', 'blackpowder', 'gun', 'turkey']), z.literal(''), z.null()]).optional(),
@@ -133,6 +144,7 @@ export const HuntFormSchema = z.object({
 export type HuntFormData = z.infer<typeof HuntFormSchema>
 export type HuntEntryData = z.infer<typeof HuntEntrySchema>
 export type HarvestDetailsData = z.infer<typeof HarvestDetailsSchema>
+export type HarvestFormData = z.infer<typeof HarvestFormSchema>
 export type SightingData = z.infer<typeof SightingSchema>
 
 // ===========================================

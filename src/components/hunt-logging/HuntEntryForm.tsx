@@ -93,6 +93,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
       start_time: hunt.start_time || '',
       end_time: hunt.end_time || '',
       had_harvest: hunt.had_harvest || false,
+      harvest: hunt.harvest,
       notes: hunt.notes || '',
       hunt_type: hunt.hunt_type || getCurrentTimePeriod(),
       hunting_season: hunt.hunting_season ?? '',
@@ -103,6 +104,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
       start_time: '',
       end_time: '',
       had_harvest: false,
+      harvest: { animal_type: 'Deer' },
       notes: '',
       hunt_type: getCurrentTimePeriod(),
       hunting_season: '',
@@ -163,6 +165,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
 
   const watchedValues = watch()
   const watchedHadHarvest = watch('had_harvest')
+  const watchedAnimalType = watch('harvest.animal_type') || 'Deer'
 
   // Silently auto-populate hunting_season when hunt_date changes (create mode only)
   useEffect(() => {
@@ -536,28 +539,29 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
       {/* Basic Harvest Info */}
       <div className="bg-morning-mist/50 p-4 rounded-lg border border-weathered-wood/20">
         <h3 className="font-medium text-forest-shadow mb-3">Basic Information</h3>
-        
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs text-weathered-wood mb-1">Animal Type</label>
-            <select className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm">
-              <option value="Deer">Deer</option>
-              <option value="Turkey">Turkey</option>
-              <option value="Coyote">Coyote</option>
-              <option value="Raccoon">Raccoon</option>
-              <option value="Other">Other</option>
+            <select
+              {...register('harvest.animal_type')}
+              className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
+            >
+              {animalTypes.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
 
           <div>
             <label className="block text-xs text-weathered-wood mb-1">Gender</label>
-            <select className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm">
-              <option value="Buck">Buck</option>
-              <option value="Doe">Doe</option>
-              <option value="Unknown">Unknown</option>
+            <select
+              {...register('harvest.gender')}
+              className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
+            >
+              <option value="">Unknown</option>
+              {getGenderOptions(watchedAnimalType).map(g => <option key={g} value={g}>{g}</option>)}
             </select>
           </div>
-          
+
           <div>
             <label className="block text-xs text-weathered-wood mb-1">Est. Weight (lbs)</label>
             <input
@@ -565,6 +569,9 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
               min="10"
               max="400"
               placeholder="150"
+              {...register('harvest.estimated_weight', {
+                setValueAs: (v: string) => v === '' ? null : (parseFloat(v) || null)
+              })}
               className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
             />
           </div>
@@ -576,16 +583,36 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
               min="5"
               max="500"
               placeholder="25"
+              {...register('harvest.shot_distance_yards', {
+                setValueAs: (v: string) => v === '' ? null : (parseFloat(v) || null)
+              })}
               className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
             />
           </div>
+
+          {watchedAnimalType === 'Deer' && (
+            <div>
+              <label className="block text-xs text-weathered-wood mb-1">Antler Points</label>
+              <input
+                type="number"
+                min="0"
+                max="30"
+                placeholder="8"
+                {...register('harvest.antler_points', {
+                  setValueAs: (v: string) => v === '' ? null : (parseInt(v, 10) || null)
+                })}
+                className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
+              />
+            </div>
+          )}
         </div>
-        
+
         <div className="mt-3">
           <label className="block text-xs text-weathered-wood mb-1">Notes (optional)</label>
           <textarea
             rows={2}
             placeholder="Shot placement, tracking notes..."
+            {...register('harvest.recovery_notes')}
             className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm resize-none"
           />
         </div>
@@ -601,7 +628,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
         >
           {isSubmitting ? 'Submitting Hunt Log...' : 'Submit Hunt Log'}
         </button>
-        
+
         <button
           type="button"
           onClick={() => {
@@ -615,7 +642,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
           <Eye className="w-4 h-4 mr-2" />
           + Add Sightings
         </button>
-        
+
         <button
           type="button"
           onClick={() => setCurrentStep('basic')}

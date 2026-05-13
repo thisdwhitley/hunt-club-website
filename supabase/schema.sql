@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict i2aUpqYtVedn6frEg8YakqQUICXqpd7H6IMDkwZKIn43z9YGRIdXIM8DNw7SExm
+\restrict WTyWVGHax5fYyYjlPKUIF2PPPtUQ232Qfs5RAcAYWUROT8SabVV2ZZsi7WbUCPb
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.9 (Debian 17.9-1.pgdg13+1)
@@ -1305,7 +1305,7 @@ CREATE TABLE "public"."hunt_harvests" (
     "processing_notes" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
-    CONSTRAINT "hunt_harvests_gender_check" CHECK ((("gender")::"text" = ANY (ARRAY[('Buck'::character varying)::"text", ('Doe'::character varying)::"text", ('Unknown'::character varying)::"text"]))),
+    CONSTRAINT "hunt_harvests_gender_check" CHECK ((("gender")::"text" = ANY ((ARRAY['Buck'::character varying, 'Doe'::character varying, 'Jake'::character varying, 'Jennie'::character varying, 'Tom'::character varying, 'Hen'::character varying, 'Unknown'::character varying])::"text"[]))),
     CONSTRAINT "hunt_harvests_hide_condition_check" CHECK ((("hide_condition")::"text" = ANY (ARRAY[('Excellent'::character varying)::"text", ('Good'::character varying)::"text", ('Fair'::character varying)::"text", ('Poor'::character varying)::"text", ('Damaged'::character varying)::"text"]))),
     CONSTRAINT "hunt_harvests_meat_condition_check" CHECK ((("meat_condition")::"text" = ANY (ARRAY[('Excellent'::character varying)::"text", ('Good'::character varying)::"text", ('Fair'::character varying)::"text", ('Poor'::character varying)::"text", ('Damaged'::character varying)::"text"])))
 );
@@ -2629,50 +2629,46 @@ CREATE POLICY "Camera reports accessible to authenticated users" ON "public"."ca
 
 
 --
+-- Name: hunt_harvests Members can delete harvests for any member; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Members can delete harvests for any member" ON "public"."hunt_harvests" FOR DELETE USING ((EXISTS ( SELECT 1
+   FROM "public"."members"
+  WHERE ("members"."id" = "auth"."uid"()))));
+
+
+--
+-- Name: hunt_logs Members can delete hunt logs for any member; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Members can delete hunt logs for any member" ON "public"."hunt_logs" FOR DELETE USING ((EXISTS ( SELECT 1
+   FROM "public"."members"
+  WHERE ("members"."id" = "auth"."uid"()))));
+
+
+--
+-- Name: hunt_sightings Members can delete sightings for any member; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Members can delete sightings for any member" ON "public"."hunt_sightings" FOR DELETE USING ((EXISTS ( SELECT 1
+   FROM "public"."members"
+  WHERE ("members"."id" = "auth"."uid"()))));
+
+
+--
+-- Name: hunt_logs Members can insert hunt logs for any member; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Members can insert hunt logs for any member" ON "public"."hunt_logs" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."members"
+  WHERE ("members"."id" = "auth"."uid"()))));
+
+
+--
 -- Name: property_boundaries Public can view boundaries; Type: POLICY; Schema: public; Owner: postgres
 --
 
 CREATE POLICY "Public can view boundaries" ON "public"."property_boundaries" FOR SELECT USING (true);
-
-
---
--- Name: hunt_harvests Users and admins can delete harvests; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users and admins can delete harvests" ON "public"."hunt_harvests" FOR DELETE USING ((EXISTS ( SELECT 1
-   FROM "public"."hunt_logs"
-  WHERE (("hunt_logs"."id" = "hunt_harvests"."hunt_log_id") AND (("hunt_logs"."member_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
-           FROM "public"."members"
-          WHERE (("members"."id" = "auth"."uid"()) AND ("members"."role" = 'admin'::"text")))))))));
-
-
---
--- Name: hunt_logs Users and admins can delete hunt logs; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users and admins can delete hunt logs" ON "public"."hunt_logs" FOR DELETE USING ((("auth"."uid"() = "member_id") OR (EXISTS ( SELECT 1
-   FROM "public"."members"
-  WHERE (("members"."id" = "auth"."uid"()) AND ("members"."role" = 'admin'::"text"))))));
-
-
---
--- Name: hunt_sightings Users and admins can delete sightings; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users and admins can delete sightings" ON "public"."hunt_sightings" FOR DELETE USING ((EXISTS ( SELECT 1
-   FROM "public"."hunt_logs"
-  WHERE (("hunt_logs"."id" = "hunt_sightings"."hunt_log_id") AND (("hunt_logs"."member_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
-           FROM "public"."members"
-          WHERE (("members"."id" = "auth"."uid"()) AND ("members"."role" = 'admin'::"text")))))))));
-
-
---
--- Name: hunt_logs Users and admins can insert hunt logs; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users and admins can insert hunt logs" ON "public"."hunt_logs" FOR INSERT WITH CHECK ((("auth"."uid"() = "member_id") OR (EXISTS ( SELECT 1
-   FROM "public"."members"
-  WHERE (("members"."id" = "auth"."uid"()) AND ("members"."role" = 'admin'::"text"))))));
 
 
 --
@@ -3938,5 +3934,5 @@ ALTER EVENT TRIGGER "pgrst_drop_watch" OWNER TO "supabase_admin";
 -- PostgreSQL database dump complete
 --
 
-\unrestrict i2aUpqYtVedn6frEg8YakqQUICXqpd7H6IMDkwZKIn43z9YGRIdXIM8DNw7SExm
+\unrestrict WTyWVGHax5fYyYjlPKUIF2PPPtUQ232Qfs5RAcAYWUROT8SabVV2ZZsi7WbUCPb
 

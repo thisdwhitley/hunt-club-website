@@ -35,6 +35,76 @@
 
 ---
 
+### 2026-05-13: Expand hunt_harvests gender check constraint for turkey
+
+**Type**: Schema Modification
+**Affected Tables**: hunt_harvests
+**Breaking Changes**: No
+**Rollback Available**: Yes (drop and re-add constraint with original values)
+
+**Purpose**: The original `hunt_harvests_gender_check` constraint only allowed `('Buck', 'Doe', 'Unknown')`, which blocked turkey harvest entries where gender options are Jake, Jennie, Tom, or Hen.
+
+**Changes Made**:
+- Dropped `hunt_harvests_gender_check` constraint
+- Re-added with expanded values: `('Buck', 'Doe', 'Jake', 'Jennie', 'Tom', 'Hen', 'Unknown')`
+- Updated `HarvestFormSchema` Zod enum in `hunt-validation.ts` to match
+
+**Migration SQL**:
+```sql
+ALTER TABLE hunt_harvests DROP CONSTRAINT hunt_harvests_gender_check;
+ALTER TABLE hunt_harvests ADD CONSTRAINT hunt_harvests_gender_check
+  CHECK (gender IN ('Buck', 'Doe', 'Jake', 'Jennie', 'Tom', 'Hen', 'Unknown'));
+```
+
+**Files Modified**:
+- supabase/schema.sql (exported)
+- src/lib/hunt-logging/hunt-validation.ts (HarvestFormSchema gender enum)
+
+---
+
+### 2026-05-13: RLS policies — allow members to insert/delete any hunt
+
+**Type**: Schema Modification (RLS Policies)
+**Affected Tables**: hunt_logs, hunt_harvests, hunt_sightings
+**Breaking Changes**: No
+**Rollback Available**: Yes
+
+**Purpose**: Original INSERT policy on `hunt_logs` required `auth.uid() = member_id`, blocking members from logging hunts on behalf of other members. DELETE policy had the same restriction. Club use case requires any authenticated member to log/delete hunts for any member.
+
+**Changes Made**:
+- Replaced INSERT policy on `hunt_logs`: now allows any authenticated member (`EXISTS (SELECT 1 FROM members WHERE id = auth.uid())`)
+- Added DELETE policies on `hunt_logs`, `hunt_harvests`, `hunt_sightings` with same any-member rule
+
+**Files Modified**:
+- supabase/schema.sql (exported)
+
+---
+
+### 2026-05-13: Wire harvest details to hunt_harvests table (issue #128)
+
+**Type**: Application (no schema change)
+**Affected Tables**: hunt_harvests (writes added)
+**Breaking Changes**: No
+
+**Purpose**: `renderHarvestForm()` in HuntEntryForm used fully uncontrolled inputs and the service layer never wrote to `hunt_harvests`. This wired the form fields to react-hook-form and added DB writes in all three callers.
+
+**Changes Made**:
+- Added `HarvestFormSchema` and `HarvestFormData` to `hunt-validation.ts`
+- Extended `HuntFormSchema` with `harvest: HarvestFormSchema.optional()`
+- Wired all harvest inputs in `HuntEntryForm.tsx` with `register()`
+- Added `saveHarvestDetails` / `upsertHarvestDetails` to `hunt-service.ts`
+- Updated all three callers: `HuntsTab.tsx`, `hunt-logging/page.tsx`, `ModalSystem.tsx`
+
+**Files Modified**:
+- src/lib/hunt-logging/hunt-validation.ts
+- src/components/hunt-logging/HuntEntryForm.tsx
+- src/lib/hunt-logging/hunt-service.ts
+- src/components/management/HuntsTab.tsx
+- src/app/hunt-logging/page.tsx
+- src/components/modals/ModalSystem.tsx
+
+---
+
 ### 2026-05-11: Backfill hunt_logs hunting_season and season
 
 **Type**: Data Migration

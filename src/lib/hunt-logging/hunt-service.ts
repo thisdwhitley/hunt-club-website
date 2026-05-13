@@ -6,6 +6,7 @@ import type {
   HuntLogInsert,
   HuntLogUpdate,
   HuntHarvest,
+  HuntHarvestInsert,
   HuntSighting,
   Stand,
   Member,
@@ -273,15 +274,34 @@ export class HuntService {
         .single()
 
       if (error) {
-        console.error('Error creating hunt:', error)
-        throw error
+        console.error('Error creating hunt:', error.message, error.code, error.details, error.hint)
+        throw new Error(error.message || 'Failed to create hunt')
       }
 
       return data.id
     } catch (error) {
-      console.error('Error in createHunt:', error)
-      throw error
+      if (error instanceof Error) throw error
+      throw new Error(String(error))
     }
+  }
+
+  async saveHarvestDetails(huntLogId: string, harvestData: Omit<HuntHarvestInsert, 'hunt_log_id'>): Promise<void> {
+    const { error } = await supabase
+      .from('hunt_harvests')
+      .insert({ ...harvestData, hunt_log_id: huntLogId })
+    if (error) throw new Error(`Failed to save harvest details: ${error.message}`)
+  }
+
+  async upsertHarvestDetails(huntLogId: string, harvestData: Omit<HuntHarvestInsert, 'hunt_log_id'>): Promise<void> {
+    const { error: delError } = await supabase
+      .from('hunt_harvests')
+      .delete()
+      .eq('hunt_log_id', huntLogId)
+    if (delError) throw new Error(`Failed to clear existing harvest: ${delError.message}`)
+    const { error } = await supabase
+      .from('hunt_harvests')
+      .insert({ ...harvestData, hunt_log_id: huntLogId })
+    if (error) throw new Error(`Failed to save harvest details: ${error.message}`)
   }
 
   async getHuntStats(seasonYear?: number): Promise<HuntStats> {

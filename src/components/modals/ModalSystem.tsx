@@ -613,8 +613,21 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       //   if (sightingsError) throw sightingsError
       // }
 
-      // Note: detailed harvest records (hunt_harvests table) are not collected via this form.
-      // The `had_harvest` flag and `harvest_count` on the hunt log are sufficient here.
+      // Insert harvest details if any
+      if (formData.had_harvest && formData.harvest?.animal_type) {
+        const { error: harvestError } = await supabase
+          .from('hunt_harvests')
+          .insert({
+            hunt_log_id: huntLog.id,
+            animal_type: formData.harvest.animal_type,
+            gender: formData.harvest.gender ?? null,
+            estimated_weight: formData.harvest.estimated_weight ?? null,
+            shot_distance_yards: formData.harvest.shot_distance_yards ?? null,
+            antler_points: formData.harvest.antler_points ?? null,
+            recovery_notes: formData.harvest.recovery_notes ?? null,
+          })
+        if (harvestError) throw harvestError
+      }
 
       setShowHuntSuccess(true)
       setHuntSuccessData({

@@ -266,10 +266,22 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
           end_time: data.end_time || null,
           hunt_type: data.hunt_type || null,
           notes: data.notes || null,
+          had_harvest: data.had_harvest ?? false,
+          harvest_count: data.had_harvest ? 1 : 0,
         })
+        if (data.had_harvest && data.harvest?.animal_type) {
+          await huntService.upsertHarvestDetails(editingHunt.id, {
+            animal_type: data.harvest.animal_type,
+            gender: data.harvest.gender ?? null,
+            estimated_weight: data.harvest.estimated_weight ?? null,
+            shot_distance_yards: data.harvest.shot_distance_yards ?? null,
+            antler_points: data.harvest.antler_points ?? null,
+            recovery_notes: data.harvest.recovery_notes ?? null,
+          })
+        }
       } else {
         if (!data.member_id) throw new Error('Member is required to log a hunt')
-        await huntService.createHunt({
+        const huntId = await huntService.createHunt({
           hunt_date: data.hunt_date,
           season: data.hunt_date.substring(0, 4),
           stand_id: data.stand_id,
@@ -280,13 +292,25 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
           notes: data.notes || null,
           had_harvest: data.had_harvest ?? false,
           harvest_count: data.had_harvest ? 1 : 0,
+          hunting_season: (data.hunting_season === '' ? null : (data.hunting_season ?? null)) as string | null,
         })
+        if (data.had_harvest && data.harvest?.animal_type) {
+          await huntService.saveHarvestDetails(huntId, {
+            animal_type: data.harvest.animal_type,
+            gender: data.harvest.gender ?? null,
+            estimated_weight: data.harvest.estimated_weight ?? null,
+            shot_distance_yards: data.harvest.shot_distance_yards ?? null,
+            antler_points: data.harvest.antler_points ?? null,
+            recovery_notes: data.harvest.recovery_notes ?? null,
+          })
+        }
       }
       setShowForm(false)
       setEditingHunt(null)
       await reload()
     } catch (err) {
-      alert(`Failed to save hunt: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message ?? String(err)
+      alert(`Failed to save hunt: ${msg}`)
     } finally {
       setFormSubmitting(false)
     }
@@ -659,7 +683,17 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
               onSubmit={handleFormSubmit}
               onCancel={() => { setShowForm(false); setEditingHunt(null) }}
               isSubmitting={formSubmitting}
-              hunt={editingHunt as unknown as Partial<HuntFormData> | undefined}
+              hunt={editingHunt ? {
+                ...editingHunt,
+                harvest: editingHunt.harvests?.[0] ? {
+                  animal_type: editingHunt.harvests[0].animal_type,
+                  gender: editingHunt.harvests[0].gender as 'Buck' | 'Doe' | 'Unknown' | null | undefined,
+                  estimated_weight: editingHunt.harvests[0].estimated_weight,
+                  shot_distance_yards: editingHunt.harvests[0].shot_distance_yards,
+                  antler_points: editingHunt.harvests[0].antler_points,
+                  recovery_notes: editingHunt.harvests[0].recovery_notes ?? undefined,
+                } : undefined,
+              } as unknown as Partial<HuntFormData> : undefined}
               mode={editingHunt ? 'edit' : 'create'}
             />
           </div>

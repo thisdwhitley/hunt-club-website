@@ -197,6 +197,22 @@ export default function HuntLoggingPage() {
 
       if (huntError) throw huntError
 
+      // Insert harvest details if any
+      if (formData.had_harvest && formData.harvest?.animal_type) {
+        const { error: harvestError } = await supabase
+          .from('hunt_harvests')
+          .insert({
+            hunt_log_id: huntLog.id,
+            animal_type: formData.harvest.animal_type,
+            gender: formData.harvest.gender ?? null,
+            estimated_weight: formData.harvest.estimated_weight ?? null,
+            shot_distance_yards: formData.harvest.shot_distance_yards ?? null,
+            antler_points: formData.harvest.antler_points ?? null,
+            recovery_notes: formData.harvest.recovery_notes ?? null,
+          })
+        if (harvestError) throw harvestError
+      }
+
       // Insert sightings if any
       if (formData.sightings && formData.sightings.length > 0) {
         const sightingsData = formData.sightings.map(sighting => ({
