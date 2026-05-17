@@ -16,6 +16,7 @@ const InfoIcon = getIcon('info')
 const CalendarIcon = getIcon('calendar')
 const ChartBarIcon = getIcon('chartBar')
 import { StandService } from '@/lib/database/stands'
+import { createClient } from '@/lib/supabase/client'
 
 // Stand type from your database schema
 export interface Stand {
@@ -96,7 +97,24 @@ interface StandFormModalProps {
 export default function StandFormModal({ stand, onClose, onSubmit }: StandFormModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState<'basic' | 'location' | 'features' | 'stats'>('basic')
+  const [cameraNames, setCameraNames] = useState<string[]>([])
   const standService = new StandService()
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase
+      .from('camera_deployments')
+      .select('camera_hardware!inner(cuddeback_name)')
+      .eq('active', true)
+      .then(({ data }) => {
+        if (!data) return
+        const names = data
+          .map(d => (d.camera_hardware as unknown as { cuddeback_name: string | null } | null)?.cuddeback_name)
+          .filter((n): n is string => !!n)
+          .sort()
+        setCameraNames(names)
+      })
+  }, [])
   
   const isEditing = !!stand
 
@@ -510,14 +528,22 @@ export default function StandFormModal({ stand, onClose, onSubmit }: StandFormMo
 
                   <div>
                     <label className="block text-sm font-medium text-forest-shadow mb-2">
-                      Trail Camera Name
+                      Trail Camera
                     </label>
-                    <input
+                    <select
                       {...register('trail_camera_name')}
-                      type="text"
                       className="w-full p-3 border border-gray-300 rounded-lg bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green"
-                      placeholder="North Ridge Cam"
-                    />
+                    >
+                      <option value="">None</option>
+                      {cameraNames.map(name => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                      {stand?.trail_camera_name && !cameraNames.includes(stand.trail_camera_name) && (
+                        <option value={stand.trail_camera_name} disabled>
+                          {stand.trail_camera_name} (inactive)
+                        </option>
+                      )}
+                    </select>
                   </div>
                 </div>
 

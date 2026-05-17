@@ -54,6 +54,7 @@ interface StandCardV2Props {
   onEdit?: (stand: Stand) => void
   onDelete?: (stand: Stand) => void
   onNavigate?: (stand: Stand) => void
+  onCameraClick?: (cameraName: string) => void
   showLocation?: boolean
   showStats?: boolean
   showActions?: boolean
@@ -71,6 +72,7 @@ export default function StandCardV2({
   onClick,
   onEdit,
   onDelete,
+  onCameraClick,
   showLocation: _showLocation = true,
   showStats = true,
   showActions = true,
@@ -666,15 +668,22 @@ export default function StandCardV2({
             {getFeatures().map((feature) => {
               const FeatureIcon = feature.icon
               const isCamera = feature.key === 'camera'
+              const clickable = isCamera && !!onCameraClick
               return (
                 <div
                   key={feature.key}
-                  className={`flex items-center gap-2${isCamera ? ' col-span-2' : ''}`}
+                  className={`flex items-center gap-2${isCamera ? ' col-span-2' : ''}${clickable ? ' cursor-pointer rounded px-1 -mx-1 hover:bg-dark-teal/10 transition-colors' : ''}`}
+                  onClick={clickable ? () => onCameraClick(feature.value as string) : undefined}
+                  role={clickable ? 'button' : undefined}
+                  title={clickable ? `View ${feature.value} in Cameras tab` : undefined}
                 >
                   <FeatureIcon size={14} style={{ color: HUNTING_COLORS.oliveGreen }} />
                   <span style={{ color: HUNTING_COLORS.forestShadow }}>
                     <strong>{feature.label}</strong> {feature.value}
                   </span>
+                  {clickable && (
+                    <span className="ml-auto text-xs" style={{ color: HUNTING_COLORS.darkTeal }}>→</span>
+                  )}
                 </div>
               )
             })}

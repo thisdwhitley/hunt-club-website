@@ -31,6 +31,8 @@ interface HuntManagementFilters {
   season: string
   member: string
   harvest: 'all' | 'yes' | 'no'
+  huntType: 'all' | 'AM' | 'PM' | 'All Day'
+  hasSightings: 'all' | 'yes' | 'no'
 }
 
 const DEFAULT_FILTERS: HuntManagementFilters = {
@@ -38,6 +40,8 @@ const DEFAULT_FILTERS: HuntManagementFilters = {
   season: '',
   member: 'all',
   harvest: 'all',
+  huntType: 'all',
+  hasSightings: 'all',
 }
 
 function HuntFiltersPanel({
@@ -62,7 +66,7 @@ function HuntFiltersPanel({
     'w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-morning-mist focus:outline-none focus:ring-2 focus:ring-olive-green focus:border-olive-green'
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Season</label>
         <select value={filters.season} onChange={e => update('season', e.target.value)} className={selectClass}>
@@ -89,8 +93,25 @@ function HuntFiltersPanel({
           <option value="no">No Harvest</option>
         </select>
       </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Time of Day</label>
+        <select value={filters.huntType} onChange={e => update('huntType', e.target.value as HuntManagementFilters['huntType'])} className={selectClass}>
+          <option value="all">All Times</option>
+          <option value="AM">AM (Morning)</option>
+          <option value="PM">PM (Evening)</option>
+          <option value="All Day">All Day</option>
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Sightings</label>
+        <select value={filters.hasSightings} onChange={e => update('hasSightings', e.target.value as HuntManagementFilters['hasSightings'])} className={selectClass}>
+          <option value="all">All Hunts</option>
+          <option value="yes">Had Sightings</option>
+          <option value="no">No Sightings</option>
+        </select>
+      </div>
       {hasActive && (
-        <div className="flex items-end">
+        <div className="flex items-end sm:col-span-3 lg:col-span-5">
           <button
             onClick={() => onFiltersChange(DEFAULT_FILTERS)}
             className="text-sm text-olive-green hover:text-pine-needle font-medium pb-2"
@@ -191,6 +212,9 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
     if (filters.member !== 'all') result = result.filter(h => h.member_id === filters.member)
     if (filters.harvest === 'yes') result = result.filter(h => h.had_harvest || (h.harvest_count ?? 0) > 0)
     if (filters.harvest === 'no') result = result.filter(h => !h.had_harvest && (h.harvest_count ?? 0) === 0)
+    if (filters.huntType !== 'all') result = result.filter(h => h.hunt_type === filters.huntType)
+    if (filters.hasSightings === 'yes') result = result.filter(h => h.sightings && h.sightings.length > 0)
+    if (filters.hasSightings === 'no') result = result.filter(h => !h.sightings || h.sightings.length === 0)
 
     if (filters.search.trim()) {
       const q = filters.search.toLowerCase()
@@ -223,7 +247,7 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
     })
 
     return result
-  }, [allHunts, filters.season, filters.member, filters.harvest, filters.search, sortBy, sortDirection])
+  }, [allHunts, filters.season, filters.member, filters.harvest, filters.huntType, filters.hasSightings, filters.search, sortBy, sortDirection])
 
   const totalPages = Math.ceil(filteredHunts.length / PAGE_SIZE)
   const paginatedHunts = filteredHunts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useMemo, useRef, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { getIcon } from '@/lib/shared/icons'
 import { ManagementHubToolbar } from '@/components/shared/ManagementHubToolbar'
 import type { TabConfig } from '@/components/shared/ManagementHubToolbar'
@@ -143,7 +144,11 @@ interface CamerasTabProps {
 }
 
 export function CamerasTab({ tabs, activeTab, onTabChange }: CamerasTabProps) {
-  const [filters, setFilters] = useState<CameraManagementFilters>(DEFAULT_FILTERS)
+  const searchParams = useSearchParams()
+  const [filters, setFilters] = useState<CameraManagementFilters>(() => ({
+    ...DEFAULT_FILTERS,
+    search: searchParams.get('cameraSearch') ?? '',
+  }))
   const [showFilters, setShowFilters] = useState(false)
 
   const [showCameraForm, setShowCameraForm] = useState(false)

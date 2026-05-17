@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { lookupSeasonStatus } from '@/app/actions/season'
 import { getIcon } from '@/lib/shared/icons'
@@ -111,6 +112,7 @@ interface StandsTabProps {
 }
 
 export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
+  const router = useRouter()
   const [stands, setStands] = useState<Stand[]>([])
   const [huntStats, setHuntStats] = useState<Record<string, StandHuntStats>>({})
   const [effectiveSeasonYear, setEffectiveSeasonYear] = useState<number>(new Date().getFullYear())
@@ -545,6 +547,7 @@ export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
                         onClick={handleViewStand}
                         onEdit={handleEditStand}
                         onDelete={handleDeleteStand}
+                        onCameraClick={name => router.push(`/management?tab=cameras&cameraSearch=${encodeURIComponent(name)}`)}
                         showLocation={true}
                         showStats={true}
                         showActions={true}
@@ -570,6 +573,7 @@ export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
                     onClick={handleViewStand}
                     onEdit={handleEditStand}
                     onDelete={handleDeleteStand}
+                    onCameraClick={name => router.push(`/management?tab=cameras&cameraSearch=${encodeURIComponent(name)}`)}
                     showLocation={true}
                     showStats={true}
                     showActions={true}
