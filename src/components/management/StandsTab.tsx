@@ -1,7 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { lookupSeasonStatus } from '@/app/actions/season'
 import { getIcon } from '@/lib/shared/icons'
@@ -11,6 +10,9 @@ import StandCardV2 from '@/components/stands/StandCardV2'
 import StandFormModal from '@/components/stands/StandFormModal'
 import { StandDetailModal } from '@/components/stands/StandDetailModal'
 import type { Stand } from '@/lib/stands/types'
+import { getCameraDeployments } from '@/lib/cameras/database'
+import type { CameraWithStatus } from '@/lib/cameras/types'
+import { parseDBDate } from '@/lib/utils/date'
 
 const StandsIcon = getIcon('stands')
 const SearchIcon = getIcon('search')
@@ -105,6 +107,142 @@ function StandFiltersPanel({
   )
 }
 
+const CAMERA_COLORS = {
+  oliveGreen: '#566E3D',
+  burntOrange: '#FA7921',
+  mutedGold: '#B9A44C',
+  darkTeal: '#0C4767',
+  forestShadow: '#2D3E1F',
+  clayEarth: '#A0653A',
+}
+
+function formatCameraReportAge(camera: CameraWithStatus): string {
+  if (camera.deployment?.is_missing) return 'Camera Missing'
+  if (!camera.latest_report) return 'No report data'
+  const checkinRaw = camera.latest_report.cuddeback_last_checkin_at
+  const sourceDateParsed = checkinRaw
+    ? new Date(checkinRaw)
+    : (camera.latest_report.report_date ? parseDBDate(camera.latest_report.report_date) : null)
+  if (!sourceDateParsed) return 'Unknown'
+  const ageInDays = Math.floor((Date.now() - sourceDateParsed.getTime()) / 86400000)
+  const shortDate = sourceDateParsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  if (ageInDays > 30) return `${ageInDays}d ago (${shortDate}) — stale`
+  if (ageInDays === 0) return `Today (${shortDate})`
+  if (ageInDays === 1) return `1 day ago (${shortDate})`
+  return `${ageInDays} days ago (${shortDate})`
+}
+
+function getBatteryColor(status: string | null | undefined): string {
+  if (!status) return CAMERA_COLORS.forestShadow
+  const s = status.toLowerCase()
+  if (s === 'critical') return CAMERA_COLORS.clayEarth
+  if (s === 'low') return CAMERA_COLORS.burntOrange
+  return CAMERA_COLORS.oliveGreen
+}
+
+interface CameraStatusPopupProps {
+  cameraName: string
+  camera: CameraWithStatus | null
+  loading: boolean
+  onClose: () => void
+  onNavigate: () => void
+}
+
+function CameraStatusPopup({ cameraName, camera, loading, onClose, onNavigate }: CameraStatusPopupProps) {
+  const popupRef = useRef<HTMLDivElement>(null)
+  const CloseIcon = getIcon('close')
+  const CameraIcon = getIcon('camera')
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
+  const isMIA = camera?.latest_report?.is_check_in_stale
+  const battery = camera?.latest_report?.battery_status
+  const signal = camera?.latest_report?.signal_level
+  const sdFree = camera?.latest_report?.sd_free_space_mb
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div
+        ref={popupRef}
+        className="bg-white rounded-lg shadow-xl w-full max-w-xs"
+        style={{ border: `2px solid ${CAMERA_COLORS.darkTeal}` }}
+      >
+        {/* Header */}
+        <div className="flex items-center gap-2 px-4 py-3 rounded-t-lg" style={{ backgroundColor: CAMERA_COLORS.darkTeal }}>
+          {React.createElement(CameraIcon, { size: 16, color: 'white' })}
+          <span className="text-white font-semibold text-sm flex-1 truncate">{cameraName}</span>
+          {isMIA && (
+            <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-white" style={{ color: CAMERA_COLORS.clayEarth }}>
+              MIA
+            </span>
+          )}
+          <button onClick={onClose} className="text-white/80 hover:text-white ml-1">
+            {React.createElement(CloseIcon, { size: 16 })}
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-6 gap-2 text-sm text-gray-500">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-olive-green" />
+              Loading camera status…
+            </div>
+          ) : !camera ? (
+            <p className="text-sm text-gray-500 py-4 text-center">Camera data unavailable</p>
+          ) : (
+            <div className="rounded-md p-3 text-xs space-y-2" style={{ background: '#F5F4F0', border: '1px solid #E8E6E0' }}>
+              <div className="flex justify-between">
+                <span style={{ color: CAMERA_COLORS.forestShadow }} className="font-medium">Battery</span>
+                <span style={{ color: getBatteryColor(battery), fontWeight: 600 }}>
+                  {battery ? battery.replace(/^EXTERNAL/i, 'Ext.') : '—'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span style={{ color: CAMERA_COLORS.forestShadow }} className="font-medium">Signal</span>
+                <span style={{ color: CAMERA_COLORS.forestShadow }}>
+                  {signal != null ? `${signal}%` : '—'}
+                </span>
+              </div>
+              {sdFree != null && (
+                <div className="flex justify-between">
+                  <span style={{ color: CAMERA_COLORS.forestShadow }} className="font-medium">SD Free</span>
+                  <span style={{ color: CAMERA_COLORS.forestShadow }}>
+                    {sdFree >= 1024 ? `${(sdFree / 1024).toFixed(1)} GB` : `${sdFree} MB`}
+                  </span>
+                </div>
+              )}
+              <div className="pt-1 border-t" style={{ borderColor: '#E8E6E0' }}>
+                <span style={{ color: CAMERA_COLORS.oliveGreen }} className="font-semibold">Last check-in: </span>
+                <span style={{ color: CAMERA_COLORS.forestShadow }}>{formatCameraReportAge(camera)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-4 pb-4 flex justify-end">
+          <button
+            onClick={onNavigate}
+            className="text-xs font-medium flex items-center gap-1"
+            style={{ color: CAMERA_COLORS.darkTeal }}
+          >
+            View in Cameras tab →
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 interface StandsTabProps {
   tabs: TabConfig[]
   activeTab: string
@@ -112,7 +250,6 @@ interface StandsTabProps {
 }
 
 export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
-  const router = useRouter()
   const [stands, setStands] = useState<Stand[]>([])
   const [huntStats, setHuntStats] = useState<Record<string, StandHuntStats>>({})
   const [effectiveSeasonYear, setEffectiveSeasonYear] = useState<number>(new Date().getFullYear())
@@ -129,6 +266,15 @@ export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
   const [showDetail, setShowDetail] = useState(false)
   const [editingStand, setEditingStand] = useState<Stand | null>(null)
   const [viewingStand, setViewingStand] = useState<Stand | null>(null)
+
+  const [cameraPopup, setCameraPopup] = useState<{ name: string; camera: CameraWithStatus | null; loading: boolean } | null>(null)
+
+  const handleCameraClick = useCallback(async (name: string) => {
+    setCameraPopup({ name, camera: null, loading: true })
+    const result = await getCameraDeployments({ search: name })
+    const match = result.data?.find(c => c.hardware.cuddeback_name === name) ?? result.data?.[0] ?? null
+    setCameraPopup(prev => prev ? { ...prev, camera: match, loading: false } : null)
+  }, [])
 
   const supabase = useMemo(() => createClient(), [])
 
@@ -547,7 +693,7 @@ export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
                         onClick={handleViewStand}
                         onEdit={handleEditStand}
                         onDelete={handleDeleteStand}
-                        onCameraClick={name => router.push(`/management?tab=cameras&cameraSearch=${encodeURIComponent(name)}`)}
+                        onCameraClick={handleCameraClick}
                         showLocation={true}
                         showStats={true}
                         showActions={true}
@@ -573,7 +719,7 @@ export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
                     onClick={handleViewStand}
                     onEdit={handleEditStand}
                     onDelete={handleDeleteStand}
-                    onCameraClick={name => router.push(`/management?tab=cameras&cameraSearch=${encodeURIComponent(name)}`)}
+                    onCameraClick={handleCameraClick}
                     showLocation={true}
                     showStats={true}
                     showActions={true}
@@ -606,6 +752,19 @@ export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
             setEditingStand(null)
           }}
           onSubmit={handleFormSubmit}
+        />
+      )}
+
+      {cameraPopup && (
+        <CameraStatusPopup
+          cameraName={cameraPopup.name}
+          camera={cameraPopup.camera}
+          loading={cameraPopup.loading}
+          onClose={() => setCameraPopup(null)}
+          onNavigate={() => {
+            setCameraPopup(null)
+            onTabChange('cameras')
+          }}
         />
       )}
     </div>

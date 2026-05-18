@@ -681,9 +681,11 @@ export default function StandCardV2({
                   <span style={{ color: HUNTING_COLORS.forestShadow }}>
                     <strong>{feature.label}</strong> {feature.value}
                   </span>
-                  {clickable && (
-                    <span className="ml-auto text-xs" style={{ color: HUNTING_COLORS.darkTeal }}>→</span>
-                  )}
+                  {clickable && React.createElement(getIcon('info'), {
+                    size: 12,
+                    className: 'ml-auto shrink-0',
+                    style: { color: HUNTING_COLORS.darkTeal },
+                  })}
                 </div>
               )
             })}
