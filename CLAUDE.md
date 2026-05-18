@@ -561,6 +561,12 @@ These defaults are intentional — do not change them without good reason:
 
 **Season year dropdown — always fetch independently:** Never derive season year options from the currently-loaded camera list. The default filter is "Active Only", so a cameras-derived list would only show the current season and hide past seasons from the dropdown. Instead, use `useSeasonYears()` (`src/lib/cameras/hooks.ts`), which calls `getSeasonYears()` (`src/lib/cameras/database.ts`) — a standalone `SELECT DISTINCT season_year` query that fires once on mount regardless of active filters. Current data: 2026 = 8 active deployments, 2025 = 17 inactive deployments.
 
+**Camera search must include `cuddeback_name`:** The client-side search filter in `getCameraDeployments` (`src/lib/cameras/database.ts`) must match on `camera.hardware?.cuddeback_name` as its first check. `cuddeback_name` is the authoritative display name and the value stored in `stands.trail_camera_name` — omitting it means searching by camera name silently returns no results.
+
+**Inline camera status popup — use `CameraCardV2` compact mode:** When surfacing camera status from another context (e.g. the stand card camera row), show a backdrop overlay containing `<CameraCardV2 camera={camera} mode="compact" showActions={false} />` rather than building custom status UI. This ensures consistent presentation with the Cameras tab. Add a "View in Cameras tab →" footer link for deeper drill-down. See `CameraStatusPopup` in `src/components/management/StandsTab.tsx` as the reference implementation.
+
+**Stand form — trail camera field is a dropdown:** `StandFormModal` fetches active camera deployments on open and renders a `<select>` populated with `cuddeback_name` values. If the currently saved camera name is no longer active, it appears as a disabled `(inactive)` option so data isn't silently cleared on save.
+
 ### Property Map — Data Model
 
 All linear and polygon property features (trails, roads, fields, food plots, water, property boundary) are stored in a single `property_features` table with GeoJSON geometry. The old `property_boundaries` table is being replaced by this (issue #139).
