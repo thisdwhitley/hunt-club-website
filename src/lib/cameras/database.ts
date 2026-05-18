@@ -303,6 +303,7 @@ export async function getCameraDeployments(
     if (filters?.search) {
       const searchTerm = filters.search.toLowerCase();
       transformedData = transformedData.filter(camera =>
+        camera.hardware?.cuddeback_name?.toLowerCase().includes(searchTerm) ||
         camera.hardware?.device_id?.toLowerCase().includes(searchTerm) ||
         camera.deployment?.location_name?.toLowerCase().includes(searchTerm) ||
         camera.hardware?.brand?.toLowerCase().includes(searchTerm) ||
