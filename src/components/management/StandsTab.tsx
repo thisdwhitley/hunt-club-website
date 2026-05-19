@@ -115,7 +115,7 @@ interface CameraStatusPopupProps {
   onNavigate: () => void
 }
 
-function CameraStatusPopup({ cameraName, camera, loading, onClose, onNavigate }: CameraStatusPopupProps) {
+function CameraStatusPopup({ cameraName: _cameraName, camera, loading, onClose, onNavigate }: CameraStatusPopupProps) {
   const CloseIcon = getIcon('close')
 
   useEffect(() => {
@@ -127,15 +127,17 @@ function CameraStatusPopup({ cameraName, camera, loading, onClose, onNavigate }:
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}
+      style={{ backgroundColor: 'rgba(0,0,0,0.65)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className="w-full max-w-xs">
         {/* Close button above the card */}
-        <div className="flex justify-between items-center mb-2 px-1">
-          <span className="text-white text-sm font-medium truncate">{cameraName}</span>
-          <button onClick={onClose} className="text-white/80 hover:text-white">
-            {React.createElement(CloseIcon, { size: 18 })}
+        <div className="flex justify-end mb-2 px-1">
+          <button
+            onClick={onClose}
+            className="flex items-center justify-center w-7 h-7 rounded-full bg-black/40 text-white/90 hover:bg-black/60 hover:text-white"
+          >
+            {React.createElement(CloseIcon, { size: 16 })}
           </button>
         </div>
 
@@ -154,7 +156,7 @@ function CameraStatusPopup({ cameraName, camera, loading, onClose, onNavigate }:
         <div className="mt-2 flex justify-end px-1">
           <button
             onClick={onNavigate}
-            className="text-xs text-white/80 hover:text-white font-medium"
+            className="text-xs font-medium px-3 py-1 rounded-full bg-black/40 text-white/90 hover:bg-black/60 hover:text-white"
           >
             View in Cameras tab →
           </button>
