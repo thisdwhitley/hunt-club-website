@@ -757,6 +757,50 @@ export class HuntService {
     }
   }
 
+  async saveSightings(huntId: string, sightings: Array<{
+    animal_type: string
+    count?: number
+    gender?: string | null
+    estimated_age?: string | null
+    behavior?: string | null
+    distance_yards?: number | null
+    direction?: string | null
+    time_observed?: string | null
+    notes?: string | null
+  }>): Promise<void> {
+    if (!sightings.length) return
+    const rows = sightings.map(s => ({
+      hunt_log_id: huntId,
+      animal_type: s.animal_type,
+      count: s.count || 1,
+      gender: s.gender || null,
+      estimated_age: s.estimated_age || null,
+      behavior: s.behavior || null,
+      distance_yards: s.distance_yards ?? null,
+      direction: s.direction || null,
+      time_observed: s.time_observed || null,
+      notes: s.notes || null,
+    }))
+    const { error } = await supabase.from('hunt_sightings').insert(rows)
+    if (error) throw error
+  }
+
+  async replaceSightings(huntId: string, sightings: Array<{
+    animal_type: string
+    count?: number
+    gender?: string | null
+    estimated_age?: string | null
+    behavior?: string | null
+    distance_yards?: number | null
+    direction?: string | null
+    time_observed?: string | null
+    notes?: string | null
+  }>): Promise<void> {
+    const { error: delError } = await supabase.from('hunt_sightings').delete().eq('hunt_log_id', huntId)
+    if (delError) throw delError
+    if (sightings.length) await this.saveSightings(huntId, sightings)
+  }
+
   async getHuntSeasons(): Promise<string[]> {
     try {
       // Query the view (which aliases the column as 'hunting_season') not the base table

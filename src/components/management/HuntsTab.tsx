@@ -303,6 +303,7 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
             recovery_notes: data.harvest.recovery_notes ?? null,
           })
         }
+        await huntService.replaceSightings(editingHunt.id, data.sightings ?? [])
       } else {
         if (!data.member_id) throw new Error('Member is required to log a hunt')
         const huntId = await huntService.createHunt({
@@ -328,6 +329,7 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
             recovery_notes: data.harvest.recovery_notes ?? null,
           })
         }
+        await huntService.saveSightings(huntId, data.sightings ?? [])
       }
       setShowForm(false)
       setEditingHunt(null)

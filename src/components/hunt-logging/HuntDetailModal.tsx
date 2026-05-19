@@ -1,7 +1,8 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import type { HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
+import { huntService } from '@/lib/hunt-logging/hunt-service'
 import { getTemperatureContext, getPrimaryTemperatureExplanation } from '@/lib/hunt-logging/temperature-utils'
 import { getStandIcon } from '@/lib/utils/standUtils'
 import { getIcon } from '@/lib/shared/icons'
@@ -32,7 +33,68 @@ interface HuntDetailModalProps {
 }
 
 export default function HuntDetailModal({ hunt, isOpen, onClose }: HuntDetailModalProps) {
+  const [editingSightingId, setEditingSightingId] = useState<string | null>(null)
+  const [sightingDraft, setSightingDraft] = useState<{
+    animal_type: string; count: number; gender: string; behavior: string
+    distance_yards: string; direction: string; time_observed: string; notes: string
+  } | null>(null)
+  const [savingId, setSavingId] = useState<string | null>(null)
+
   if (!isOpen || !hunt) return null
+
+  const startEditSighting = (s: NonNullable<typeof hunt.sightings>[number]) => {
+    setEditingSightingId(s.id)
+    setSightingDraft({
+      animal_type: s.animal_type ?? '',
+      count: s.count ?? 1,
+      gender: s.gender ?? 'Unknown',
+      behavior: s.behavior ?? '',
+      distance_yards: s.distance_yards != null ? String(s.distance_yards) : '',
+      direction: s.direction ?? 'Unknown',
+      time_observed: s.time_observed ?? '',
+      notes: s.notes ?? '',
+    })
+  }
+
+  const cancelEdit = () => { setEditingSightingId(null); setSightingDraft(null) }
+
+  const saveEdit = async (sightingId: string) => {
+    if (!sightingDraft) return
+    setSavingId(sightingId)
+    try {
+      await huntService.updateSighting(sightingId, {
+        animal_type: sightingDraft.animal_type,
+        count: Number(sightingDraft.count) || 1,
+        gender: sightingDraft.gender || null,
+        behavior: sightingDraft.behavior || null,
+        distance_yards: sightingDraft.distance_yards ? Number(sightingDraft.distance_yards) : null,
+        direction: (sightingDraft.direction || null) as 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW' | 'Unknown' | null,
+        time_observed: sightingDraft.time_observed || null,
+        notes: sightingDraft.notes || null,
+      })
+      // Update the local sighting data in-place so the UI reflects the save immediately
+      if (hunt.sightings) {
+        const idx = hunt.sightings.findIndex(s => s.id === sightingId)
+        if (idx !== -1) {
+          hunt.sightings[idx] = {
+            ...hunt.sightings[idx],
+            animal_type: sightingDraft.animal_type,
+            count: Number(sightingDraft.count) || 1,
+            gender: sightingDraft.gender || null,
+            behavior: sightingDraft.behavior || null,
+            distance_yards: sightingDraft.distance_yards ? Number(sightingDraft.distance_yards) : null,
+            direction: (sightingDraft.direction || null) as 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW' | 'Unknown' | null,
+            time_observed: sightingDraft.time_observed || null,
+            notes: sightingDraft.notes || null,
+          }
+        }
+      }
+      setEditingSightingId(null)
+      setSightingDraft(null)
+    } finally {
+      setSavingId(null)
+    }
+  }
 
   const formatTime = (time: string | null) => {
     if (!time) return 'N/A'
@@ -332,47 +394,118 @@ export default function HuntDetailModal({ hunt, isOpen, onClose }: HuntDetailMod
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {hunt.sightings.map((sighting) => (
                   <div key={sighting.id} className="bg-olive-green/5 border border-olive-green/20 rounded-lg p-4">
-                    <h4 className="font-medium text-forest-shadow mb-3">
-                      {sighting.animal_type}{sighting.count && sighting.count > 1 ? ` (${sighting.count})` : ''}
-                    </h4>
-                    <div className="space-y-2 text-sm">
-                      {sighting.gender && (
-                        <div className="flex justify-between">
-                          <span className="text-weathered-wood">Gender:</span>
-                          <span className="font-medium text-forest-shadow">{sighting.gender}</span>
+                    {editingSightingId === sighting.id && sightingDraft ? (
+                      <div className="space-y-2 text-sm">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-xs text-weathered-wood mb-1">Animal</label>
+                            <input value={sightingDraft.animal_type} onChange={e => setSightingDraft(d => d && ({ ...d, animal_type: e.target.value }))}
+                              className="w-full p-1.5 border border-weathered-wood/30 rounded bg-white text-forest-shadow text-xs focus:ring-1 focus:ring-olive-green" />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-weathered-wood mb-1">Count</label>
+                            <input type="number" min="1" value={sightingDraft.count} onChange={e => setSightingDraft(d => d && ({ ...d, count: Number(e.target.value) }))}
+                              className="w-full p-1.5 border border-weathered-wood/30 rounded bg-white text-forest-shadow text-xs focus:ring-1 focus:ring-olive-green" />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-weathered-wood mb-1">Gender</label>
+                            <select value={sightingDraft.gender} onChange={e => setSightingDraft(d => d && ({ ...d, gender: e.target.value }))}
+                              className="w-full p-1.5 border border-weathered-wood/30 rounded bg-white text-forest-shadow text-xs focus:ring-1 focus:ring-olive-green">
+                              {['Unknown', 'Buck', 'Doe', 'Mixed'].map(g => <option key={g} value={g}>{g}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-weathered-wood mb-1">Time</label>
+                            <input type="time" value={sightingDraft.time_observed} onChange={e => setSightingDraft(d => d && ({ ...d, time_observed: e.target.value }))}
+                              className="w-full p-1.5 border border-weathered-wood/30 rounded bg-white text-forest-shadow text-xs focus:ring-1 focus:ring-olive-green" />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-weathered-wood mb-1">Distance (yds)</label>
+                            <input type="number" min="0" value={sightingDraft.distance_yards} onChange={e => setSightingDraft(d => d && ({ ...d, distance_yards: e.target.value }))}
+                              className="w-full p-1.5 border border-weathered-wood/30 rounded bg-white text-forest-shadow text-xs focus:ring-1 focus:ring-olive-green" />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-weathered-wood mb-1">Direction</label>
+                            <select value={sightingDraft.direction} onChange={e => setSightingDraft(d => d && ({ ...d, direction: e.target.value }))}
+                              className="w-full p-1.5 border border-weathered-wood/30 rounded bg-white text-forest-shadow text-xs focus:ring-1 focus:ring-olive-green">
+                              {['Unknown', 'N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].map(d => <option key={d} value={d}>{d}</option>)}
+                            </select>
+                          </div>
+                          <div className="col-span-2">
+                            <label className="block text-xs text-weathered-wood mb-1">Behavior</label>
+                            <input value={sightingDraft.behavior} onChange={e => setSightingDraft(d => d && ({ ...d, behavior: e.target.value }))}
+                              placeholder="Feeding, alert, moving..."
+                              className="w-full p-1.5 border border-weathered-wood/30 rounded bg-white text-forest-shadow text-xs focus:ring-1 focus:ring-olive-green" />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="block text-xs text-weathered-wood mb-1">Notes</label>
+                            <input value={sightingDraft.notes} onChange={e => setSightingDraft(d => d && ({ ...d, notes: e.target.value }))}
+                              className="w-full p-1.5 border border-weathered-wood/30 rounded bg-white text-forest-shadow text-xs focus:ring-1 focus:ring-olive-green" />
+                          </div>
                         </div>
-                      )}
-                      {sighting.behavior && (
-                        <div className="flex justify-between">
-                          <span className="text-weathered-wood">Behavior:</span>
-                          <span className="font-medium text-forest-shadow">{sighting.behavior}</span>
+                        <div className="flex gap-2 pt-1">
+                          <button onClick={() => saveEdit(sighting.id)} disabled={savingId === sighting.id}
+                            className="flex-1 py-1 bg-olive-green text-white text-xs rounded hover:bg-forest-shadow disabled:opacity-50 transition-colors">
+                            {savingId === sighting.id ? 'Saving…' : 'Save'}
+                          </button>
+                          <button onClick={cancelEdit}
+                            className="flex-1 py-1 border border-weathered-wood/30 text-weathered-wood text-xs rounded hover:bg-morning-mist transition-colors">
+                            Cancel
+                          </button>
                         </div>
-                      )}
-                      {sighting.distance_yards && (
-                        <div className="flex justify-between">
-                          <span className="text-weathered-wood">Distance:</span>
-                          <span className="font-medium text-forest-shadow">{sighting.distance_yards} yds</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex justify-between items-start mb-3">
+                          <h4 className="font-medium text-forest-shadow">
+                            {sighting.animal_type}{sighting.count && sighting.count > 1 ? ` (${sighting.count})` : ''}
+                          </h4>
+                          <button onClick={() => startEditSighting(sighting)}
+                            className="text-weathered-wood hover:text-olive-green transition-colors p-0.5 rounded"
+                            title="Edit sighting">
+                            <Eye size={14} />
+                          </button>
                         </div>
-                      )}
-                      {sighting.direction && (
-                        <div className="flex justify-between">
-                          <span className="text-weathered-wood">Direction:</span>
-                          <span className="font-medium text-forest-shadow">{sighting.direction}</span>
+                        <div className="space-y-2 text-sm">
+                          {sighting.gender && (
+                            <div className="flex justify-between">
+                              <span className="text-weathered-wood">Gender:</span>
+                              <span className="font-medium text-forest-shadow">{sighting.gender}</span>
+                            </div>
+                          )}
+                          {sighting.behavior && (
+                            <div className="flex justify-between">
+                              <span className="text-weathered-wood">Behavior:</span>
+                              <span className="font-medium text-forest-shadow">{sighting.behavior}</span>
+                            </div>
+                          )}
+                          {sighting.distance_yards && (
+                            <div className="flex justify-between">
+                              <span className="text-weathered-wood">Distance:</span>
+                              <span className="font-medium text-forest-shadow">{sighting.distance_yards} yds</span>
+                            </div>
+                          )}
+                          {sighting.direction && (
+                            <div className="flex justify-between">
+                              <span className="text-weathered-wood">Direction:</span>
+                              <span className="font-medium text-forest-shadow">{sighting.direction}</span>
+                            </div>
+                          )}
+                          {sighting.time_observed && (
+                            <div className="flex justify-between">
+                              <span className="text-weathered-wood">Time:</span>
+                              <span className="font-medium text-forest-shadow">{sighting.time_observed}</span>
+                            </div>
+                          )}
+                          {sighting.notes && (
+                            <div className="mt-2">
+                              <span className="text-weathered-wood">Notes:</span>
+                              <p className="text-forest-shadow italic mt-1">&quot;{sighting.notes}&quot;</p>
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {sighting.time_observed && (
-                        <div className="flex justify-between">
-                          <span className="text-weathered-wood">Time:</span>
-                          <span className="font-medium text-forest-shadow">{sighting.time_observed}</span>
-                        </div>
-                      )}
-                      {sighting.notes && (
-                        <div className="mt-2">
-                          <span className="text-weathered-wood">Notes:</span>
-                          <p className="text-forest-shadow italic mt-1">&quot;{sighting.notes}&quot;</p>
-                        </div>
-                      )}
-                    </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>

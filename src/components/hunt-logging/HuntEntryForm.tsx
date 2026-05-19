@@ -71,6 +71,7 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
   const [showExactTimes, setShowExactTimes] = useState(false)
 
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [expandedSightings, setExpandedSightings] = useState<Set<number>>(new Set())
   const [selectedHunter, setSelectedHunter] = useState(user?.id || '')
   const [members, setMembers] = useState<{ id: string; display_name?: string | null; full_name?: string | null; email?: string | null }[]>([])
   const [submittedHuntData, setSubmittedHuntData] = useState<(HuntFormData & { hunter_name?: string; stand_name?: string }) | null>(null)
@@ -753,6 +754,59 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
                   className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
                 />
               </div>
+
+              {/* More details toggle */}
+              <button
+                type="button"
+                onClick={() => setExpandedSightings(prev => {
+                  const next = new Set(prev)
+                  if (next.has(index)) { next.delete(index) } else { next.add(index) }
+                  return next
+                })}
+                className="mt-3 flex items-center gap-1 text-xs text-olive-green hover:text-forest-shadow transition-colors"
+              >
+                <ChevronDown
+                  size={12}
+                  className={`transition-transform ${expandedSightings.has(index) ? 'rotate-180' : ''}`}
+                />
+                {expandedSightings.has(index) ? 'Less details' : 'More details'}
+              </button>
+
+              {expandedSightings.has(index) && (
+                <div className="mt-2 grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-weathered-wood mb-1">Distance (yards)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="2000"
+                      placeholder="e.g. 30"
+                      {...register(`sightings.${index}.distance_yards`, { valueAsNumber: true })}
+                      className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-weathered-wood mb-1">Direction</label>
+                    <select
+                      {...register(`sightings.${index}.direction`)}
+                      className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
+                    >
+                      {['Unknown', 'N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs text-weathered-wood mb-1">Notes</label>
+                    <input
+                      type="text"
+                      placeholder="Any additional observations..."
+                      {...register(`sightings.${index}.notes`)}
+                      className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )
         })}
