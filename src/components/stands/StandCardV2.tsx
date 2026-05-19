@@ -673,7 +673,7 @@ export default function StandCardV2({
                 <div
                   key={feature.key}
                   className={`flex items-center gap-2${isCamera ? ' col-span-2' : ''}${clickable ? ' cursor-pointer rounded px-1 -mx-1 hover:bg-dark-teal/10 transition-colors' : ''}`}
-                  onClick={clickable ? () => onCameraClick(feature.value as string) : undefined}
+                  onClick={clickable ? (e) => { e.stopPropagation(); onCameraClick(feature.value as string) } : undefined}
                   role={clickable ? 'button' : undefined}
                   title={clickable ? `View ${feature.value} in Cameras tab` : undefined}
                 >
