@@ -149,6 +149,12 @@ export type IconName =
   | 'location'
   | 'crosshair'
   
+  // Pressure trend
+  | 'chevronsUp'
+  | 'chevronsDown'
+  | 'minus'
+  | 'gauge'
+
   // Misc Utility
   | 'lock'
   | 'unlock'

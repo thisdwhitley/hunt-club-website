@@ -24,6 +24,14 @@ import {
   AlertCircle,
   Trophy,
   Binoculars,
+  Droplets,
+  Gauge,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUp,
+  ChevronsDown,
+  Minus,
+  type LucideIcon,
 } from 'lucide-react'
 
 interface HuntDetailModalProps {
@@ -120,6 +128,26 @@ export default function HuntDetailModal({ hunt, isOpen, onClose }: HuntDetailMod
   const tempContext = getTemperatureContext(hunt)
   const primaryTemp = getPrimaryTemperatureExplanation(hunt)
   const StandIcon = getIcon(getStandIcon(hunt.stand?.type) as IconName)
+
+  type PressureTrend = 'rapid_rise' | 'rising' | 'stable' | 'falling' | 'rapid_fall'
+  const PRESSURE_TREND_META: Record<PressureTrend, { Icon: LucideIcon; color: string; label: string }> = {
+    rapid_rise: { Icon: ChevronsUp,   color: '#FA7921', label: 'Rapid rise' },
+    rising:     { Icon: ChevronUp,    color: '#B9A44C', label: 'Rising' },
+    stable:     { Icon: Minus,        color: '#8B7355', label: 'Steady' },
+    falling:    { Icon: ChevronDown,  color: '#B9A44C', label: 'Falling' },
+    rapid_fall: { Icon: ChevronsDown, color: '#A0653A', label: 'Rapid drop' },
+  }
+  const wc = (hunt.weather_conditions && typeof hunt.weather_conditions === 'object' && !Array.isArray(hunt.weather_conditions))
+    ? hunt.weather_conditions as Record<string, unknown>
+    : null
+  const skyCondition   = typeof wc?.summary     === 'string' ? wc.summary    : null
+  const humidity       = typeof wc?.humidity     === 'number' ? wc.humidity   : null
+  const pressureTrend  = (typeof wc?.pressure_trend === 'string' && wc.pressure_trend in PRESSURE_TREND_META)
+    ? wc.pressure_trend as PressureTrend : null
+  const pressureChange = typeof wc?.pressure_change_24h === 'number' ? wc.pressure_change_24h : null
+  const pressureDawnMb = typeof wc?.pressure_dawn_mb    === 'number' ? wc.pressure_dawn_mb    : null
+  const pressureDuskMb = typeof wc?.pressure_dusk_mb    === 'number' ? wc.pressure_dusk_mb    : null
+  const pressureMb     = typeof wc?.pressure_mb         === 'number' ? wc.pressure_mb         : null
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -308,6 +336,55 @@ export default function HuntDetailModal({ hunt, isOpen, onClose }: HuntDetailMod
                       <div className="flex items-center justify-between">
                         <span className="text-forest-shadow">Legal Hunting:</span>
                         <span className="font-medium text-weathered-wood">{hunt.legal_hunting_start} – {hunt.legal_hunting_end}</span>
+                      </div>
+                    )}
+                    {skyCondition && (
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center text-forest-shadow">
+                          <CloudSun className="w-4 h-4 mr-2 text-muted-gold" />
+                          Sky:
+                        </span>
+                        <span className="font-medium text-weathered-wood">{skyCondition}</span>
+                      </div>
+                    )}
+                    {humidity !== null && (
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center text-forest-shadow">
+                          <Droplets className="w-4 h-4 mr-2 text-dark-teal" />
+                          Humidity:
+                        </span>
+                        <span className="font-medium text-weathered-wood">{humidity}%</span>
+                      </div>
+                    )}
+                    {pressureTrend && (() => {
+                      const { Icon, color, label } = PRESSURE_TREND_META[pressureTrend]
+                      return (
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center text-forest-shadow">
+                            <Gauge className="w-4 h-4 mr-2" style={{ color: '#566E3D' }} />
+                            Pressure:
+                          </span>
+                          <span className="flex items-center gap-1.5 font-medium" style={{ color }}>
+                            <Icon size={14} style={{ color }} />
+                            {label}
+                            {pressureChange !== null && (
+                              <span className="text-weathered-wood font-normal">
+                                ({pressureChange > 0 ? '+' : ''}{pressureChange} mb/24h)
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      )
+                    })()}
+                    {(pressureDawnMb !== null || pressureDuskMb !== null || pressureMb !== null) && (
+                      <div className="flex items-center justify-between pl-6 text-sm">
+                        <span className="text-forest-shadow/70">Barometric:</span>
+                        <span className="font-medium text-weathered-wood text-right">
+                          {pressureDawnMb !== null && <span>Dawn {pressureDawnMb} mb</span>}
+                          {pressureDawnMb !== null && pressureDuskMb !== null && <span className="mx-1">·</span>}
+                          {pressureDuskMb !== null && <span>Dusk {pressureDuskMb} mb</span>}
+                          {pressureDawnMb === null && pressureDuskMb === null && pressureMb !== null && <span>{pressureMb} mb</span>}
+                        </span>
                       </div>
                     )}
                   </div>

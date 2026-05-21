@@ -163,6 +163,12 @@ import {
   List,
   Grid3X3,
 
+  // Pressure Trend
+  ChevronsUp,
+  ChevronsDown,
+  Minus,
+  Gauge,
+
   // Additional Lucide Icons
   type LucideIcon
 } from 'lucide-react'
@@ -336,6 +342,12 @@ export const ICONS: IconRegistry = {
   viewGrid: LayoutGrid,
   viewList: List,
   viewCompact: Grid3X3,
+
+  // Pressure Trend
+  chevronsUp: ChevronsUp,
+  chevronsDown: ChevronsDown,
+  minus: Minus,
+  gauge: Gauge,
 } as const
 
 /**

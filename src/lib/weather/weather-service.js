@@ -20,6 +20,15 @@ const PROPERTY_CENTER = {
   lng: -79.51088069
 };
 
+// Pressure trend thresholds (mb per 24h). Adjust as real data accumulates.
+const PRESSURE_TREND_THRESHOLDS = {
+  RAPID_RISE:  6,   // > +6 mb → rapid_rise
+  RISING:      2,   // > +2 mb → rising
+  FALLING:    -2,   // < -2 mb → falling
+  RAPID_FALL: -6,   // < -6 mb → rapid_fall
+  // otherwise → stable
+}
+
 // Visual Crossing API configuration
 const VISUAL_CROSSING_CONFIG = {
   baseUrl: 'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline',
@@ -231,48 +240,57 @@ class WeatherCollectionService {
     // Calculate dawn/dusk temperatures using database function
     const dawnDuskResult = await this.calculateDawnDuskTemps(dayData);
 
-    // Only include columns that actually exist in your database
+    // Calculate dawn/dusk/daily pressure from hourly data
+    const { pressure_mb, pressure_dawn_mb, pressure_dusk_mb } = this.calculatePressureValues(dayData);
+
+    // Compute 24h pressure change and categorical trend
+    const prevPressure = await this.fetchPreviousDayPressure(targetDate);
+    const pressure_change_24h = (pressure_mb != null && prevPressure != null)
+      ? Math.round((pressure_mb - prevPressure) * 10) / 10
+      : null;
+    const pressure_trend = this.classifyPressureTrend(pressure_change_24h);
+
     const processedData = {
       date: targetDate,
       property_center_lat: PROPERTY_CENTER.lat,
       property_center_lng: PROPERTY_CENTER.lng,
       collection_timestamp: new Date().toISOString(),
       api_source: 'visual_crossing',
-      raw_weather_data: rawData, // Store complete API response here
-      
-      // Temperature data (these columns exist)
+      raw_weather_data: rawData,
+
+      // Temperature data
       tempmax: dayData.tempmax,
       tempmin: dayData.tempmin,
       temp: dayData.temp,
       temp_dawn: dawnDuskResult.temp_dawn,
       temp_dusk: dawnDuskResult.temp_dusk,
-      
-      // Atmospheric conditions (only humidity exists in your schema)
+
+      // Atmospheric conditions
       humidity: dayData.humidity,
-      
-      // Precipitation (only precip and precipprob exist)
+
+      // Precipitation
       precip: dayData.precip,
       precipprob: dayData.precipprob,
-      
-      // Wind (only windspeed and winddir exist, no windgust)
+
+      // Wind
       windspeed: dayData.windspeed,
       winddir: dayData.winddir,
-      
-      // Sky conditions (only cloudcover and uvindex exist)
+
+      // Sky conditions
       cloudcover: dayData.cloudcover,
       uvindex: dayData.uvindex,
-      
-      // Astronomical (only sunrise, sunset, moonphase exist)
+
+      // Astronomical
       sunrise: dayData.sunrise,
       sunset: dayData.sunset,
-      moonphase: dayData.moonphase
-      
-      // Note: conditions, description, icon, visibility, pressure, dew, 
-      // precipcover, preciptype, windgust, solarradiation are stored 
-      // in raw_weather_data for future use if needed
-      
-      // Debug info with sunrise/sunset times used for calculation is available
-      // in the dawnDuskResult but not stored in database
+      moonphase: dayData.moonphase,
+
+      // Barometric pressure
+      pressure_mb,
+      pressure_dawn_mb,
+      pressure_dusk_mb,
+      pressure_change_24h,
+      pressure_trend,
     };
 
     return processedData;
@@ -329,6 +347,80 @@ class WeatherCollectionService {
       console.log('⚠️ Error calculating dawn/dusk temperatures:', error);
       return {};
     }
+  }
+
+  /**
+   * Extract pressure values from hourly data using sunrise/sunset-relative windows.
+   * Dawn: (sunrise - 2h) to (sunrise + 1h)
+   * Dusk: (sunset  - 1h) to (sunset  + 1h)
+   * Falls back to day-level pressure if hourly data is missing.
+   */
+  calculatePressureValues(dayData) {
+    const pressure_mb = dayData.pressure ?? null
+
+    if (!dayData.hours || dayData.hours.length === 0 || !dayData.sunrise || !dayData.sunset) {
+      return { pressure_mb, pressure_dawn_mb: null, pressure_dusk_mb: null }
+    }
+
+    const toMinutes = (timeStr) => {
+      const [h, m] = timeStr.split(':').map(Number)
+      return h * 60 + m
+    }
+
+    const sunriseMin = toMinutes(dayData.sunrise)
+    const sunsetMin  = toMinutes(dayData.sunset)
+    const dawnStart  = sunriseMin - 120
+    const dawnEnd    = sunriseMin + 60
+    const duskStart  = sunsetMin  - 60
+    const duskEnd    = sunsetMin  + 60
+
+    const avgWindow = (hours, start, end) => {
+      const vals = hours
+        .map(h => ({ min: toMinutes(h.datetime), p: h.pressure }))
+        .filter(h => h.p != null && h.min >= start && h.min <= end)
+      if (vals.length === 0) return null
+      return Math.round((vals.reduce((s, h) => s + h.p, 0) / vals.length) * 10) / 10
+    }
+
+    const pressure_dawn_mb = avgWindow(dayData.hours, dawnStart, dawnEnd)
+    const pressure_dusk_mb = avgWindow(dayData.hours, duskStart, duskEnd)
+
+    return { pressure_mb, pressure_dawn_mb, pressure_dusk_mb }
+  }
+
+  /**
+   * Fetch the previous day's pressure_mb from the DB to compute change/trend.
+   */
+  async fetchPreviousDayPressure(targetDate) {
+    try {
+      const prev = new Date(targetDate)
+      prev.setDate(prev.getDate() - 1)
+      const prevDate = prev.toISOString().split('T')[0]
+
+      const { data, error } = await this.supabase
+        .from('daily_weather_snapshots')
+        .select('pressure_mb')
+        .eq('date', prevDate)
+        .single()
+
+      if (error || !data || data.pressure_mb == null) return null
+      return Number(data.pressure_mb)
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Derive a categorical pressure trend label from a 24h change in mb.
+   */
+  classifyPressureTrend(change24h) {
+    if (change24h == null) return null
+    const { RAPID_RISE, RISING, FALLING, RAPID_FALL } = PRESSURE_TREND_THRESHOLDS
+    if (change24h >  RAPID_RISE)  return 'rapid_rise'
+    if (change24h >  RISING)      return 'rising'
+    if (change24h <  RAPID_FALL)  return 'rapid_fall'
+    if (change24h <  FALLING)     return 'falling'
+    return 'stable'
   }
 
   /**

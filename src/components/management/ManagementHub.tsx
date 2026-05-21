@@ -6,12 +6,14 @@ import { ManagementHubToolbar } from '@/components/shared/ManagementHubToolbar'
 import { CamerasTab } from './CamerasTab'
 import { StandsTab } from './StandsTab'
 import { HuntsTab } from './HuntsTab'
+import { SightingsTab } from './SightingsTab'
 import type { TabConfig } from '@/components/shared/ManagementHubToolbar'
 
 const TABS: TabConfig[] = [
   { key: 'cameras', label: 'Cameras', icon: 'camera' },
   { key: 'stands', label: 'Stands', icon: 'stands' },
   { key: 'hunts', label: 'Hunts', icon: 'hunts' },
+  { key: 'sightings', label: 'Sightings', icon: 'binoculars' },
 ]
 
 function TabPlaceholder({
@@ -63,6 +65,10 @@ export default function ManagementHub() {
 
   if (activeTab === 'hunts') {
     return <HuntsTab tabs={TABS} activeTab={activeTab} onTabChange={handleTabChange} />
+  }
+
+  if (activeTab === 'sightings') {
+    return <SightingsTab tabs={TABS} activeTab={activeTab} onTabChange={handleTabChange} />
   }
 
   return (

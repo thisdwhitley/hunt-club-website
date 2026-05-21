@@ -94,6 +94,36 @@ const getSkyCondition = (conditions: unknown): string | null => {
   return typeof c.summary === 'string' ? c.summary : null
 }
 
+type PressureTrend = 'rapid_rise' | 'rising' | 'stable' | 'falling' | 'rapid_fall'
+
+interface PressureInfo {
+  trend: PressureTrend
+  change24h: number | null
+  pressureMb: number | null
+}
+
+const TREND_DISPLAY: Record<PressureTrend, { icon: Parameters<typeof getIcon>[0]; color: string; label: string }> = {
+  rapid_rise: { icon: 'chevronsUp',   color: HUNTING_COLORS.burntOrange, label: 'Rapid rise' },
+  rising:     { icon: 'chevronUp',    color: HUNTING_COLORS.mutedGold,   label: 'Rising' },
+  stable:     { icon: 'minus',        color: HUNTING_COLORS.weatheredWood, label: 'Steady' },
+  falling:    { icon: 'chevronDown',  color: HUNTING_COLORS.mutedGold,   label: 'Falling' },
+  rapid_fall: { icon: 'chevronsDown', color: HUNTING_COLORS.clayEarth,   label: 'Rapid drop' },
+}
+
+const getPressureInfo = (conditions: unknown, huntType: string | null): PressureInfo | null => {
+  if (!conditions || typeof conditions !== 'object' || Array.isArray(conditions)) return null
+  const c = conditions as Record<string, unknown>
+  const trend = c.pressure_trend
+  if (typeof trend !== 'string' || !(trend in TREND_DISPLAY)) return null
+  const change24h = typeof c.pressure_change_24h === 'number' ? c.pressure_change_24h : null
+  const pressureMb = huntType === 'AM'
+    ? (typeof c.pressure_dawn_mb === 'number' ? c.pressure_dawn_mb : null)
+    : huntType === 'PM'
+      ? (typeof c.pressure_dusk_mb === 'number' ? c.pressure_dusk_mb : null)
+      : (typeof c.pressure_mb === 'number' ? c.pressure_mb : null)
+  return { trend: trend as PressureTrend, change24h, pressureMb }
+}
+
 
 export default function HuntCardV2({
   hunt,
@@ -245,6 +275,20 @@ export default function HuntCardV2({
                 {getMoonIllumination(hunt.moon_illumination)}
               </span>
             )}
+            {(() => {
+              const p = getPressureInfo(hunt.weather_conditions, hunt.hunt_type ?? null)
+              if (!p) return null
+              const d = TREND_DISPLAY[p.trend]
+              const tip = p.change24h != null
+                ? `Pressure: ${d.label} (${p.change24h > 0 ? '+' : ''}${p.change24h} mb/24h)`
+                : `Pressure: ${d.label}`
+              return (
+                <span className="flex items-center gap-0.5" title={tip}>
+                  {React.createElement(getIcon('gauge'), { size: 16, style: { color: HUNTING_COLORS.oliveGreen } })}
+                  {React.createElement(getIcon(d.icon), { size: 14, style: { color: d.color } })}
+                </span>
+              )
+            })()}
           </div>
         </td>
 
@@ -582,6 +626,22 @@ export default function HuntCardV2({
                 </span>
               </div>
             )}
+            {(() => {
+              const p = getPressureInfo(hunt.weather_conditions, hunt.hunt_type ?? null)
+              if (!p) return null
+              const d = TREND_DISPLAY[p.trend]
+              const tipParts = [d.label]
+              if (p.change24h != null) tipParts.push(`${p.change24h > 0 ? '+' : ''}${p.change24h} mb/24h`)
+              if (p.pressureMb != null) tipParts.push(`${p.pressureMb} mb`)
+              return (
+                <div className="flex items-center gap-1.5" title={tipParts.join(' · ')}>
+                  {React.createElement(getIcon(p.trend === 'stable' ? 'gauge' : d.icon), { size: 14, style: { color: HUNTING_COLORS.oliveGreen } })}
+                  <span style={{ color: HUNTING_COLORS.forestShadow }}>
+                    <strong>Pressure:</strong> {d.label}
+                  </span>
+                </div>
+              )
+            })()}
           </div>
           {hunt.daily_low !== null && hunt.daily_high !== null && tempContext.context !== 'average' && (
             <div className="text-xs text-weathered-wood mt-2 pt-2 border-t border-weathered-wood/20 text-center">

@@ -35,6 +35,33 @@
 
 ---
 
+### 2026-05-20: Barometric pressure columns on daily_weather_snapshots (#149)
+**Type**: Schema Addition + Data Migration  
+**Affected Tables**: `daily_weather_snapshots`, `hunt_logs` (weather_conditions JSONB)  
+**Breaking Changes**: No  
+**Rollback Available**: Yes (drop columns; revert triggers)
+
+**Purpose**: Surface barometric pressure trend on hunt cards. Absolute pressure is less useful to hunters than direction/rate of change, so we store both raw values and a categorical trend label.
+
+**Changes Made**:
+- Added 5 columns to `daily_weather_snapshots`: `pressure_mb`, `pressure_dawn_mb`, `pressure_dusk_mb`, `pressure_change_24h`, `pressure_trend`
+- Dawn window: (sunrise − 2h) to (sunrise + 1h) from hourly data; dusk: (sunset − 1h) to (sunset + 1h)
+- `pressure_trend` CHECK constraint: `rapid_rise | rising | stable | falling | rapid_fall`
+- Thresholds (in `PRESSURE_TREND_THRESHOLDS` constant in `weather-service.js`): rapid = ±6 mb/24h, moderate = ±2 mb/24h
+- Updated both weather triggers to include all 5 pressure fields in `hunt_logs.weather_conditions` JSONB
+- Backfilled all existing `daily_weather_snapshots` rows from raw JSON
+- Backfilled existing `hunt_logs.weather_conditions` via targeted UPDATE (triggers skip rows with `weather_fetched_at` set)
+- Added 4 icons to registry: `chevronsUp`, `chevronsDown`, `minus`, `gauge`
+- Filed #158: future cleanup to use same hourly-averaging approach for `temp_dawn`/`temp_dusk`
+
+**Files Modified**:
+- `supabase/schema.sql` (exported)
+- `src/lib/weather/weather-service.js`
+- `src/lib/shared/icons/index.ts` + `types.ts`
+- `src/components/hunt-logging/HuntCardV2.tsx`
+
+---
+
 ### 2026-05-13: Expand hunt_harvests gender check constraint for turkey
 
 **Type**: Schema Modification

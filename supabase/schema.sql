@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict WTyWVGHax5fYyYjlPKUIF2PPPtUQ232Qfs5RAcAYWUROT8SabVV2ZZsi7WbUCPb
+\restrict QcebShFOffGcbgUuaIfptTZPc1ZYehV2xyzgApNnFAI0LPMCCRaw5Ar2EvpB22c
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.9 (Debian 17.9-1.pgdg13+1)
@@ -575,7 +575,6 @@ ALTER FUNCTION "public"."interpolate_dawn_dusk_temps"("sunrise_time" time withou
 
 CREATE FUNCTION "public"."populate_hunt_weather_on_insert"() RETURNS "trigger"
     LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
     AS $$
 DECLARE
   snap RECORD;
@@ -583,7 +582,6 @@ DECLARE
   v_moon_phase_name TEXT;
   v_weather_conditions JSONB;
 BEGIN
-  -- Only populate if weather not already set
   IF NEW.weather_fetched_at IS NOT NULL THEN
     RETURN NEW;
   END IF;
@@ -594,7 +592,6 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  -- Wind direction degrees → cardinal
   CASE
     WHEN snap.winddir IS NULL THEN v_wind_direction_text := NULL;
     WHEN snap.winddir >= 337.5 OR snap.winddir < 22.5 THEN v_wind_direction_text := 'N';
@@ -608,15 +605,14 @@ BEGIN
     ELSE v_wind_direction_text := 'Variable';
   END CASE;
 
-  -- Moon phase decimal → name
   CASE
     WHEN snap.moonphase IS NULL THEN v_moon_phase_name := NULL;
     WHEN snap.moonphase < 0.125 THEN v_moon_phase_name := 'New Moon';
-    WHEN snap.moonphase < 0.25 THEN v_moon_phase_name := 'Waxing Crescent';
+    WHEN snap.moonphase < 0.25  THEN v_moon_phase_name := 'Waxing Crescent';
     WHEN snap.moonphase < 0.375 THEN v_moon_phase_name := 'First Quarter';
-    WHEN snap.moonphase < 0.5 THEN v_moon_phase_name := 'Waxing Gibbous';
+    WHEN snap.moonphase < 0.5   THEN v_moon_phase_name := 'Waxing Gibbous';
     WHEN snap.moonphase < 0.625 THEN v_moon_phase_name := 'Full Moon';
-    WHEN snap.moonphase < 0.75 THEN v_moon_phase_name := 'Waning Gibbous';
+    WHEN snap.moonphase < 0.75  THEN v_moon_phase_name := 'Waning Gibbous';
     WHEN snap.moonphase < 0.875 THEN v_moon_phase_name := 'Last Quarter';
     ELSE v_moon_phase_name := 'Waning Crescent';
   END CASE;
@@ -629,10 +625,15 @@ BEGIN
       WHEN snap.cloudcover > 25 THEN 'Partly Cloudy'
       ELSE 'Clear'
     END,
-    'cloudcover', snap.cloudcover,
-    'humidity', snap.humidity,
-    'winddir_degrees', snap.winddir,
-    'data_source', 'daily_weather_snapshots'
+    'cloudcover',        snap.cloudcover,
+    'humidity',          snap.humidity,
+    'winddir_degrees',   snap.winddir,
+    'data_source',       'daily_weather_snapshots',
+    'pressure_mb',       snap.pressure_mb,
+    'pressure_dawn_mb',  snap.pressure_dawn_mb,
+    'pressure_dusk_mb',  snap.pressure_dusk_mb,
+    'pressure_change_24h', snap.pressure_change_24h,
+    'pressure_trend',    snap.pressure_trend
   );
 
   NEW.weather_conditions  := v_weather_conditions;
@@ -719,7 +720,6 @@ ALTER FUNCTION "public"."update_camera_alert_status"() OWNER TO "postgres";
 
 CREATE FUNCTION "public"."update_hunt_logs_weather"() RETURNS "trigger"
     LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
     AS $$
 DECLARE
   hunt_record RECORD;
@@ -727,7 +727,6 @@ DECLARE
   v_moon_phase_name TEXT;
   v_weather_conditions JSONB;
 BEGIN
-  -- Convert wind direction from degrees to cardinal direction
   CASE 
     WHEN NEW.winddir IS NULL THEN v_wind_direction_text := NULL;
     WHEN NEW.winddir >= 337.5 OR NEW.winddir < 22.5 THEN v_wind_direction_text := 'N';
@@ -741,54 +740,55 @@ BEGIN
     ELSE v_wind_direction_text := 'Variable';
   END CASE;
 
-  -- Convert moon phase from decimal to text
   CASE 
     WHEN NEW.moonphase IS NULL THEN v_moon_phase_name := NULL;
     WHEN NEW.moonphase < 0.125 THEN v_moon_phase_name := 'New Moon';
-    WHEN NEW.moonphase < 0.25 THEN v_moon_phase_name := 'Waxing Crescent';
+    WHEN NEW.moonphase < 0.25  THEN v_moon_phase_name := 'Waxing Crescent';
     WHEN NEW.moonphase < 0.375 THEN v_moon_phase_name := 'First Quarter';
-    WHEN NEW.moonphase < 0.5 THEN v_moon_phase_name := 'Waxing Gibbous';
+    WHEN NEW.moonphase < 0.5   THEN v_moon_phase_name := 'Waxing Gibbous';
     WHEN NEW.moonphase < 0.625 THEN v_moon_phase_name := 'Full Moon';
-    WHEN NEW.moonphase < 0.75 THEN v_moon_phase_name := 'Waning Gibbous';
+    WHEN NEW.moonphase < 0.75  THEN v_moon_phase_name := 'Waning Gibbous';
     WHEN NEW.moonphase < 0.875 THEN v_moon_phase_name := 'Last Quarter';
     ELSE v_moon_phase_name := 'Waning Crescent';
   END CASE;
 
-  -- Create simplified weather conditions JSON
   v_weather_conditions := jsonb_build_object(
-    'summary', CASE 
+    'summary', CASE
       WHEN NEW.precip > 0.1 THEN 'Rainy'
       WHEN NEW.cloudcover > 80 THEN 'Overcast'
       WHEN NEW.cloudcover > 50 THEN 'Mostly Cloudy'
       WHEN NEW.cloudcover > 25 THEN 'Partly Cloudy'
       ELSE 'Clear'
     END,
-    'cloudcover', NEW.cloudcover,
-    'humidity', NEW.humidity,
-    'winddir_degrees', NEW.winddir,
-    'data_source', 'daily_weather_snapshots'
+    'cloudcover',        NEW.cloudcover,
+    'humidity',          NEW.humidity,
+    'winddir_degrees',   NEW.winddir,
+    'data_source',       'daily_weather_snapshots',
+    'pressure_mb',       NEW.pressure_mb,
+    'pressure_dawn_mb',  NEW.pressure_dawn_mb,
+    'pressure_dusk_mb',  NEW.pressure_dusk_mb,
+    'pressure_change_24h', NEW.pressure_change_24h,
+    'pressure_trend',    NEW.pressure_trend
   );
 
-  -- Update all hunt logs that match this date and don't have weather data yet
-  UPDATE hunt_logs 
-  SET 
+  UPDATE hunt_logs
+  SET
     weather_conditions = v_weather_conditions,
-    temperature_high = ROUND(NEW.tempmax)::integer,
-    temperature_low = ROUND(NEW.tempmin)::integer,
-    wind_speed = ROUND(NEW.windspeed)::integer,
-    wind_direction = v_wind_direction_text,
-    moon_illumination = NEW.moonphase,
-    moon_phase = v_moon_phase_name,
-    sunrise_time = NEW.sunrise,
-    sunset_time = NEW.sunset,
-    precipitation = NEW.precip,
+    temperature_high   = ROUND(NEW.tempmax)::integer,
+    temperature_low    = ROUND(NEW.tempmin)::integer,
+    wind_speed         = ROUND(NEW.windspeed)::integer,
+    wind_direction     = v_wind_direction_text,
+    moon_illumination  = NEW.moonphase,
+    moon_phase         = v_moon_phase_name,
+    sunrise_time       = NEW.sunrise,
+    sunset_time        = NEW.sunset,
+    precipitation      = NEW.precip,
     weather_fetched_at = NOW(),
-    updated_at = NOW()
-  WHERE 
-    hunt_date = NEW.date 
-    AND weather_fetched_at IS NULL;  -- Only update hunts without weather data
+    updated_at         = NOW()
+  WHERE
+    hunt_date = NEW.date
+    AND weather_fetched_at IS NULL;
 
-  -- Log the update for debugging
   RAISE NOTICE 'Updated hunt logs for date % with weather data from daily snapshot', NEW.date;
 
   RETURN NEW;
@@ -1236,7 +1236,13 @@ CREATE TABLE "public"."daily_weather_snapshots" (
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
     "legal_hunting_start" time without time zone,
-    "legal_hunting_end" time without time zone
+    "legal_hunting_end" time without time zone,
+    "pressure_mb" numeric,
+    "pressure_dawn_mb" numeric,
+    "pressure_dusk_mb" numeric,
+    "pressure_change_24h" numeric,
+    "pressure_trend" "text",
+    CONSTRAINT "daily_weather_snapshots_pressure_trend_check" CHECK (("pressure_trend" = ANY (ARRAY['rapid_rise'::"text", 'rising'::"text", 'stable'::"text", 'falling'::"text", 'rapid_fall'::"text"])))
 );
 
 
@@ -1254,6 +1260,41 @@ COMMENT ON COLUMN "public"."daily_weather_snapshots"."legal_hunting_start" IS 'N
 --
 
 COMMENT ON COLUMN "public"."daily_weather_snapshots"."legal_hunting_end" IS 'NC legal hunting end time (sunset + 30 minutes)';
+
+
+--
+-- Name: COLUMN "daily_weather_snapshots"."pressure_mb"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN "public"."daily_weather_snapshots"."pressure_mb" IS 'Daily average barometric pressure (mb), from Visual Crossing day-level data';
+
+
+--
+-- Name: COLUMN "daily_weather_snapshots"."pressure_dawn_mb"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN "public"."daily_weather_snapshots"."pressure_dawn_mb" IS 'Avg pressure over (sunrise-2h) to (sunrise+1h) window from hourly data';
+
+
+--
+-- Name: COLUMN "daily_weather_snapshots"."pressure_dusk_mb"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN "public"."daily_weather_snapshots"."pressure_dusk_mb" IS 'Avg pressure over (sunset-1h) to (sunset+1h) window from hourly data';
+
+
+--
+-- Name: COLUMN "daily_weather_snapshots"."pressure_change_24h"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN "public"."daily_weather_snapshots"."pressure_change_24h" IS 'pressure_mb minus previous day pressure_mb (positive = rising)';
+
+
+--
+-- Name: COLUMN "daily_weather_snapshots"."pressure_trend"; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN "public"."daily_weather_snapshots"."pressure_trend" IS 'Categorical trend: rapid_rise>6mb, rising 2-6mb, stable ±2mb, falling -2 to -6mb, rapid_fall<-6mb';
 
 
 --
@@ -3934,5 +3975,5 @@ ALTER EVENT TRIGGER "pgrst_drop_watch" OWNER TO "supabase_admin";
 -- PostgreSQL database dump complete
 --
 
-\unrestrict WTyWVGHax5fYyYjlPKUIF2PPPtUQ232Qfs5RAcAYWUROT8SabVV2ZZsi7WbUCPb
+\unrestrict QcebShFOffGcbgUuaIfptTZPc1ZYehV2xyzgApNnFAI0LPMCCRaw5Ar2EvpB22c
 

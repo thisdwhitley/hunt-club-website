@@ -35,6 +35,16 @@ export interface HuntWithDetails extends HuntWithTemperature {
   sightings?: HuntSighting[]
 }
 
+export interface SightingWithContext extends HuntSighting {
+  hunt_log: {
+    hunt_date: string
+    hunting_season: string | null
+    stand_id: string | null
+    stand: { name: string } | null
+    member: { display_name: string | null; full_name: string | null } | null
+  } | null
+}
+
 export interface HuntStats {
   totalHunts: number
   totalHarvests: number
@@ -753,6 +763,57 @@ export class HuntService {
       if (error) throw error
     } catch (error) {
       console.error('Error in deleteSighting:', error)
+      throw error
+    }
+  }
+
+  async getSightingsWithContext(): Promise<SightingWithContext[]> {
+    try {
+      const { data: sightings, error: sErr } = await supabase
+        .from('hunt_sightings')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (sErr) throw sErr
+      if (!sightings || sightings.length === 0) return []
+
+      const huntIds = [...new Set(sightings.map(s => s.hunt_log_id))]
+      const { data: hunts, error: hErr } = await supabase
+        .from('hunt_logs')
+        .select('id, hunt_date, hunting_season, stand_id, member_id')
+        .in('id', huntIds)
+      if (hErr) throw hErr
+
+      const standIds = [...new Set((hunts || []).map(h => h.stand_id).filter(Boolean))]
+      const { data: stands } = standIds.length
+        ? await supabase.from('stands').select('id, name').in('id', standIds)
+        : { data: [] }
+
+      const memberIds = [...new Set((hunts || []).map(h => h.member_id).filter(Boolean))]
+      const { data: members } = memberIds.length
+        ? await supabase.from('members').select('id, display_name, full_name').in('id', memberIds)
+        : { data: [] }
+
+      const huntMap = new Map((hunts || []).map(h => [h.id, h]))
+      const standMap = new Map((stands || []).map(s => [s.id, s]))
+      const memberMap = new Map((members || []).map(m => [m.id, m]))
+
+      return sightings.map(s => {
+        const hunt = huntMap.get(s.hunt_log_id) ?? null
+        return {
+          ...s,
+          hunt_log: hunt
+            ? {
+                hunt_date: hunt.hunt_date,
+                hunting_season: hunt.hunting_season,
+                stand_id: hunt.stand_id,
+                stand: hunt.stand_id ? (standMap.get(hunt.stand_id) ?? null) : null,
+                member: hunt.member_id ? (memberMap.get(hunt.member_id) ?? null) : null,
+              }
+            : null,
+        }
+      })
+    } catch (error) {
+      console.error('Error in getSightingsWithContext:', error)
       throw error
     }
   }
