@@ -690,6 +690,8 @@ Never use `phase * 100` directly — that gives "50%" for a full moon.
 
 **Backfilling pressure into existing hunt_logs:** existing records have `weather_fetched_at` set, so triggers won't update them. Use a targeted `UPDATE hunt_logs SET weather_conditions = weather_conditions || jsonb_build_object(...)` joined to `daily_weather_snapshots`.
 
+**Dawn/dusk temperature method (fixed #158, 2026-05-21):** `temp_dawn` and `temp_dusk` in `daily_weather_snapshots` are now computed by averaging actual hourly readings in sunrise/sunset-relative windows — same approach as `pressure_dawn_mb`/`pressure_dusk_mb`. The old `interpolate_dawn_dusk_temps` DB function is no longer called and can be dropped. Backfill script: `npm run weather:backfill-temps`.
+
 **Sky condition over raw precipitation:**
 Use `weather_conditions.summary` ("Clear", "Partly Cloudy", "Mostly Cloudy", "Overcast", "Rainy") for hunt card display instead of the raw `precipitation` inches. The summary is computed from cloud cover + precip by the weather trigger and stored in the JSONB blob. Extract with:
 ```typescript
