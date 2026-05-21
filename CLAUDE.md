@@ -672,6 +672,24 @@ const illumination = (1 - Math.cos(2 * Math.PI * phase)) / 2  // → 0–1
 ```
 Never use `phase * 100` directly — that gives "50%" for a full moon.
 
+**Barometric pressure — `weather_conditions` JSONB fields (added 2026-05-21, #149):**
+
+`daily_weather_snapshots` now has `pressure_mb`, `pressure_dawn_mb`, `pressure_dusk_mb`, `pressure_change_24h`, `pressure_trend`. All five are propagated into `hunt_logs.weather_conditions` by both weather triggers. Dawn/dusk windows are sunrise/sunset-relative from hourly data (dawn: sunrise−2h to sunrise+1h; dusk: sunset−1h to sunset+1h).
+
+`pressure_trend` values: `rapid_rise | rising | stable | falling | rapid_fall`. Thresholds (mb/24h) live in `PRESSURE_TREND_THRESHOLDS` at the top of `src/lib/weather/weather-service.js` — change there only; do not hardcode thresholds elsewhere.
+
+**Pressure display rules:**
+- **Full card:** show the trend chevron icon (olive-green, consistent with info-box standard) + `**Pressure:** {trend label}`. For `stable`, use the gauge icon instead of minus. Tooltip carries mb/24h change + absolute pressure.
+- **List mode:** gauge icon + trend chevron side by side, tooltip only.
+- **Detail modal:** full row with trend icon + label + mb change in parens, plus an indented sub-row showing raw dawn/dusk mb values.
+- Trend labels: Rapid Rise, Rising, **Steady** (not "Stable" — that means atmospheric stability, not pressure trend), Falling, Rapid Drop.
+- Pick `pressure_dawn_mb` for AM hunts, `pressure_dusk_mb` for PM hunts, `pressure_mb` otherwise.
+- Hide the pressure row entirely if `pressure_trend` is null (no previous day to compare against).
+
+`TREND_DISPLAY` map lives in `HuntCardV2.tsx`; matching `PRESSURE_TREND_META` lives in `HuntDetailModal.tsx`. Keep them in sync.
+
+**Backfilling pressure into existing hunt_logs:** existing records have `weather_fetched_at` set, so triggers won't update them. Use a targeted `UPDATE hunt_logs SET weather_conditions = weather_conditions || jsonb_build_object(...)` joined to `daily_weather_snapshots`.
+
 **Sky condition over raw precipitation:**
 Use `weather_conditions.summary` ("Clear", "Partly Cloudy", "Mostly Cloudy", "Overcast", "Rainy") for hunt card display instead of the raw `precipitation` inches. The summary is computed from cloud cover + precip by the weather trigger and stored in the JSONB blob. Extract with:
 ```typescript
@@ -685,8 +703,7 @@ const getSkyCondition = (conditions: unknown): string | null => {
 **`src/lib/stands/constants.ts` still uses direct lucide-react imports (intentional):**
 The `STAND_TYPES`, `TIME_OF_DAY_OPTIONS`, and `FEATURE_ICONS` constants store `LucideIcon` component references as values (e.g. `icon: LadderIcon`). Converting these to icon name strings requires changing the type and all consumers. This file is only imported by `useStands.ts` (for `DEFAULTS`/`PERFORMANCE_THRESHOLDS` — not the icon constants). Tracked under issue #33. Do not attempt to fix mid-task.
 
-**Sightings data not yet available:**
-`hunt_logs` tracks `harvest_count` and `had_harvest` but has no `sighting_count` field. Deer sighting patterns (e.g. "8 deer seen at Creek Stand on AM hunts") require issue #23 schema work first. Do not build UI for sightings until that column exists.
+**Sightings:** captured in `hunt_sightings` table (linked to `hunt_logs`). The management SightingsTab (`src/components/management/SightingsTab.tsx`) allows browsing and inline editing all sightings. The hunt entry form captures sightings inline (#112, closed 2026-05-19). Cross-stand sighting analytics (issue #23) still require future schema work.
 
 ### HuntsTab — Season Filtering
 

@@ -237,8 +237,8 @@ class WeatherCollectionService {
       throw new Error('No day data found in Visual Crossing response');
     }
 
-    // Calculate dawn/dusk temperatures using database function
-    const dawnDuskResult = await this.calculateDawnDuskTemps(dayData);
+    // Calculate dawn/dusk temperatures from hourly data
+    const dawnDuskResult = this.calculateDawnDuskTemps(dayData);
 
     // Calculate dawn/dusk/daily pressure from hourly data
     const { pressure_mb, pressure_dawn_mb, pressure_dusk_mb } = this.calculatePressureValues(dayData);
@@ -297,56 +297,43 @@ class WeatherCollectionService {
   }
 
   /**
-   * Calculate dawn and dusk temperatures using database function
+   * Extract dawn and dusk temperatures from hourly data using sunrise/sunset-relative windows.
+   * Dawn: (sunrise - 2h) to (sunrise + 1h)
+   * Dusk: (sunset  - 1h) to (sunset  + 1h)
+   * Mirrors the approach used for pressure in calculatePressureValues().
    */
-  async calculateDawnDuskTemps(dayData) {
-    try {
-      // Extract hourly temperatures around sunrise/sunset
-      const sunrise = dayData.sunrise;
-      const sunset = dayData.sunset;
-      const tempMax = dayData.tempmax;
-      const tempMin = dayData.tempmin;
-      const tempAvg = dayData.temp;
-
-      if (!sunrise || !sunset || !dayData.hours || dayData.hours.length === 0) {
-        console.log('⚠️ Missing sunrise/sunset or hourly data, skipping dawn/dusk temperature calculation');
-        return {};
-      }
-
-      console.log(`🌅 Using sunrise: ${sunrise}, sunset: ${sunset} for dawn/dusk temperature calculation`);
-
-      // Call database function for temperature interpolation
-      const { data, error } = await this.supabase
-        .rpc('interpolate_dawn_dusk_temps', {
-          sunrise_time: sunrise,
-          sunset_time: sunset,
-          tempmin: tempMin,        // Fixed parameter name
-          tempmax: tempMax,        // Fixed parameter name
-          current_temp: tempAvg    // Fixed parameter name
-        });
-
-      if (error) {
-        console.log('⚠️ Database function failed for dawn/dusk temps:', error.message);
-        return {};
-      }
-
-      // The function returns a table, so we need to get the first row
-      const result = Array.isArray(data) ? data[0] : data;
-
-      const dawnDuskData = {
-        temp_dawn: result?.temp_dawn,
-        temp_dusk: result?.temp_dusk,
-        sunrise_used: sunrise,    // Include the times used
-        sunset_used: sunset       // Include the times used
-      };
-
-      console.log(`🌡️ Calculated dawn temp: ${dawnDuskData.temp_dawn}°F (near ${sunrise}), dusk temp: ${dawnDuskData.temp_dusk}°F (near ${sunset})`);
-
-      return dawnDuskData;
-    } catch (error) {
-      console.log('⚠️ Error calculating dawn/dusk temperatures:', error);
-      return {};
+  calculateDawnDuskTemps(dayData) {
+    if (!dayData.hours || dayData.hours.length === 0 || !dayData.sunrise || !dayData.sunset) {
+      console.log('⚠️ Missing sunrise/sunset or hourly data, skipping dawn/dusk temperature calculation');
+      return { temp_dawn: null, temp_dusk: null };
     }
+
+    const toMinutes = (timeStr) => {
+      const [h, m] = timeStr.split(':').map(Number);
+      return h * 60 + m;
+    };
+
+    const sunriseMin = toMinutes(dayData.sunrise);
+    const sunsetMin  = toMinutes(dayData.sunset);
+    const dawnStart  = sunriseMin - 120;
+    const dawnEnd    = sunriseMin + 60;
+    const duskStart  = sunsetMin  - 60;
+    const duskEnd    = sunsetMin  + 60;
+
+    const avgWindow = (hours, start, end) => {
+      const vals = hours
+        .map(h => ({ min: toMinutes(h.datetime), t: h.temp }))
+        .filter(h => h.t != null && h.min >= start && h.min <= end);
+      if (vals.length === 0) return null;
+      return Math.round(vals.reduce((s, h) => s + h.t, 0) / vals.length * 10) / 10;
+    };
+
+    const temp_dawn = avgWindow(dayData.hours, dawnStart, dawnEnd);
+    const temp_dusk = avgWindow(dayData.hours, duskStart, duskEnd);
+
+    console.log(`🌡️ Calculated dawn temp: ${temp_dawn}°F (near ${dayData.sunrise}), dusk temp: ${temp_dusk}°F (near ${dayData.sunset})`);
+
+    return { temp_dawn, temp_dusk };
   }
 
   /**

@@ -44,26 +44,16 @@ async function verifyDatabaseSchema(service) {
     // Check if required database functions exist
     const functionsToCheck = [
       {
-        name: 'interpolate_dawn_dusk_temps',
-        params: { 
-          sunrise_time: '06:00:00',
-          sunset_time: '20:00:00', 
-          tempmin: 70,            // Fixed parameter name
-          tempmax: 90,            // Fixed parameter name
-          current_temp: 80        // Fixed parameter name
-        }
-      },
-      {
         name: 'calculate_weather_quality_score',
         params: {
-          weather_data: { days: [{ tempmax: 90, tempmin: 70, temp: 80 }] }  // Fixed parameter name
+          weather_data: { days: [{ tempmax: 90, tempmin: 70, temp: 80 }] }
         }
       }
     ];
-    
+
     for (const func of functionsToCheck) {
       const { data, error } = await service.supabase.rpc(func.name, func.params);
-      
+
       if (error && error.message.includes('Could not find the function')) {
         errors.push(`Database function '${func.name}' not found`);
       }

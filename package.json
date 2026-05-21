@@ -16,6 +16,7 @@
     "cuddeback:sync": "node scripts/sync-cuddeback-cameras.js",
     "cuddeback:test": "DEBUG_MODE=true node scripts/sync-cuddeback-cameras.js",
     "cuddeback:local": "node scripts/test-cuddeback-sync.js",
+    "weather:backfill-temps": "node scripts/backfill-dawn-dusk-temps.js",
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
     "build:safe": "npm run lint && npm run type-check && npm run build"
