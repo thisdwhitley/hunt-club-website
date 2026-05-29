@@ -407,7 +407,7 @@ async function extractCuddebackData(browser) {
     // Wait for page to fully render
     logger.debug('⏳ Waiting for login form to render...');
     try {
-      await page.waitForSelector('fluent-text-field, input[type="email"], form', {
+      await page.waitForSelector('input[type="email"], input#username, fluent-text-field, form', {
         visible: true,
         timeout: 15000
       });
@@ -418,18 +418,17 @@ async function extractCuddebackData(browser) {
 
     await delay(2000);
 
-    // Find Fluent UI login fields
-    let emailField = await page.$('fluent-text-field#username');
-    let passwordField = await page.$('fluent-text-field#password');
+    // Find login fields (supports MUI inputs and legacy Fluent UI)
+    let emailField = await page.$('input#username') || await page.$('fluent-text-field#username') || await page.$('input[type="email"]');
+    let passwordField = await page.$('input#password') || await page.$('fluent-text-field#password') || await page.$('input[type="password"]');
 
     if (!emailField || !passwordField) {
-      // Debug and throw error
       const debugTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
       await page.screenshot({ path: `debug-login-page-${debugTimestamp}.png`, fullPage: true });
       const pageHtml = await page.content();
       await fs.writeFile(`debug-login-page-${debugTimestamp}.html`, pageHtml);
       logger.error(`📸 Debug files saved: debug-login-page-${debugTimestamp}.png`);
-      throw new Error('Login form not found - could not locate Fluent UI email/password fields');
+      throw new Error('Login form not found - could not locate email/password fields');
     }
 
     // Fill credentials using Tab navigation (triggers Blazor validation properly)
@@ -460,8 +459,8 @@ async function extractCuddebackData(browser) {
     let buttonEnabled = false;
     for (let i = 0; i < 20; i++) {
       const buttonState = await page.evaluate(() => {
-        const btn = document.querySelector('fluent-button[type="submit"]');
-        return { disabled: btn?.hasAttribute('disabled') };
+        const btn = document.querySelector('button[type="submit"]') || document.querySelector('fluent-button[type="submit"]');
+        return { disabled: btn ? (btn.disabled || btn.hasAttribute('disabled')) : true };
       });
 
       if (!buttonState.disabled) {
@@ -475,7 +474,7 @@ async function extractCuddebackData(browser) {
     if (!buttonEnabled) {
       logger.warn('Button still disabled - attempting to enable it manually');
       await page.evaluate(() => {
-        const btn = document.querySelector('fluent-button[type="submit"]');
+        const btn = document.querySelector('button[type="submit"]') || document.querySelector('fluent-button[type="submit"]');
         if (btn) {
           btn.removeAttribute('disabled');
           btn.classList.remove('disabled');
@@ -485,31 +484,24 @@ async function extractCuddebackData(browser) {
     }
 
     // Try login strategies (ordered by reliability in CI environments)
-    // Note: Blazor forms don't support traditional form.submit() - must use button clicks
     const loginStrategies = [
-      { name: 'Direct selector click', action: async () => {
-        await page.click('fluent-button[type="submit"]');
-      }},
-      { name: 'JavaScript button click', action: async () => {
-        await page.evaluate(() => {
-          const btn = document.querySelector('fluent-button[type="submit"]');
-          if (btn) {
-            btn.click();
-            // Also try dispatching events for Blazor
-            btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-          }
-        });
-      }},
       { name: 'Enter key on password', action: async () => {
         await passwordField.click();
         await delay(200);
         await page.keyboard.press('Enter');
       }},
+      { name: 'Direct selector click', action: async () => {
+        await page.click('button[type="submit"]');
+      }},
+      { name: 'JavaScript button click', action: async () => {
+        await page.evaluate(() => {
+          const btn = document.querySelector('button[type="submit"]') || document.querySelector('fluent-button[type="submit"]');
+          if (btn) btn.click();
+        });
+      }},
       { name: 'Element handle click', action: async () => {
-        const btn = await page.$('fluent-button[type="submit"]');
-        if (btn) {
-          await btn.click();
-        }
+        const btn = await page.$('button[type="submit"]') || await page.$('fluent-button[type="submit"]');
+        if (btn) await btn.click();
       }}
     ];
 
@@ -537,7 +529,7 @@ async function extractCuddebackData(browser) {
         // Navigation timeout expected for SPA
       }
 
-      // Give Blazor SPA time to update
+      // Give SPA time to update
       await delay(2000);
 
       currentUrl = page.url();
@@ -619,9 +611,11 @@ async function extractCuddebackData(browser) {
     logger.debug('⏳ Waiting for report page to render...');
     try {
       await Promise.race([
-        page.waitForSelector('fluent-button:not([class*="Manage"])', { timeout: 15000 }),
         page.waitForSelector('fluent-data-grid-row', { timeout: 15000 }),
-        page.waitForSelector('.device-row', { timeout: 15000 })
+        page.waitForSelector('table tbody tr', { timeout: 15000 }),
+        page.waitForSelector('.device-row', { timeout: 15000 }),
+        page.waitForSelector('button:not([class*="Manage"])', { timeout: 15000 }),
+        page.waitForSelector('fluent-button:not([class*="Manage"])', { timeout: 15000 })
       ]);
       logger.debug('✅ Report page content loaded');
     } catch (e) {
