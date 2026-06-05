@@ -394,15 +394,43 @@ async function extractCuddebackData(browser) {
     // Hide automation detection
     await page.evaluateOnNewDocument(() => {
       Object.defineProperty(navigator, 'webdriver', { get: () => false });
+      Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3] });
+      Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
     });
 
-    // Set realistic user agent
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+    // Set realistic user agent (current Chrome on Windows)
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36');
+
+    // Set realistic viewport
+    await page.setViewport({ width: 1920, height: 1080 });
+
+    // Set headers that a real browser sends — helps bypass WAF/bot-detection blocks
+    await page.setExtraHTTPHeaders({
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Cache-Control': 'max-age=0',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Sec-Fetch-User': '?1',
+      'Upgrade-Insecure-Requests': '1',
+    });
 
     logger.info('🔐 Logging into Cuddeback...');
 
-    // Navigate to login page
-    await page.goto(CONFIG.CUDDEBACK_LOGIN_URL, { waitUntil: 'networkidle2' });
+    // Navigate to login page; capture response status to detect WAF blocks early
+    const loginResponse = await page.goto(CONFIG.CUDDEBACK_LOGIN_URL, { waitUntil: 'networkidle2' });
+    const loginStatus = loginResponse ? loginResponse.status() : 0;
+    logger.debug(`📡 Login page response status: ${loginStatus}`);
+    if (loginStatus === 403) {
+      const pageHtml = await page.content();
+      const debugTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      await page.screenshot({ path: `debug-login-page-${debugTimestamp}.png`, fullPage: true });
+      await fs.writeFile(`debug-login-page-${debugTimestamp}.html`, pageHtml);
+      logger.error(`📸 Debug files saved: debug-login-page-${debugTimestamp}.png`);
+      throw new Error(`Login page blocked with HTTP 403 — Cuddeback may be blocking CI/cloud IPs`);
+    }
 
     // Wait for page to fully render
     logger.debug('⏳ Waiting for login form to render...');
