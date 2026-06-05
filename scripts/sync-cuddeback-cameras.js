@@ -390,6 +390,7 @@ async function extractCuddebackData(browser) {
   // Helper for delays (page.waitForTimeout was removed in newer Puppeteer)
   const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+
   try {
     // Hide automation detection
     await page.evaluateOnNewDocument(() => {
@@ -404,17 +405,27 @@ async function extractCuddebackData(browser) {
     // Set realistic viewport
     await page.setViewport({ width: 1920, height: 1080 });
 
-    // Set headers that a real browser sends — helps bypass WAF/bot-detection blocks
-    await page.setExtraHTTPHeaders({
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Accept-Encoding': 'gzip, deflate, br',
-      'Cache-Control': 'max-age=0',
-      'Sec-Fetch-Dest': 'document',
-      'Sec-Fetch-Mode': 'navigate',
-      'Sec-Fetch-Site': 'none',
-      'Sec-Fetch-User': '?1',
-      'Upgrade-Insecure-Requests': '1',
+    // Apply navigation headers only to top-level page navigations, not to the React app's
+    // cross-origin fetch calls (Sec-Fetch-* and similar headers break the CORS preflight
+    // on camp-api.cuddeback.com if injected globally via setExtraHTTPHeaders).
+    await page.setRequestInterception(true);
+    page.on('request', request => {
+      if (request.isNavigationRequest() && request.resourceType() === 'document') {
+        const headers = {
+          ...request.headers(),
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Cache-Control': 'max-age=0',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'none',
+          'Sec-Fetch-User': '?1',
+          'Upgrade-Insecure-Requests': '1',
+        };
+        request.continue({ headers });
+      } else {
+        request.continue();
+      }
     });
 
     logger.info('🔐 Logging into Cuddeback...');
