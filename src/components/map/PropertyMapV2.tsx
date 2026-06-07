@@ -17,11 +17,11 @@ type PropertyFeature = Database['public']['Tables']['property_features']['Row']
 const PROPERTY_CENTER: [number, number] = [36.42712517693617, -79.51073582842501]
 
 const FEATURE_STYLES: Record<string, LeafletLib.PathOptions> = {
-  boundary:  { color: '#566E3D', weight: 2, dashArray: '6,4', fill: false, opacity: 0.9 },
-  trail:     { color: '#FA7921', weight: 2, dashArray: '4,4', opacity: 0.8, fill: false },
+  boundary:  { color: '#B9A44C', weight: 3, dashArray: '6,4', fill: false, opacity: 0.9 },
+  trail:     { color: '#A0653A', weight: 2, dashArray: '4,4', opacity: 0.8, fill: false },
   road:      { color: '#8B7355', weight: 3, opacity: 0.9, fill: false },
-  field:     { color: '#B9A44C', weight: 1, fillColor: '#B9A44C', fillOpacity: 0.15 },
-  food_plot: { color: '#B9A44C', weight: 1, fillColor: '#B9A44C', fillOpacity: 0.15 },
+  field:     { color: '#566E3D', weight: 1, fillColor: '#566E3D', fillOpacity: 0.15 },
+  food_plot: { color: '#566E3D', weight: 1, fillColor: '#566E3D', fillOpacity: 0.15 },
   water:     { color: '#0C4767', weight: 2, opacity: 0.8, fill: false },
 }
 
@@ -39,10 +39,10 @@ const LAYER_LABELS: Record<LayerKey, string> = {
 }
 
 const LAYER_COLORS: Record<LayerKey, string> = {
-  boundary: '#566E3D',
-  trail:    '#FA7921',
+  boundary: '#B9A44C',
+  trail:    '#A0653A',
   road:     '#8B7355',
-  field:    '#B9A44C',
+  field:    '#566E3D',
   water:    '#0C4767',
   stands:   '#FA7921',
   cameras:  '#0C4767',
