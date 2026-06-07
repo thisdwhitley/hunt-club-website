@@ -491,6 +491,11 @@ export type Database = {
           moonphase: number | null
           precip: number | null
           precipprob: number | null
+          pressure_change_24h: number | null
+          pressure_dawn_mb: number | null
+          pressure_dusk_mb: number | null
+          pressure_mb: number | null
+          pressure_trend: string | null
           property_center_lat: number
           property_center_lng: number
           quality_notes: string | null
@@ -522,6 +527,11 @@ export type Database = {
           moonphase?: number | null
           precip?: number | null
           precipprob?: number | null
+          pressure_change_24h?: number | null
+          pressure_dawn_mb?: number | null
+          pressure_dusk_mb?: number | null
+          pressure_mb?: number | null
+          pressure_trend?: string | null
           property_center_lat?: number
           property_center_lng?: number
           quality_notes?: string | null
@@ -553,6 +563,11 @@ export type Database = {
           moonphase?: number | null
           precip?: number | null
           precipprob?: number | null
+          pressure_change_24h?: number | null
+          pressure_dawn_mb?: number | null
+          pressure_dusk_mb?: number | null
+          pressure_mb?: number | null
+          pressure_trend?: string | null
           property_center_lat?: number
           property_center_lng?: number
           quality_notes?: string | null
@@ -977,32 +992,38 @@ export type Database = {
         }
         Relationships: []
       }
-      property_boundaries: {
+      property_features: {
         Row: {
-          boundary_data: Json
+          active: boolean
+          color: string | null
           created_at: string
-          description: string | null
+          feature_type: string
+          geometry: Json
           id: string
           name: string
-          total_acres: number | null
+          notes: string | null
           updated_at: string
         }
         Insert: {
-          boundary_data: Json
+          active?: boolean
+          color?: string | null
           created_at?: string
-          description?: string | null
+          feature_type: string
+          geometry: Json
           id?: string
-          name?: string
-          total_acres?: number | null
+          name: string
+          notes?: string | null
           updated_at?: string
         }
         Update: {
-          boundary_data?: Json
+          active?: boolean
+          color?: string | null
           created_at?: string
-          description?: string | null
+          feature_type?: string
+          geometry?: Json
           id?: string
           name?: string
-          total_acres?: number | null
+          notes?: string | null
           updated_at?: string
         }
         Relationships: []

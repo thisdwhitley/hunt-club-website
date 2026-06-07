@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict QcebShFOffGcbgUuaIfptTZPc1ZYehV2xyzgApNnFAI0LPMCCRaw5Ar2EvpB22c
+\restrict Y3YSqUhgZxzN8AdehE5suGtSIotWICXsfFpS9Y3bJJB93Dbxstd652bgFMbGLze
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.9 (Debian 17.9-1.pgdg13+1)
@@ -1567,21 +1567,24 @@ CREATE TABLE "public"."members" (
 ALTER TABLE "public"."members" OWNER TO "postgres";
 
 --
--- Name: property_boundaries; Type: TABLE; Schema: public; Owner: postgres
+-- Name: property_features; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE "public"."property_boundaries" (
+CREATE TABLE "public"."property_features" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "name" character varying(100) DEFAULT 'Main Property'::character varying NOT NULL,
-    "boundary_data" "jsonb" NOT NULL,
-    "total_acres" numeric(8,2),
-    "description" "text",
-    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL
+    "name" character varying(100) NOT NULL,
+    "feature_type" character varying(20) NOT NULL,
+    "geometry" "jsonb" NOT NULL,
+    "color" character varying(7),
+    "notes" "text",
+    "active" boolean DEFAULT true NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "property_features_feature_type_check" CHECK ((("feature_type")::"text" = ANY ((ARRAY['boundary'::character varying, 'trail'::character varying, 'road'::character varying, 'field'::character varying, 'food_plot'::character varying, 'water'::character varying])::"text"[])))
 );
 
 
-ALTER TABLE "public"."property_boundaries" OWNER TO "postgres";
+ALTER TABLE "public"."property_features" OWNER TO "postgres";
 
 --
 -- Name: season_calendar; Type: TABLE; Schema: public; Owner: postgres
@@ -1856,11 +1859,11 @@ ALTER TABLE ONLY "public"."members"
 
 
 --
--- Name: property_boundaries property_boundaries_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: property_features property_features_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY "public"."property_boundaries"
-    ADD CONSTRAINT "property_boundaries_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."property_features"
+    ADD CONSTRAINT "property_features_pkey" PRIMARY KEY ("id");
 
 
 --
@@ -2323,13 +2326,6 @@ CREATE TRIGGER "trigger_update_stand_activity_on_update" AFTER UPDATE OF "hunt_d
 
 
 --
--- Name: property_boundaries update_boundaries_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
---
-
-CREATE TRIGGER "update_boundaries_updated_at" BEFORE UPDATE ON "public"."property_boundaries" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
-
-
---
 -- Name: daily_camera_snapshots update_camera_snapshots_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -2706,13 +2702,6 @@ CREATE POLICY "Members can insert hunt logs for any member" ON "public"."hunt_lo
 
 
 --
--- Name: property_boundaries Public can view boundaries; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Public can view boundaries" ON "public"."property_boundaries" FOR SELECT USING (true);
-
-
---
 -- Name: hunt_harvests Users and admins can update harvests; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -2825,13 +2814,6 @@ CREATE POLICY "Users can view their own hunt logs" ON "public"."hunt_logs" FOR S
 --
 
 CREATE POLICY "Users can view weather snapshots" ON "public"."daily_weather_snapshots" FOR SELECT USING (("auth"."role"() = 'authenticated'::"text"));
-
-
---
--- Name: property_boundaries authenticated_users_all_access_boundaries; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "authenticated_users_all_access_boundaries" ON "public"."property_boundaries" USING (("auth"."role"() = 'authenticated'::"text"));
 
 
 --
@@ -2952,12 +2934,6 @@ CREATE POLICY "members_select_authenticated" ON "public"."members" FOR SELECT TO
 
 CREATE POLICY "members_update_own" ON "public"."members" FOR UPDATE TO "authenticated" USING (("auth"."uid"() = "id")) WITH CHECK (("auth"."uid"() = "id"));
 
-
---
--- Name: property_boundaries; Type: ROW SECURITY; Schema: public; Owner: postgres
---
-
-ALTER TABLE "public"."property_boundaries" ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: season_calendar; Type: ROW SECURITY; Schema: public; Owner: postgres
@@ -3796,12 +3772,12 @@ GRANT ALL ON TABLE "public"."members" TO "service_role";
 
 
 --
--- Name: TABLE "property_boundaries"; Type: ACL; Schema: public; Owner: postgres
+-- Name: TABLE "property_features"; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT ALL ON TABLE "public"."property_boundaries" TO "anon";
-GRANT ALL ON TABLE "public"."property_boundaries" TO "authenticated";
-GRANT ALL ON TABLE "public"."property_boundaries" TO "service_role";
+GRANT ALL ON TABLE "public"."property_features" TO "anon";
+GRANT ALL ON TABLE "public"."property_features" TO "authenticated";
+GRANT ALL ON TABLE "public"."property_features" TO "service_role";
 
 
 --
@@ -3975,5 +3951,5 @@ ALTER EVENT TRIGGER "pgrst_drop_watch" OWNER TO "supabase_admin";
 -- PostgreSQL database dump complete
 --
 
-\unrestrict QcebShFOffGcbgUuaIfptTZPc1ZYehV2xyzgApNnFAI0LPMCCRaw5Ar2EvpB22c
+\unrestrict Y3YSqUhgZxzN8AdehE5suGtSIotWICXsfFpS9Y3bJJB93Dbxstd652bgFMbGLze
 

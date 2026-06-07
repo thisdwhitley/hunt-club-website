@@ -35,6 +35,56 @@
 
 ---
 
+### 2026-06-07: Migrate property_boundaries → property_features (#139)
+**Type**: Schema Replacement + Data Migration  
+**Affected Tables**: `property_boundaries` (dropped), `property_features` (created)  
+**Breaking Changes**: Yes — `property_boundaries` is gone; code querying it will fail  
+**Rollback Available**: No (table dropped; boundary data preserved in property_features)
+
+**Purpose**: Replace the single-purpose `property_boundaries` table (raw `[[lat,lng],...]` JSONB) with a unified `property_features` table that stores all linear and polygon property features (boundary, trail, road, field, food_plot, water) as GeoJSON geometry. Enables the full map redo (#140) and direct onX GeoJSON import.
+
+**Changes Made**:
+- Created `property_features` table: `id`, `name`, `feature_type` (enum check), `geometry` (jsonb GeoJSON), `color`, `notes`, `active`, `created_at`, `updated_at`
+- Migrated existing boundary row: converted `[[lat,lng],...]` → GeoJSON Polygon `{type:'Polygon', coordinates:[[[lng,lat],...]]}` (note coordinate axis flip for GeoJSON spec)
+- Dropped `property_boundaries`
+
+**Migration SQL**:
+```sql
+CREATE TABLE property_features (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name         varchar(100) NOT NULL,
+  feature_type varchar(20) NOT NULL CHECK (feature_type IN ('boundary','trail','road','field','food_plot','water')),
+  geometry     jsonb NOT NULL,
+  color        varchar(7),
+  notes        text,
+  active       boolean NOT NULL DEFAULT true,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  updated_at   timestamptz NOT NULL DEFAULT now()
+);
+
+INSERT INTO property_features (name, feature_type, geometry, notes, active, created_at, updated_at)
+SELECT name, 'boundary',
+  jsonb_build_object('type','Polygon','coordinates',jsonb_build_array(
+    (SELECT jsonb_agg(jsonb_build_array((coord->>1)::numeric,(coord->>0)::numeric))
+     FROM jsonb_array_elements(boundary_data) AS coord)
+  )),
+  COALESCE(description,'') || ' (' || total_acres || ' acres)',
+  true, created_at, updated_at
+FROM property_boundaries;
+
+DROP TABLE property_boundaries;
+```
+
+**Files Modified**:
+- `supabase/schema.sql` (exported)
+- `src/types/database.ts` (regenerated via db:sync)
+- `src/components/map/PropertyMapV2.tsx` (new component using property_features)
+- `src/app/property-map-v2/page.tsx` (new page at /property-map-v2)
+
+**Note**: `src/components/map/PropertyMap.tsx` still references `property_boundaries` but catches the error silently — the old /property-map page renders without a boundary. It will be replaced/deleted as part of #140.
+
+---
+
 ### 2026-05-20: Barometric pressure columns on daily_weather_snapshots (#149)
 **Type**: Schema Addition + Data Migration  
 **Affected Tables**: `daily_weather_snapshots`, `hunt_logs` (weather_conditions JSONB)  
