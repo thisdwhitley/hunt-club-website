@@ -569,7 +569,7 @@ These defaults are intentional — do not change them without good reason:
 
 ### Property Map — Data Model
 
-All linear and polygon property features (trails, roads, fields, food plots, water, property boundary) are stored in a single `property_features` table with GeoJSON geometry. The old `property_boundaries` table is being replaced by this (issue #139).
+All linear and polygon property features (trails, roads, fields, food plots, water, property boundary) are stored in a single `property_features` table with GeoJSON geometry. The old `property_boundaries` table was replaced by this in the 2026-06-07 migration (#139).
 
 **Table:** `property_features` — `id`, `name`, `feature_type` (boundary | trail | road | field | food_plot | water), `geometry` (jsonb — GeoJSON), `color` (optional hex override), `notes`, `active`, `created_at`, `updated_at`
 
@@ -582,6 +582,20 @@ All linear and polygon property features (trails, roads, fields, food plots, wat
 **Import flow:** onX exports → GeoJSON or GPX file → import UI previews on map → user sets `feature_type` + `name` → saved to `property_features`. Replaces the old `gpx-test` SQL-generation approach.
 
 **Stands and cameras** remain as point features in their own tables (`stands`, `camera_deployments`) — do not add them to `property_features`.
+
+**Map layer color scheme** — locked; do not change without updating both `FEATURE_STYLES` and `LAYER_COLORS` in `src/components/map/PropertyMapV2.tsx`:
+
+| Layer | Color | Hex | Rationale |
+|---|---|---|---|
+| Boundary | Muted gold | `#B9A44C` | Most visible on satellite; distinct from all markers; weight 3, dashed |
+| Trails | Clay earth | `#A0653A` | Dirt path feel; weight 2, dashed |
+| Roads | Weathered wood | `#8B7355` | Neutral brown; weight 3, solid |
+| Fields / food plots | Olive green | `#566E3D` | Natural fill over vegetation on satellite; semi-transparent |
+| Water | Dark teal | `#0C4767` | Semantically obvious; shared with camera markers but visually distinct (line vs dot) |
+| Stands | Burnt orange | `#FA7921` | Primary accent; matches stand card header icon |
+| Cameras | Dark teal | `#0C4767` | Shared with water layer (different visual form) |
+
+**Note:** `property_features.color` is an optional per-row hex override that takes precedence over the defaults above — useful for marking a specific trail or field differently.
 
 ### Stands Management Page — Card Design Pattern
 
