@@ -583,6 +583,8 @@ All linear and polygon property features (trails, roads, fields, food plots, wat
 
 **Stands and cameras** remain as point features in their own tables (`stands`, `camera_deployments`) — do not add them to `property_features`.
 
+**Active map component:** `src/components/map/PropertyMapV2.tsx` at `/property-map-v2` — this is the canonical map going forward. `PropertyMap.tsx` / `/property-map` is deprecated and will be deleted as part of #140. Do not add features to `PropertyMap.tsx`.
+
 **Map layer color scheme** — locked; do not change without updating both `FEATURE_STYLES` and `LAYER_COLORS` in `src/components/map/PropertyMapV2.tsx`:
 
 | Layer | Color | Hex | Rationale |

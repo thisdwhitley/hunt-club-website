@@ -233,11 +233,11 @@ Food plot management
 - crop_type, planting_date, notes
 - active, created_at, updated_at
 
-### property_boundaries
-Legal property boundaries
-- id, boundary_name, coordinates (JSON)
-- area_acres, description
-- created_at, updated_at
+### property_features
+All linear and polygon property features — boundary, trail, road, field, food_plot, water
+- id, name, feature_type (enum), geometry (GeoJSON jsonb), color (optional hex override)
+- notes, active, created_at, updated_at
+- Replaces `property_boundaries` (dropped 2026-06-07, migration #139)
 
 ### trail_cameras_backup
 Backup of original trail_cameras table
