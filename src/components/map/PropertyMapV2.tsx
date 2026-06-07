@@ -17,7 +17,7 @@ type PropertyFeature = Database['public']['Tables']['property_features']['Row']
 const PROPERTY_CENTER: [number, number] = [36.42712517693617, -79.51073582842501]
 
 const FEATURE_STYLES: Record<string, LeafletLib.PathOptions> = {
-  boundary:  { color: '#B9A44C', weight: 3, dashArray: '6,4', fill: false, opacity: 0.9 },
+  boundary:  { color: '#FE9920', weight: 3, dashArray: '6,4', fill: false, opacity: 0.9 },
   trail:     { color: '#A0653A', weight: 2, dashArray: '4,4', opacity: 0.8, fill: false },
   road:      { color: '#8B7355', weight: 3, opacity: 0.9, fill: false },
   field:     { color: '#566E3D', weight: 1, fillColor: '#566E3D', fillOpacity: 0.15 },
@@ -39,7 +39,7 @@ const LAYER_LABELS: Record<LayerKey, string> = {
 }
 
 const LAYER_COLORS: Record<LayerKey, string> = {
-  boundary: '#B9A44C',
+  boundary: '#FE9920',
   trail:    '#A0653A',
   road:     '#8B7355',
   field:    '#566E3D',

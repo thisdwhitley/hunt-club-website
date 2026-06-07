@@ -589,7 +589,7 @@ All linear and polygon property features (trails, roads, fields, food plots, wat
 
 | Layer | Color | Hex | Rationale |
 |---|---|---|---|
-| Boundary | Muted gold | `#B9A44C` | Most visible on satellite; distinct from all markers; weight 3, dashed |
+| Boundary | Bright orange | `#FE9920` | High contrast on satellite; distinct from stand burnt orange (#FA7921); weight 3, dashed |
 | Trails | Clay earth | `#A0653A` | Dirt path feel; weight 2, dashed |
 | Roads | Weathered wood | `#8B7355` | Neutral brown; weight 3, solid |
 | Fields / food plots | Olive green | `#566E3D` | Natural fill over vegetation on satellite; semi-transparent |
