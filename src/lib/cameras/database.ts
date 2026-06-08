@@ -2,7 +2,6 @@
 // Phase 2, Step 2.2: Database CRUD operations for camera system
 
 import { createClient } from '@/lib/supabase/client';
-// import { createClient } from '@supabase/supabase-js';
 import type {
   CameraHardware,
   CameraDeployment,
@@ -19,12 +18,6 @@ import type {
 } from './types';
 
 // ============================================================================
-// SUPABASE CLIENT SETUP
-// ============================================================================
-
-const supabase = createClient();
-
-// ============================================================================
 // CAMERA HARDWARE OPERATIONS
 // ============================================================================
 
@@ -34,6 +27,7 @@ const supabase = createClient();
 export async function getCameraHardware(
   filters?: Partial<CameraFilters>
 ): Promise<CameraAPIResponse<CameraHardware[]>> {
+  const supabase = createClient()
   try {
     let query = supabase
       .from('camera_hardware')
@@ -74,6 +68,7 @@ export async function getCameraHardware(
 export async function getCameraHardwareById(
   id: string
 ): Promise<CameraAPIResponse<CameraHardware>> {
+  const supabase = createClient()
   try {
     const { data, error } = await supabase
       .from('camera_hardware')
@@ -99,6 +94,7 @@ export async function getCameraHardwareById(
 export async function createCameraHardware(
   data: CameraHardwareFormData
 ): Promise<CameraAPIResponse<CameraHardware>> {
+  const supabase = createClient()
   try {
     const { data: newHardware, error } = await supabase
       .from('camera_hardware')
@@ -129,6 +125,7 @@ export async function updateCameraHardware(
   id: string,
   data: Partial<CameraHardwareFormData>
 ): Promise<CameraAPIResponse<CameraHardware>> {
+  const supabase = createClient()
   try {
     const updateData = {
       ...data,
@@ -164,6 +161,7 @@ export async function updateCameraHardware(
 export async function deleteCameraHardware(
   id: string
 ): Promise<CameraAPIResponse<void>> {
+  const supabase = createClient()
   try {
     // First check if hardware has active deployments
     const { data: deployments } = await supabase
@@ -325,6 +323,7 @@ export async function getCameraDeployments(
 export async function getCameraDeploymentById(
   id: string
 ): Promise<CameraAPIResponse<CameraDeployment>> {
+  const supabase = createClient()
   try {
     const { data, error } = await supabase
       .from('camera_deployments')
@@ -350,6 +349,7 @@ export async function getCameraDeploymentById(
 export async function createCameraDeployment(
   data: CameraDeploymentFormData
 ): Promise<CameraAPIResponse<CameraDeployment>> {
+  const supabase = createClient()
   try {
     // Check if hardware is already actively deployed
     const { data: existingDeployment } = await supabase
@@ -395,6 +395,7 @@ export async function updateCameraDeployment(
   id: string,
   data: Partial<CameraDeploymentFormData>
 ): Promise<CameraAPIResponse<CameraDeployment>> {
+  const supabase = createClient()
   try {
     const updateData = {
       ...data,
@@ -430,6 +431,7 @@ export async function updateCameraDeployment(
 export async function deactivateCameraDeployment(
   id: string
 ): Promise<CameraAPIResponse<void>> {
+  const supabase = createClient()
   try {
     const { error } = await supabase
       .from('camera_deployments')
@@ -464,6 +466,7 @@ export async function deactivateCameraDeployment(
 export async function addStatusReport(
   data: CameraStatusReportFormData
 ): Promise<CameraAPIResponse<CameraStatusReport>> {
+  const supabase = createClient()
   try {
     const reportData = {
       ...data,
@@ -499,6 +502,7 @@ export async function getStatusReports(
   deploymentId: string,
   limit: number = 30
 ): Promise<CameraAPIResponse<CameraStatusReport[]>> {
+  const supabase = createClient()
   try {
     const { data, error } = await supabase
       .from('camera_status_reports')
@@ -553,6 +557,7 @@ export async function getCameraAlerts(): Promise<CameraAPIResponse<CameraWithSta
  * Get missing cameras (FIXED)
  */
 export async function getMissingCameras(): Promise<CameraAPIResponse<MissingCameraAlert[]>> {
+  const supabase = createClient()
   try {
     const { data: deployments, error } = await supabase
       .from('camera_deployments')
@@ -597,6 +602,7 @@ export async function getMissingCameras(): Promise<CameraAPIResponse<MissingCame
 export async function detectMissingCameras(
   date?: string
 ): Promise<CameraAPIResponse<void>> {
+  const supabase = createClient()
   try {
     const checkDate = date || new Date().toISOString().split('T')[0];
     
@@ -626,6 +632,7 @@ export async function detectMissingCameras(
  * Get comprehensive camera system statistics
  */
 export async function getCameraStats(): Promise<CameraAPIResponse<CameraStats>> {
+  const supabase = createClient()
   try {
     // Get hardware stats
     const { data: hardware, error: hardwareError } = await supabase
@@ -758,6 +765,7 @@ export async function isDeviceIdAvailable(
   deviceId: string,
   excludeId?: string
 ): Promise<boolean> {
+  const supabase = createClient()
   try {
     let query = supabase
       .from('camera_hardware')
@@ -786,6 +794,7 @@ export async function isDeviceIdAvailable(
  * Get available hardware for deployment (FIXED)
  */
 export async function getAvailableHardware(): Promise<CameraAPIResponse<CameraHardware[]>> {
+  const supabase = createClient()
   try {
     // First, get all active hardware
     const { data: allHardware, error: hardwareError } = await supabase
@@ -829,6 +838,7 @@ export async function getAvailableHardware(): Promise<CameraAPIResponse<CameraHa
 export async function hardDeleteCameraHardware(
   id: string
 ): Promise<CameraAPIResponse<void>> {
+  const supabase = createClient()
   try {
     // First, delete all status reports for this hardware
     const { error: reportsError } = await supabase
@@ -880,6 +890,7 @@ export async function hardDeleteCameraHardware(
 export async function softDeleteCameraHardware(
   id: string
 ): Promise<CameraAPIResponse<void>> {
+  const supabase = createClient()
   try {
     // First check if hardware has active deployments
     const { data: deployments } = await supabase
@@ -924,6 +935,7 @@ export async function softDeleteCameraHardware(
  * Deactivate all active camera deployments (end of season)
  */
 export async function deactivateAllActiveDeployments(): Promise<CameraAPIResponse<{ count: number }>> {
+  const supabase = createClient()
   try {
     const { data, error } = await supabase
       .from('camera_deployments')
@@ -949,6 +961,7 @@ export async function deactivateAllActiveDeployments(): Promise<CameraAPIRespons
 export async function getCameraHardwareByDeviceId(
   deviceId: string
 ): Promise<CameraAPIResponse<CameraHardware>> {
+  const supabase = createClient()
   try {
     const { data, error } = await supabase
       .from('camera_hardware')
@@ -996,6 +1009,7 @@ export interface DeploymentImportResult {
 export async function importDeployments(
   rows: DeploymentImportRow[]
 ): Promise<CameraAPIResponse<DeploymentImportResult[]>> {
+  const supabase = createClient()
   const results: DeploymentImportResult[] = [];
 
   for (const row of rows) {
@@ -1041,6 +1055,7 @@ export async function importDeployments(
 }
 
 export async function getSeasonYears(): Promise<CameraAPIResponse<number[]>> {
+  const supabase = createClient()
   try {
     const { data, error } = await supabase
       .from('camera_deployments')

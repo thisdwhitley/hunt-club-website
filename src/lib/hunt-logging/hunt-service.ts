@@ -13,8 +13,6 @@ import type {
   HuntWithTemperature
 } from '@/types/database'
 
-const supabase = createClient()
-
 // Extended member interface to handle cases where member record doesn't exist
 export interface ExtendedMember extends Partial<Member> {
   email?: string
@@ -83,7 +81,8 @@ export interface ManagementStats {
 }
 
 export class HuntService {
-  
+  private supabase = createClient()
+
   // ===============================================
   // UPDATED CRUD OPERATIONS - Now uses hunt_logs_with_temperature view
   // ===============================================
@@ -91,7 +90,7 @@ export class HuntService {
   async getHunts(filters?: HuntFilters): Promise<HuntWithDetails[]> {
     try {
       // Build the base hunt logs query
-      let huntQuery = supabase
+      let huntQuery = this.supabase
         .from('hunt_logs_with_temperature')
         .select('*')
         .order('hunt_date', { ascending: false })
@@ -142,19 +141,19 @@ export class HuntService {
       const [membersResult, standsResult, harvestsResult, sightingsResult] = await Promise.all([
         // Get member data from members table only
         memberIds.length > 0 
-          ? supabase.from('members').select('*').in('id', memberIds)
+          ? this.supabase.from('members').select('*').in('id', memberIds)
           : { data: [], error: null },
         
         // Get stands data
         standIds.length > 0 
-          ? supabase.from('stands').select('*').in('id', standIds)
+          ? this.supabase.from('stands').select('*').in('id', standIds)
           : { data: [], error: null },
         
         // Get harvests for these hunts
-        supabase.from('hunt_harvests').select('*').in('hunt_log_id', huntIds),
+        this.supabase.from('hunt_harvests').select('*').in('hunt_log_id', huntIds),
         
         // Get sightings for these hunts
-        supabase.from('hunt_sightings').select('*').in('hunt_log_id', huntIds)
+        this.supabase.from('hunt_sightings').select('*').in('hunt_log_id', huntIds)
       ])
 
       // ADD THIS DEBUG BLOCK RIGHT HERE:
@@ -222,7 +221,7 @@ export class HuntService {
   async getHuntById(huntId: string): Promise<HuntWithDetails | null> {
     try {
       // UPDATED: Use hunt_logs_with_temperature view
-      const { data: huntLog, error: huntError } = await supabase
+      const { data: huntLog, error: huntError } = await this.supabase
         .from('hunt_logs_with_temperature')
         .select('*')
         .eq('id', huntId)
@@ -238,18 +237,18 @@ export class HuntService {
       // Get related data - FIXED: Only use members table
       const [memberResult, standResult, harvestsResult, sightingsResult] = await Promise.all([
         // FIXED: Only query members table, no profiles fallback
-        supabase.from('members').select('*').eq('id', huntLog.member_id).single(),
+        this.supabase.from('members').select('*').eq('id', huntLog.member_id).single(),
         
         // Get stand info
         huntLog.stand_id 
-          ? supabase.from('stands').select('*').eq('id', huntLog.stand_id).single()
+          ? this.supabase.from('stands').select('*').eq('id', huntLog.stand_id).single()
           : { data: null, error: null },
         
         // Get harvests
-        supabase.from('hunt_harvests').select('*').eq('hunt_log_id', huntId),
+        this.supabase.from('hunt_harvests').select('*').eq('hunt_log_id', huntId),
         
         // Get sightings
-        supabase.from('hunt_sightings').select('*').eq('hunt_log_id', huntId)
+        this.supabase.from('hunt_sightings').select('*').eq('hunt_log_id', huntId)
       ])
 
       // Create enriched member data with display_name (consistent with getHunts)
@@ -277,7 +276,7 @@ export class HuntService {
   // NOTE: Create/Update operations still use base hunt_logs table
   async createHunt(huntData: HuntLogInsert): Promise<string> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('hunt_logs') // Still use base table for mutations
         .insert(huntData)
         .select('id')
@@ -296,19 +295,19 @@ export class HuntService {
   }
 
   async saveHarvestDetails(huntLogId: string, harvestData: Omit<HuntHarvestInsert, 'hunt_log_id'>): Promise<void> {
-    const { error } = await supabase
+    const { error } = await this.supabase
       .from('hunt_harvests')
       .insert({ ...harvestData, hunt_log_id: huntLogId })
     if (error) throw new Error(`Failed to save harvest details: ${error.message}`)
   }
 
   async upsertHarvestDetails(huntLogId: string, harvestData: Omit<HuntHarvestInsert, 'hunt_log_id'>): Promise<void> {
-    const { error: delError } = await supabase
+    const { error: delError } = await this.supabase
       .from('hunt_harvests')
       .delete()
       .eq('hunt_log_id', huntLogId)
     if (delError) throw new Error(`Failed to clear existing harvest: ${delError.message}`)
-    const { error } = await supabase
+    const { error } = await this.supabase
       .from('hunt_harvests')
       .insert({ ...harvestData, hunt_log_id: huntLogId })
     if (error) throw new Error(`Failed to save harvest details: ${error.message}`)
@@ -320,19 +319,19 @@ export class HuntService {
       const yearStart = `${year}-01-01`
       const yearEnd = `${year + 1}-01-01`
 
-      const thisSeasonQuery = supabase
+      const thisSeasonQuery = this.supabase
         .from('hunt_logs')
         .select('id, hunt_date, harvest_count')
         .gte('hunt_date', yearStart)
         .lt('hunt_date', yearEnd)
 
-      const allHuntsQuery = supabase
+      const allHuntsQuery = this.supabase
         .from('hunt_logs')
         .select('id, had_harvest, harvest_count')
         .gte('hunt_date', yearStart)
         .lt('hunt_date', yearEnd)
 
-      const standHuntCountsQuery = supabase
+      const standHuntCountsQuery = this.supabase
         .from('hunt_logs')
         .select('stand_id')
         .gte('hunt_date', yearStart)
@@ -341,13 +340,13 @@ export class HuntService {
       const [huntsResult, allHuntsResult, sightingsResult, standsResult, standHuntCounts] = await Promise.all([
         thisSeasonQuery,
         allHuntsQuery,
-        supabase
+        this.supabase
           .from('hunt_sightings')
           .select('id, count, hunt_log_id, hunt_logs!inner(hunt_date)')
           .eq('animal_type', 'Deer')
           .gte('hunt_logs.hunt_date', yearStart)
           .lt('hunt_logs.hunt_date', yearEnd),
-        supabase.from('stands').select('id, name, type, active').eq('active', true),
+        this.supabase.from('stands').select('id, name, type, active').eq('active', true),
         standHuntCountsQuery
       ])
 
@@ -412,7 +411,7 @@ export class HuntService {
       // This respects foreign key constraints
       
       // 1. Delete hunt sightings
-      const { error: sightingsError } = await supabase
+      const { error: sightingsError } = await this.supabase
         .from('hunt_sightings')
         .delete()
         .eq('hunt_log_id', huntId)
@@ -423,7 +422,7 @@ export class HuntService {
       }
 
       // 2. Delete hunt harvests  
-      const { error: harvestsError } = await supabase
+      const { error: harvestsError } = await this.supabase
         .from('hunt_harvests')
         .delete()
         .eq('hunt_log_id', huntId)
@@ -434,7 +433,7 @@ export class HuntService {
       }
 
       // 3. Delete main hunt log - use base table for deletion
-      const { error: huntError } = await supabase
+      const { error: huntError } = await this.supabase
         .from('hunt_logs') // Use base table for mutations
         .delete()
         .eq('id', huntId)
@@ -456,7 +455,7 @@ export class HuntService {
       console.log(`Updating hunt ${huntId} with:`, updates)
       
       // Update the hunt log - use base table for mutations
-      const { error } = await supabase
+      const { error } = await this.supabase
         .from('hunt_logs') // Use base table for mutations
         .update({
           ...updates,
@@ -639,12 +638,12 @@ export class HuntService {
         standStatsResult,
         memberStatsResult
       ] = await Promise.all([
-        supabase.from('hunt_logs').select('id', { count: 'exact' }),
-        supabase.from('hunt_logs').select('id', { count: 'exact' }).gte('hunt_date', firstOfMonth),
-        supabase.from('hunt_logs').select('id', { count: 'exact' }).gte('hunt_date', firstOfWeek),
-        supabase.from('hunt_logs').select('harvest_count').gt('harvest_count', 0),
-        supabase.from('stands').select('name, total_hunts').not('total_hunts', 'is', null).order('total_hunts', { ascending: false }).limit(5),
-        supabase.from('hunt_logs').select('member_id, members!inner(display_name, full_name)').not('member_id', 'is', null)
+        this.supabase.from('hunt_logs').select('id', { count: 'exact' }),
+        this.supabase.from('hunt_logs').select('id', { count: 'exact' }).gte('hunt_date', firstOfMonth),
+        this.supabase.from('hunt_logs').select('id', { count: 'exact' }).gte('hunt_date', firstOfWeek),
+        this.supabase.from('hunt_logs').select('harvest_count').gt('harvest_count', 0),
+        this.supabase.from('stands').select('name, total_hunts').not('total_hunts', 'is', null).order('total_hunts', { ascending: false }).limit(5),
+        this.supabase.from('hunt_logs').select('member_id, members!inner(display_name, full_name)').not('member_id', 'is', null)
       ])
 
       const totalHunts = totalResult.count || 0
@@ -707,7 +706,7 @@ export class HuntService {
   // Harvest and sighting management methods (unchanged)
   async createHarvest(harvestData: Omit<HuntHarvest, 'id' | 'created_at' | 'updated_at'>): Promise<string> {
     try {
-      const { data, error } = await supabase.from('hunt_harvests').insert(harvestData).select('id').single()
+      const { data, error } = await this.supabase.from('hunt_harvests').insert(harvestData).select('id').single()
       if (error) throw error
       return data.id
     } catch (error) {
@@ -718,7 +717,7 @@ export class HuntService {
 
   async createSighting(sightingData: Omit<HuntSighting, 'id' | 'created_at' | 'updated_at'>): Promise<string> {
     try {
-      const { data, error } = await supabase.from('hunt_sightings').insert(sightingData).select('id').single()
+      const { data, error } = await this.supabase.from('hunt_sightings').insert(sightingData).select('id').single()
       if (error) throw error
       return data.id
     } catch (error) {
@@ -729,7 +728,7 @@ export class HuntService {
 
   async updateHarvest(harvestId: string, updates: Partial<HuntHarvest>): Promise<void> {
     try {
-      const { error } = await supabase.from('hunt_harvests').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', harvestId)
+      const { error } = await this.supabase.from('hunt_harvests').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', harvestId)
       if (error) throw error
     } catch (error) {
       console.error('Error in updateHarvest:', error)
@@ -739,7 +738,7 @@ export class HuntService {
 
   async updateSighting(sightingId: string, updates: Partial<HuntSighting>): Promise<void> {
     try {
-      const { error } = await supabase.from('hunt_sightings').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', sightingId)
+      const { error } = await this.supabase.from('hunt_sightings').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', sightingId)
       if (error) throw error
     } catch (error) {
       console.error('Error in updateSighting:', error)
@@ -749,7 +748,7 @@ export class HuntService {
 
   async deleteHarvest(harvestId: string): Promise<void> {
     try {
-      const { error } = await supabase.from('hunt_harvests').delete().eq('id', harvestId)
+      const { error } = await this.supabase.from('hunt_harvests').delete().eq('id', harvestId)
       if (error) throw error
     } catch (error) {
       console.error('Error in deleteHarvest:', error)
@@ -759,7 +758,7 @@ export class HuntService {
 
   async deleteSighting(sightingId: string): Promise<void> {
     try {
-      const { error } = await supabase.from('hunt_sightings').delete().eq('id', sightingId)
+      const { error } = await this.supabase.from('hunt_sightings').delete().eq('id', sightingId)
       if (error) throw error
     } catch (error) {
       console.error('Error in deleteSighting:', error)
@@ -769,7 +768,7 @@ export class HuntService {
 
   async getSightingsWithContext(): Promise<SightingWithContext[]> {
     try {
-      const { data: sightings, error: sErr } = await supabase
+      const { data: sightings, error: sErr } = await this.supabase
         .from('hunt_sightings')
         .select('*')
         .order('created_at', { ascending: false })
@@ -777,7 +776,7 @@ export class HuntService {
       if (!sightings || sightings.length === 0) return []
 
       const huntIds = [...new Set(sightings.map(s => s.hunt_log_id))]
-      const { data: hunts, error: hErr } = await supabase
+      const { data: hunts, error: hErr } = await this.supabase
         .from('hunt_logs')
         .select('id, hunt_date, hunting_season, stand_id, member_id')
         .in('id', huntIds)
@@ -785,12 +784,12 @@ export class HuntService {
 
       const standIds = [...new Set((hunts || []).map(h => h.stand_id).filter(Boolean))]
       const { data: stands } = standIds.length
-        ? await supabase.from('stands').select('id, name').in('id', standIds)
+        ? await this.supabase.from('stands').select('id, name').in('id', standIds)
         : { data: [] }
 
       const memberIds = [...new Set((hunts || []).map(h => h.member_id).filter(Boolean))]
       const { data: members } = memberIds.length
-        ? await supabase.from('members').select('id, display_name, full_name').in('id', memberIds)
+        ? await this.supabase.from('members').select('id, display_name, full_name').in('id', memberIds)
         : { data: [] }
 
       const huntMap = new Map((hunts || []).map(h => [h.id, h]))
@@ -842,7 +841,7 @@ export class HuntService {
       time_observed: s.time_observed || null,
       notes: s.notes || null,
     }))
-    const { error } = await supabase.from('hunt_sightings').insert(rows)
+    const { error } = await this.supabase.from('hunt_sightings').insert(rows)
     if (error) throw error
   }
 
@@ -857,7 +856,7 @@ export class HuntService {
     time_observed?: string | null
     notes?: string | null
   }>): Promise<void> {
-    const { error: delError } = await supabase.from('hunt_sightings').delete().eq('hunt_log_id', huntId)
+    const { error: delError } = await this.supabase.from('hunt_sightings').delete().eq('hunt_log_id', huntId)
     if (delError) throw delError
     if (sightings.length) await this.saveSightings(huntId, sightings)
   }
@@ -865,7 +864,7 @@ export class HuntService {
   async getHuntSeasons(): Promise<string[]> {
     try {
       // Query the view (which aliases the column as 'hunting_season') not the base table
-      const { data, error } = await supabase
+      const { data, error } = await this.supabase
         .from('hunt_logs_with_temperature')
         .select('hunting_season')
         .not('hunting_season', 'is', null)
@@ -881,7 +880,7 @@ export class HuntService {
 
   async getHuntMembers(): Promise<Array<{ id: string; name: string }>> {
     try {
-      const { data: huntData, error: huntError } = await supabase
+      const { data: huntData, error: huntError } = await this.supabase
         .from('hunt_logs')
         .select('member_id')
         .not('member_id', 'is', null)
@@ -890,7 +889,7 @@ export class HuntService {
       const memberIds = [...new Set((huntData ?? []).map(r => r.member_id as string))]
       if (memberIds.length === 0) return []
 
-      const { data: memberData, error: memberError } = await supabase
+      const { data: memberData, error: memberError } = await this.supabase
         .from('members')
         .select('id, display_name, full_name')
         .in('id', memberIds)
