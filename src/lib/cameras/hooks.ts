@@ -20,21 +20,23 @@ import type {
 import {
   getCameraHardware,
   getCameraHardwareById,
-  createCameraHardware,
-  updateCameraHardware,
-  softDeleteCameraHardware,
   getCameraDeployments,
   getCameraDeploymentById,
-  addStatusReport,
   getStatusReports,
   getCameraAlerts,
   getMissingCameras,
-  detectMissingCameras,
   getCameraStats,
   isDeviceIdAvailable,
   getAvailableHardware,
   getSeasonYears
 } from './database';
+import {
+  createCameraHardware,
+  updateCameraHardware,
+  softDeleteCameraHardware,
+  addStatusReport,
+  detectMissingCameras,
+} from '@/app/actions/cameras';
 
 // ============================================================================
 // CAMERA HARDWARE HOOKS

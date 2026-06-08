@@ -7,10 +7,8 @@ import React, { useState, useRef } from 'react'
 import { getIcon } from '@/lib/shared/icons'
 import { BATTERY_TYPES } from '@/lib/cameras/types'
 import type { BatteryType } from '@/lib/cameras/types'
-import {
-  getCameraHardwareByDeviceId,
-  importDeployments,
-} from '@/lib/cameras/database'
+import { getCameraHardwareByDeviceId } from '@/lib/cameras/database'
+import { importDeployments } from '@/app/actions/cameras'
 import type { DeploymentImportRow, DeploymentImportResult } from '@/lib/cameras/database'
 
 // ============================================================================

@@ -17,7 +17,7 @@ import {
   hardDeleteCameraHardware,
   createCameraHardware,
   deactivateAllActiveDeployments,
-} from '@/lib/cameras/database'
+} from '@/app/actions/cameras'
 import type {
   CameraWithStatus,
   CameraFilters,
