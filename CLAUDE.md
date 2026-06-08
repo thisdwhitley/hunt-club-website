@@ -130,8 +130,8 @@ const { data, error } = await supabase.from('table_name').select()
 
 **Which client to use for new service files:**
 - **Reference / slow-changing data** (season calendar, hardware lists): always use `createServerSupabaseClient`. These service functions live in `src/lib/[feature]/index.ts` with no `'use client'` directive and are called from Server Components or Server Actions only.
-- **User-interactive / filtered data** (cameras list, hunts list): existing services use the browser client — match that pattern for now. Migration to server-side is tracked in issues #151–#153.
-- **Never** create a module-level singleton `const supabase = createClient()` in new service files — create the client inside each function or accept it as a parameter (tracked in #151).
+- **User-interactive / filtered data** (cameras list, hunts list): reads use the browser client in `database.ts`; mutations use Server Actions in `src/app/actions/[domain].ts` with the server client. Cameras fully migrated (#151, #152 partial); hunts and stands mutations still use browser client — migration tracked in #152.
+- **Never** create a module-level singleton `const supabase = createClient()` in new service files — create the client inside each function or accept it as a parameter (#151 complete).
 
 **Season service — `src/lib/seasons/index.ts`:**
 The canonical example of the server-side service pattern. All functions use `createServerSupabaseClient`. Key functions:
@@ -178,6 +178,36 @@ lookupSeasonType(huntDate, 'deer').then(seasonType => {
 - Keep actions thin — just call the service function and return. No business logic in actions.
 - Return `null` on error rather than throwing, so client components can handle gracefully
 - Use this pattern instead of API routes for simple server→client data fetches
+
+**Server Actions for mutations (`src/app/actions/cameras.ts` — canonical example):**
+
+All create/update/delete operations live in domain-scoped actions files, NOT in the service/database layer. Each mutation:
+1. Uses `createServerSupabaseClient` (not the browser `createClient`)
+2. Calls `revalidatePath('/management/[domain]')` after a successful write
+3. Returns the same `CAPIResponse` shape as before so hooks and components don't change signature
+
+```typescript
+// src/app/actions/cameras.ts
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
+
+export async function createCameraDeployment(data: CameraDeploymentFormData) {
+  const supabase = await createServerSupabaseClient()
+  const { data: newDeployment, error } = await supabase
+    .from('camera_deployments').insert([data]).select().single()
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/management/cameras')
+  return { success: true, data: newDeployment }
+}
+```
+
+**Read vs. mutation split:**
+- **Reads (SELECT)** stay in `src/lib/[domain]/database.ts` using the browser client — called from hooks
+- **Mutations (INSERT/UPDATE/DELETE/RPC)** live in `src/app/actions/[domain].ts` — called from hooks and components
+- Hooks import reads from `database.ts` and mutations from `@/app/actions/[domain]`
+- This split is complete for cameras; hunts and stands follow the same pattern (remaining #152 scope)
 
 **Authentication (use `useAuth` hook):**
 ```typescript
