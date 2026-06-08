@@ -583,7 +583,13 @@ All linear and polygon property features (trails, roads, fields, food plots, wat
 
 **Stands and cameras** remain as point features in their own tables (`stands`, `camera_deployments`) — do not add them to `property_features`.
 
-**Active map component:** `src/components/map/PropertyMapV2.tsx` at `/property-map-v2` — this is the canonical map going forward. `PropertyMap.tsx` / `/property-map` is deprecated and will be deleted as part of #140. Do not add features to `PropertyMap.tsx`.
+**Active map component:** `src/components/map/PropertyMapV2.tsx` at `/property-map` — this is the canonical map. `PropertyMap.tsx` and the old `/property-map-v2` route were deleted in #140. Do not recreate them.
+
+**Leaflet z-index isolation:** The PropertyMapV2 outer wrapper uses `isolation: 'isolate'` (inline style). This is required — without it, Leaflet's internal z-indexes (400–1000+) bleed into the page stacking context and sit above the navigation hamburger menu (z-50). Never remove this.
+
+**Import flow:** `src/components/map/ImportFeaturesModal.tsx` — upload GeoJSON or GPX → auto-detect feature type → preview on map (gray dashed overlay via `previewFeatures` prop on PropertyMapV2) → upsert to `property_features`. GPX parsing uses browser DOMParser (no external library). End-to-end save flow verified in issue #162. The Import button lives inside PropertyMapV2's own header via the `onImportClick` prop — do not add a page-level sub-header to host it.
+
+**Page width:** The `/property-map` page uses `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8` — same as all other pages — so the map card aligns with the nav header width.
 
 **Map layer color scheme** — locked; do not change without updating both `FEATURE_STYLES` and `LAYER_COLORS` in `src/components/map/PropertyMapV2.tsx`:
 
