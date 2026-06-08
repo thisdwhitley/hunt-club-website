@@ -26,7 +26,7 @@ import {
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { CalendarView } from "@/components/CalendarView";
-import PropertyMap from '@/components/map/PropertyMap';
+import PropertyMapV2 from '@/components/map/PropertyMapV2';
 import { useModal } from '@/components/modals/ModalSystem'
 import { createClient } from '@/lib/supabase/client'
 
@@ -713,7 +713,7 @@ const renderHunts = () => {
       case 'calendar':
         return <CalendarView />;
       case 'property':
-        return <PropertyMap showControls={false} />;
+        return <PropertyMapV2 height="h-[500px]" />;
       case 'hunts':
         return <div className="p-6">{renderHunts()}</div>
       case 'dashboard':

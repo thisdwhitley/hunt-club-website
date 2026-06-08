@@ -52,7 +52,7 @@ export const navigationItems: NavigationItem[] = [
   },
   {
     name: 'Property Map',
-    href: '/map',
+    href: '/property-map',
     icon: MapPin,
     description: 'Interactive property map'
   },

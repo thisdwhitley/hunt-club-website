@@ -67,13 +67,20 @@ const TILE_URLS: Record<TileKey, string> = {
 
 let L!: typeof LeafletLib
 
-export default function PropertyMapV2({ height = 'h-96 md:h-[600px]' }: { height?: string }) {
+interface PropertyMapV2Props {
+  height?: string
+  previewFeatures?: import('geojson').Feature[]
+  onImportClick?: () => void
+}
+
+export default function PropertyMapV2({ height = 'h-96 md:h-[600px]', previewFeatures, onImportClick }: PropertyMapV2Props) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<LeafletLib.Map | null>(null)
   const tileLayerRef = useRef<LeafletLib.TileLayer | null>(null)
   const geoLayerRefs = useRef<Partial<Record<LayerKey, LeafletLib.GeoJSON>>>({})
   const standLayerRef = useRef<LeafletLib.LayerGroup | null>(null)
   const cameraLayerRef = useRef<LeafletLib.LayerGroup | null>(null)
+  const previewLayerRef = useRef<LeafletLib.GeoJSON | null>(null)
   const visibilityRef = useRef<Record<LayerKey, boolean>>(DEFAULT_VISIBILITY)
 
   const [leafletReady, setLeafletReady] = useState(false)
@@ -232,7 +239,7 @@ export default function PropertyMapV2({ height = 'h-96 md:h-[600px]' }: { height
       if (layerKey === 'boundary') {
         try {
           const bounds = geoLayer.getBounds()
-          if (bounds.isValid()) mapInstanceRef.current.fitBounds(bounds, { padding: [24, 24] })
+          if (bounds.isValid()) mapInstanceRef.current.fitBounds(bounds, { padding: [2, 2], maxZoom: 19 })
         } catch { /* ignore */ }
       }
     }
@@ -299,6 +306,25 @@ export default function PropertyMapV2({ height = 'h-96 md:h-[600px]' }: { height
     cameraLayerRef.current = group
   }, [mapReady, cameras])
 
+  // Preview layer — unsaved features shown as dashed gray overlay
+  useEffect(() => {
+    if (!mapReady || !mapInstanceRef.current) return
+    if (previewLayerRef.current) {
+      mapInstanceRef.current.removeLayer(previewLayerRef.current)
+      previewLayerRef.current = null
+    }
+    if (!previewFeatures?.length) return
+
+    const fc: import('geojson').FeatureCollection = { type: 'FeatureCollection', features: previewFeatures }
+    previewLayerRef.current = L.geoJSON(fc, {
+      style: () => ({ color: '#666', weight: 2, dashArray: '5,5', opacity: 0.7, fillOpacity: 0.08 }),
+      onEachFeature: (feat, layer) => {
+        const name = feat.properties?.name as string | undefined
+        if (name) layer.bindPopup(`<em style="font-size:12px;color:#444">${name} (preview)</em>`)
+      },
+    }).addTo(mapInstanceRef.current)
+  }, [mapReady, previewFeatures])
+
   const toggleLayer = (key: LayerKey) => {
     setVisibility(prev => {
       const next = { ...prev, [key]: !prev[key] }
@@ -331,7 +357,7 @@ export default function PropertyMapV2({ height = 'h-96 md:h-[600px]' }: { height
   const tileLabels: Record<TileKey, string> = { esri: 'Esri', google: 'Google', street: 'Street', terrain: 'Terrain' }
 
   return (
-    <div style={{ background: '#E8E6E0', border: '2px solid #2D3E1F', borderRadius: '12px', overflow: 'hidden' }}>
+    <div style={{ background: '#E8E6E0', border: '2px solid #2D3E1F', borderRadius: '12px', overflow: 'hidden', isolation: 'isolate' }}>
       {/* Header */}
       <div style={{ background: '#2D3E1F', color: 'white', padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
@@ -340,26 +366,45 @@ export default function PropertyMapV2({ height = 'h-96 md:h-[600px]' }: { height
             {loading ? 'Loading…' : `${stands.length} stands · ${cameras.filter(c => c.deployment?.active).length} cameras · 100 acres`}
           </p>
         </div>
-        {/* Tile selector */}
-        <div style={{ display: 'flex', gap: 4 }}>
-          {(Object.keys(tileLabels) as TileKey[]).map(t => (
+        {/* Right controls: tile selector + optional import button */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {(Object.keys(tileLabels) as TileKey[]).map(t => (
+              <button
+                key={t}
+                onClick={() => setCurrentTile(t)}
+                style={{
+                  background: currentTile === t ? '#FA7921' : 'rgba(255,255,255,0.12)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 4,
+                  padding: '3px 9px',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                {tileLabels[t]}
+              </button>
+            ))}
+          </div>
+          {onImportClick && (
             <button
-              key={t}
-              onClick={() => setCurrentTile(t)}
+              onClick={onImportClick}
               style={{
-                background: currentTile === t ? '#FA7921' : 'rgba(255,255,255,0.12)',
+                background: 'rgba(255,255,255,0.15)',
                 color: 'white',
-                border: 'none',
+                border: '1px solid rgba(255,255,255,0.3)',
                 borderRadius: 4,
-                padding: '3px 9px',
+                padding: '3px 10px',
                 fontSize: 11,
                 fontWeight: 600,
                 cursor: 'pointer',
               }}
             >
-              {tileLabels[t]}
+              Import
             </button>
-          ))}
+          )}
         </div>
       </div>
 

@@ -14,7 +14,7 @@ import { ICONS } from '@/lib/shared/icons'
 // Navigation configuration
 const navigationItems = [
   { name: 'Calendar', href: '/calendar', icon: 'calendar' as const },
-  { name: 'Property Map', href: '/map', icon: 'map' as const },
+  { name: 'Property Map', href: '/property-map', icon: 'map' as const },
   { name: 'Hunt Logs', href: '/hunts', icon: 'hunts' as const },
 ]
 
@@ -347,10 +347,10 @@ export default function Navigation() {
                       <ul className="space-y-2">
                         <li>
                           <Link
-                            href="/map"
+                            href="/property-map"
                             onClick={closeMenu}
                             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                              isActive('/map')
+                              isActive('/property-map')
                                 ? 'bg-pine-needle text-white shadow-club'
                                 : 'text-green-100 hover:bg-pine-needle hover:text-white'
                             }`}
