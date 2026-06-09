@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Y3YSqUhgZxzN8AdehE5suGtSIotWICXsfFpS9Y3bJJB93Dbxstd652bgFMbGLze
+\restrict PZcuJ5vgPAe4t3LhXhGoXiSPNHftGccUtEHgxRQVaicX3vva2jdYdZYRdUIkPQ3
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.9 (Debian 17.9-1.pgdg13+1)
@@ -2638,6 +2638,20 @@ CREATE POLICY "Authenticated users can insert sightings" ON "public"."hunt_sight
 
 
 --
+-- Name: property_features Authenticated users can manage property features; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Authenticated users can manage property features" ON "public"."property_features" TO "authenticated" USING (true) WITH CHECK (true);
+
+
+--
+-- Name: property_features Authenticated users can read property features; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Authenticated users can read property features" ON "public"."property_features" FOR SELECT TO "authenticated" USING (true);
+
+
+--
 -- Name: season_calendar Authenticated users can read season_calendar; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -2934,6 +2948,12 @@ CREATE POLICY "members_select_authenticated" ON "public"."members" FOR SELECT TO
 
 CREATE POLICY "members_update_own" ON "public"."members" FOR UPDATE TO "authenticated" USING (("auth"."uid"() = "id")) WITH CHECK (("auth"."uid"() = "id"));
 
+
+--
+-- Name: property_features; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE "public"."property_features" ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: season_calendar; Type: ROW SECURITY; Schema: public; Owner: postgres
@@ -3951,5 +3971,5 @@ ALTER EVENT TRIGGER "pgrst_drop_watch" OWNER TO "supabase_admin";
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Y3YSqUhgZxzN8AdehE5suGtSIotWICXsfFpS9Y3bJJB93Dbxstd652bgFMbGLze
+\unrestrict PZcuJ5vgPAe4t3LhXhGoXiSPNHftGccUtEHgxRQVaicX3vva2jdYdZYRdUIkPQ3
 

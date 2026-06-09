@@ -35,6 +35,33 @@
 
 ---
 
+### 2026-06-09: Enable RLS on property_features (security fix)
+**Type**: Security  
+**Affected Tables**: `property_features`  
+**Breaking Changes**: No  
+**Rollback Available**: Yes (drop policies + disable RLS)
+
+**Purpose**: `property_features` was created in the 2026-06-07 migration without RLS, leaving it accessible via the anon key. Caught by Supabase security advisor (ERROR level). Fixed by enabling RLS and adding standard authenticated-only policies matching every other table in the schema.
+
+**Changes Made**:
+- `ALTER TABLE public.property_features ENABLE ROW LEVEL SECURITY`
+- Added policy: `Authenticated users can read property features` (SELECT, authenticated)
+- Added policy: `Authenticated users can manage property features` (ALL, authenticated)
+
+**Migration SQL**:
+```sql
+ALTER TABLE public.property_features ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can read property features"
+  ON public.property_features FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated users can manage property features"
+  ON public.property_features FOR ALL TO authenticated USING (true) WITH CHECK (true);
+```
+
+**Files Modified**:
+- supabase/schema.sql (exported)
+
+---
+
 ### 2026-06-07: Migrate property_boundaries → property_features (#139)
 **Type**: Schema Replacement + Data Migration  
 **Affected Tables**: `property_boundaries` (dropped), `property_features` (created)  
