@@ -4,9 +4,7 @@
 import { createClient } from '@/lib/supabase/client'
 import type {
   HuntLogInsert,
-  HuntLogUpdate,
   HuntHarvest,
-  HuntHarvestInsert,
   HuntSighting,
   Stand,
   Member,
@@ -273,46 +271,6 @@ export class HuntService {
     }
   }
 
-  // NOTE: Create/Update operations still use base hunt_logs table
-  async createHunt(huntData: HuntLogInsert): Promise<string> {
-    try {
-      const { data, error } = await this.supabase
-        .from('hunt_logs') // Still use base table for mutations
-        .insert(huntData)
-        .select('id')
-        .single()
-
-      if (error) {
-        console.error('Error creating hunt:', error.message, error.code, error.details, error.hint)
-        throw new Error(error.message || 'Failed to create hunt')
-      }
-
-      return data.id
-    } catch (error) {
-      if (error instanceof Error) throw error
-      throw new Error(String(error))
-    }
-  }
-
-  async saveHarvestDetails(huntLogId: string, harvestData: Omit<HuntHarvestInsert, 'hunt_log_id'>): Promise<void> {
-    const { error } = await this.supabase
-      .from('hunt_harvests')
-      .insert({ ...harvestData, hunt_log_id: huntLogId })
-    if (error) throw new Error(`Failed to save harvest details: ${error.message}`)
-  }
-
-  async upsertHarvestDetails(huntLogId: string, harvestData: Omit<HuntHarvestInsert, 'hunt_log_id'>): Promise<void> {
-    const { error: delError } = await this.supabase
-      .from('hunt_harvests')
-      .delete()
-      .eq('hunt_log_id', huntLogId)
-    if (delError) throw new Error(`Failed to clear existing harvest: ${delError.message}`)
-    const { error } = await this.supabase
-      .from('hunt_harvests')
-      .insert({ ...harvestData, hunt_log_id: huntLogId })
-    if (error) throw new Error(`Failed to save harvest details: ${error.message}`)
-  }
-
   async getHuntStats(seasonYear?: number): Promise<HuntStats> {
     try {
       const year = seasonYear ?? new Date().getFullYear()
@@ -402,100 +360,6 @@ export class HuntService {
   // ===============================================
   // MANAGEMENT INTERFACE METHODS
   // ===============================================
-
-  async deleteHunt(huntId: string): Promise<void> {
-    try {
-      console.log(`Starting deletion of hunt: ${huntId}`)
-      
-      // Delete in order: sightings -> harvests -> hunt_log
-      // This respects foreign key constraints
-      
-      // 1. Delete hunt sightings
-      const { error: sightingsError } = await this.supabase
-        .from('hunt_sightings')
-        .delete()
-        .eq('hunt_log_id', huntId)
-      
-      if (sightingsError) {
-        console.error('Error deleting hunt sightings:', sightingsError)
-        throw new Error(`Failed to delete hunt sightings: ${sightingsError.message}`)
-      }
-
-      // 2. Delete hunt harvests  
-      const { error: harvestsError } = await this.supabase
-        .from('hunt_harvests')
-        .delete()
-        .eq('hunt_log_id', huntId)
-      
-      if (harvestsError) {
-        console.error('Error deleting hunt harvests:', harvestsError)
-        throw new Error(`Failed to delete hunt harvests: ${harvestsError.message}`)
-      }
-
-      // 3. Delete main hunt log - use base table for deletion
-      const { error: huntError } = await this.supabase
-        .from('hunt_logs') // Use base table for mutations
-        .delete()
-        .eq('id', huntId)
-      
-      if (huntError) {
-        console.error('Error deleting hunt log:', huntError)
-        throw new Error(`Failed to delete hunt log: ${huntError.message}`)
-      }
-
-      console.log(`Hunt ${huntId} deleted successfully`)
-    } catch (error) {
-      console.error('Error in deleteHunt:', error)
-      throw error
-    }
-  }
-
-  async updateHunt(huntId: string, updates: Partial<HuntLogUpdate>): Promise<void> {
-    try {
-      console.log(`Updating hunt ${huntId} with:`, updates)
-      
-      // Update the hunt log - use base table for mutations
-      const { error } = await this.supabase
-        .from('hunt_logs') // Use base table for mutations
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', huntId)
-      
-      if (error) {
-        console.error('Error updating hunt:', error)
-        throw new Error(`Failed to update hunt: ${error.message}`)
-      }
-
-      console.log(`Hunt ${huntId} updated successfully`)
-    } catch (error) {
-      console.error('Error in updateHunt:', error)
-      throw error
-    }
-  }
-
-  async bulkDeleteHunts(huntIds: string[]): Promise<{ succeeded: string[], failed: string[] }> {
-    const succeeded: string[] = []
-    const failed: string[] = []
-
-    console.log(`Starting bulk delete of ${huntIds.length} hunts`)
-
-    // Process deletions sequentially to avoid overwhelming the database
-    for (const huntId of huntIds) {
-      try {
-        await this.deleteHunt(huntId)
-        succeeded.push(huntId)
-        console.log(`Successfully deleted hunt: ${huntId}`)
-      } catch (error) {
-        console.error(`Failed to delete hunt ${huntId}:`, error)
-        failed.push(huntId)
-      }
-    }
-
-    console.log(`Bulk delete completed: ${succeeded.length} succeeded, ${failed.length} failed`)
-    return { succeeded, failed }
-  }
 
   /**
    * UPDATED: Export hunt data to CSV format with smart temperature
@@ -703,69 +567,6 @@ export class HuntService {
     return { isValid: errors.length === 0, errors }
   }
 
-  // Harvest and sighting management methods (unchanged)
-  async createHarvest(harvestData: Omit<HuntHarvest, 'id' | 'created_at' | 'updated_at'>): Promise<string> {
-    try {
-      const { data, error } = await this.supabase.from('hunt_harvests').insert(harvestData).select('id').single()
-      if (error) throw error
-      return data.id
-    } catch (error) {
-      console.error('Error in createHarvest:', error)
-      throw error
-    }
-  }
-
-  async createSighting(sightingData: Omit<HuntSighting, 'id' | 'created_at' | 'updated_at'>): Promise<string> {
-    try {
-      const { data, error } = await this.supabase.from('hunt_sightings').insert(sightingData).select('id').single()
-      if (error) throw error
-      return data.id
-    } catch (error) {
-      console.error('Error in createSighting:', error)
-      throw error
-    }
-  }
-
-  async updateHarvest(harvestId: string, updates: Partial<HuntHarvest>): Promise<void> {
-    try {
-      const { error } = await this.supabase.from('hunt_harvests').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', harvestId)
-      if (error) throw error
-    } catch (error) {
-      console.error('Error in updateHarvest:', error)
-      throw error
-    }
-  }
-
-  async updateSighting(sightingId: string, updates: Partial<HuntSighting>): Promise<void> {
-    try {
-      const { error } = await this.supabase.from('hunt_sightings').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', sightingId)
-      if (error) throw error
-    } catch (error) {
-      console.error('Error in updateSighting:', error)
-      throw error
-    }
-  }
-
-  async deleteHarvest(harvestId: string): Promise<void> {
-    try {
-      const { error } = await this.supabase.from('hunt_harvests').delete().eq('id', harvestId)
-      if (error) throw error
-    } catch (error) {
-      console.error('Error in deleteHarvest:', error)
-      throw error
-    }
-  }
-
-  async deleteSighting(sightingId: string): Promise<void> {
-    try {
-      const { error } = await this.supabase.from('hunt_sightings').delete().eq('id', sightingId)
-      if (error) throw error
-    } catch (error) {
-      console.error('Error in deleteSighting:', error)
-      throw error
-    }
-  }
-
   async getSightingsWithContext(): Promise<SightingWithContext[]> {
     try {
       const { data: sightings, error: sErr } = await this.supabase
@@ -815,50 +616,6 @@ export class HuntService {
       console.error('Error in getSightingsWithContext:', error)
       throw error
     }
-  }
-
-  async saveSightings(huntId: string, sightings: Array<{
-    animal_type: string
-    count?: number
-    gender?: string | null
-    estimated_age?: string | null
-    behavior?: string | null
-    distance_yards?: number | null
-    direction?: string | null
-    time_observed?: string | null
-    notes?: string | null
-  }>): Promise<void> {
-    if (!sightings.length) return
-    const rows = sightings.map(s => ({
-      hunt_log_id: huntId,
-      animal_type: s.animal_type,
-      count: s.count || 1,
-      gender: s.gender || null,
-      estimated_age: s.estimated_age || null,
-      behavior: s.behavior || null,
-      distance_yards: s.distance_yards ?? null,
-      direction: s.direction || null,
-      time_observed: s.time_observed || null,
-      notes: s.notes || null,
-    }))
-    const { error } = await this.supabase.from('hunt_sightings').insert(rows)
-    if (error) throw error
-  }
-
-  async replaceSightings(huntId: string, sightings: Array<{
-    animal_type: string
-    count?: number
-    gender?: string | null
-    estimated_age?: string | null
-    behavior?: string | null
-    distance_yards?: number | null
-    direction?: string | null
-    time_observed?: string | null
-    notes?: string | null
-  }>): Promise<void> {
-    const { error: delError } = await this.supabase.from('hunt_sightings').delete().eq('hunt_log_id', huntId)
-    if (delError) throw delError
-    if (sightings.length) await this.saveSightings(huntId, sightings)
   }
 
   async getHuntSeasons(): Promise<string[]> {

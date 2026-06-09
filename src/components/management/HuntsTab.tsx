@@ -8,6 +8,15 @@ import HuntCardV2 from '@/components/hunt-logging/HuntCardV2'
 import HuntDetailModal from '@/components/hunt-logging/HuntDetailModal'
 import HuntEntryForm from '@/components/hunt-logging/HuntEntryForm'
 import { huntService, type HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
+import {
+  createHunt,
+  updateHunt,
+  deleteHunt,
+  saveHarvestDetails,
+  upsertHarvestDetails,
+  saveSightings,
+  replaceSightings,
+} from '@/app/actions/hunts'
 import type { HuntFormData } from '@/lib/hunt-logging/hunt-validation'
 import { useStands } from '@/hooks/useStands'
 import { Download, X as XIcon } from 'lucide-react'
@@ -266,7 +275,7 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
   const handleDeleteHunt = async (huntId: string) => {
     if (!confirm('Delete this hunt record? This also deletes all associated harvests and sightings.')) return
     try {
-      await huntService.deleteHunt(huntId)
+      await deleteHunt(huntId)
       await reload()
     } catch (err) {
       alert(`Failed to delete hunt: ${err instanceof Error ? err.message : 'Unknown error'}`)
@@ -282,7 +291,7 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
     setFormSubmitting(true)
     try {
       if (editingHunt) {
-        await huntService.updateHunt(editingHunt.id, {
+        await updateHunt(editingHunt.id, {
           hunt_date: data.hunt_date,
           season: data.hunt_date.substring(0, 4),
           stand_id: data.stand_id,
@@ -294,7 +303,7 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
           harvest_count: data.had_harvest ? 1 : 0,
         })
         if (data.had_harvest && data.harvest?.animal_type) {
-          await huntService.upsertHarvestDetails(editingHunt.id, {
+          await upsertHarvestDetails(editingHunt.id, {
             animal_type: data.harvest.animal_type,
             gender: data.harvest.gender ?? null,
             estimated_weight: data.harvest.estimated_weight ?? null,
@@ -303,10 +312,10 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
             recovery_notes: data.harvest.recovery_notes ?? null,
           })
         }
-        await huntService.replaceSightings(editingHunt.id, data.sightings ?? [])
+        await replaceSightings(editingHunt.id, data.sightings ?? [])
       } else {
         if (!data.member_id) throw new Error('Member is required to log a hunt')
-        const huntId = await huntService.createHunt({
+        const huntId = await createHunt({
           hunt_date: data.hunt_date,
           season: data.hunt_date.substring(0, 4),
           stand_id: data.stand_id,
@@ -320,7 +329,7 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
           hunting_season: (data.hunting_season === '' ? null : (data.hunting_season ?? null)) as string | null,
         })
         if (data.had_harvest && data.harvest?.animal_type) {
-          await huntService.saveHarvestDetails(huntId, {
+          await saveHarvestDetails(huntId, {
             animal_type: data.harvest.animal_type,
             gender: data.harvest.gender ?? null,
             estimated_weight: data.harvest.estimated_weight ?? null,
@@ -329,7 +338,7 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
             recovery_notes: data.harvest.recovery_notes ?? null,
           })
         }
-        await huntService.saveSightings(huntId, data.sightings ?? [])
+        await saveSightings(huntId, data.sightings ?? [])
       }
       setShowForm(false)
       setEditingHunt(null)

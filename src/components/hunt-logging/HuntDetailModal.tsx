@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import type { HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
-import { huntService } from '@/lib/hunt-logging/hunt-service'
+import { updateSighting } from '@/app/actions/hunts'
 import { getTemperatureContext, getPrimaryTemperatureExplanation } from '@/lib/hunt-logging/temperature-utils'
 import { getStandIcon } from '@/lib/utils/standUtils'
 import { getIcon } from '@/lib/shared/icons'
@@ -70,7 +70,7 @@ export default function HuntDetailModal({ hunt, isOpen, onClose }: HuntDetailMod
     if (!sightingDraft) return
     setSavingId(sightingId)
     try {
-      await huntService.updateSighting(sightingId, {
+      await updateSighting(sightingId, {
         animal_type: sightingDraft.animal_type,
         count: Number(sightingDraft.count) || 1,
         gender: sightingDraft.gender || null,

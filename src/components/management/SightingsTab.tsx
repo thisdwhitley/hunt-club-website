@@ -5,6 +5,7 @@ import { getIcon } from '@/lib/shared/icons'
 import { ManagementHubToolbar } from '@/components/shared/ManagementHubToolbar'
 import type { TabConfig } from '@/components/shared/ManagementHubToolbar'
 import { huntService, type SightingWithContext } from '@/lib/hunt-logging/hunt-service'
+import { updateSighting, deleteSighting } from '@/app/actions/hunts'
 import { formatDate } from '@/lib/utils/date'
 import { useRouter } from 'next/navigation'
 
@@ -317,7 +318,7 @@ export function SightingsTab({ tabs, activeTab, onTabChange }: SightingsTabProps
   }
 
   const handleSave = async (id: string, draft: SightingDraft) => {
-    await huntService.updateSighting(id, {
+    await updateSighting(id, {
       animal_type: draft.animal_type,
       count: Number(draft.count) || 1,
       gender: draft.gender || null,
@@ -343,7 +344,7 @@ export function SightingsTab({ tabs, activeTab, onTabChange }: SightingsTabProps
   }
 
   const handleDelete = async (sighting: SightingWithContext) => {
-    await huntService.deleteSighting(sighting.id)
+    await deleteSighting(sighting.id)
     setAllSightings(prev => prev.filter(s => s.id !== sighting.id))
   }
 

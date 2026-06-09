@@ -4,7 +4,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { huntService, type HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
+import type { HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
+import { deleteHunt, bulkDeleteHunts, updateHunt } from '@/app/actions/hunts'
 import { getTemperatureContext, getPrimaryTemperatureExplanation } from '@/lib/hunt-logging/temperature-utils'
 import { getStandIcon } from '@/lib/utils/standUtils'
 import { getIcon } from '@/lib/shared/icons'
@@ -653,7 +654,7 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
     if (window.confirm('Are you sure you want to delete this hunt record? This will also delete all associated harvests and sightings.')) {
       try {
         setLoading(true)
-        await huntService.deleteHunt(huntId)
+        await deleteHunt(huntId)
         onHuntDelete() // This will refresh the parent data
         console.log('Hunt deleted successfully:', huntId)
       } catch (error) {
@@ -669,7 +670,7 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
     if (window.confirm(`Are you sure you want to delete ${selectedIds.size} hunt records? This will also delete all associated harvests and sightings.`)) {
       try {
         setLoading(true)
-        const result = await huntService.bulkDeleteHunts(Array.from(selectedIds))
+        const result = await bulkDeleteHunts(Array.from(selectedIds))
 
         if (result.failed.length > 0) {
           alert(`${result.succeeded.length} hunts deleted successfully. ${result.failed.length} failed to delete.`)
@@ -705,7 +706,7 @@ const HuntDataManagement: React.FC<HuntDataManagementProps> = ({
         hunting_season: (data.hunting_season === '' ? null : (data.hunting_season ?? null)) as string | null,
       }
 
-      await huntService.updateHunt(editingHunt.id, huntUpdates)
+      await updateHunt(editingHunt.id, huntUpdates)
       setShowEditForm(false)
       setEditingHunt(null)
       onHuntUpdate() // Reload data
