@@ -35,6 +35,24 @@
 
 ---
 
+### 2026-06-09: Harden function search_path + revoke handle_new_user (security fix)
+**Type**: Security  
+**Affected Objects**: `populate_hunt_weather_on_insert`, `update_hunt_logs_weather` (functions), `handle_new_user` (privilege revoke)  
+**Breaking Changes**: No  
+**Rollback Available**: Yes
+
+**Purpose**: Address remaining Supabase security WARNs. Added `SET search_path = public` to both weather trigger functions to prevent search_path hijacking. Revoked `EXECUTE` on `handle_new_user()` from `anon` and `authenticated` roles — it is called only by the `auth.users` DB trigger, never via the REST API.
+
+**Changes Made**:
+- `CREATE OR REPLACE FUNCTION populate_hunt_weather_on_insert` with `SET search_path = public`
+- `CREATE OR REPLACE FUNCTION update_hunt_logs_weather` with `SET search_path = public`
+- `REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM anon, authenticated`
+
+**Files Modified**:
+- supabase/schema.sql (exported)
+
+---
+
 ### 2026-06-09: Enable RLS on property_features (security fix)
 **Type**: Security  
 **Affected Tables**: `property_features`  

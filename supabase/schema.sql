@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict PZcuJ5vgPAe4t3LhXhGoXiSPNHftGccUtEHgxRQVaicX3vva2jdYdZYRdUIkPQ3
+\restrict RHfT2ffbLJVISmngzuIsdPsmhhWD3CN2qqqW0H8McXhCUNeLSDuup2V0o7vo7Np
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.9 (Debian 17.9-1.pgdg13+1)
@@ -575,6 +575,7 @@ ALTER FUNCTION "public"."interpolate_dawn_dusk_temps"("sunrise_time" time withou
 
 CREATE FUNCTION "public"."populate_hunt_weather_on_insert"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 DECLARE
   snap RECORD;
@@ -720,6 +721,7 @@ ALTER FUNCTION "public"."update_camera_alert_status"() OWNER TO "postgres";
 
 CREATE FUNCTION "public"."update_hunt_logs_weather"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 DECLARE
   hunt_record RECORD;
@@ -3528,8 +3530,6 @@ GRANT ALL ON FUNCTION "public"."detect_missing_cameras"("check_date" "date") TO 
 -- Name: FUNCTION "handle_new_user"(); Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "anon";
-GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
 
 
@@ -3971,5 +3971,5 @@ ALTER EVENT TRIGGER "pgrst_drop_watch" OWNER TO "supabase_admin";
 -- PostgreSQL database dump complete
 --
 
-\unrestrict PZcuJ5vgPAe4t3LhXhGoXiSPNHftGccUtEHgxRQVaicX3vva2jdYdZYRdUIkPQ3
+\unrestrict RHfT2ffbLJVISmngzuIsdPsmhhWD3CN2qqqW0H8McXhCUNeLSDuup2V0o7vo7Np
 

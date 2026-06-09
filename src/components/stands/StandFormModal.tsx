@@ -15,7 +15,7 @@ const MapPinIcon = getIcon('mapPin')
 const InfoIcon = getIcon('info')
 const CalendarIcon = getIcon('calendar')
 const ChartBarIcon = getIcon('chartBar')
-import { StandService } from '@/lib/database/stands'
+import { createStand, updateStand } from '@/app/actions/stands'
 import { createClient } from '@/lib/supabase/client'
 
 // Stand type from your database schema
@@ -98,7 +98,6 @@ export default function StandFormModal({ stand, onClose, onSubmit }: StandFormMo
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState<'basic' | 'location' | 'features' | 'stats'>('basic')
   const [cameraNames, setCameraNames] = useState<string[]>([])
-  const standService = new StandService()
 
   useEffect(() => {
     const supabase = createClient()
@@ -209,12 +208,12 @@ export default function StandFormModal({ stand, onClose, onSubmit }: StandFormMo
         last_used_date: data.last_used_date
       }
 
-      console.log('🔍 Form submitting data:', dbData)
-
       if (isEditing && stand) {
-        await standService.updateStand(stand.id, dbData)
+        const result = await updateStand(stand.id, dbData)
+        if (!result.success) throw new Error(result.error)
       } else {
-        await standService.createStand(dbData)
+        const result = await createStand(dbData)
+        if (!result.success) throw new Error(result.error)
       }
 
       onSubmit()

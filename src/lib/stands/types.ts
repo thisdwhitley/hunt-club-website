@@ -83,6 +83,10 @@ export interface StandInsert {
   nearby_water_source?: boolean | null
   food_source?: FoodSourceType | null
   trail_camera_name?: string | null
+  total_hunts?: number | null
+  total_harvests?: number | null
+  season_hunts?: number | null
+  last_used_date?: string | null
 }
 
 export interface StandUpdate extends Partial<StandInsert> {

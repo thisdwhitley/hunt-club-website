@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { lookupSeasonStatus } from '@/app/actions/season'
+import { deactivateStand } from '@/app/actions/stands'
 import { getIcon } from '@/lib/shared/icons'
 import { ManagementHubToolbar } from '@/components/shared/ManagementHubToolbar'
 import type { TabConfig } from '@/components/shared/ManagementHubToolbar'
@@ -334,11 +335,8 @@ export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
     )
       return
     try {
-      const { error: updateError } = await supabase
-        .from('stands')
-        .update({ active: false, updated_at: new Date().toISOString() })
-        .eq('id', stand.id)
-      if (updateError) throw new Error(updateError.message)
+      const result = await deactivateStand(stand.id)
+      if (!result.success) throw new Error(result.error)
       await loadStands()
     } catch (err) {
       alert(`Failed to retire stand: ${err instanceof Error ? err.message : 'Unknown error'}`)
