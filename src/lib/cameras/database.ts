@@ -2,6 +2,8 @@
 // Phase 2, Step 2.2: Database CRUD operations for camera system
 
 import { createClient } from '@/lib/supabase/client';
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/types/database'
 import type {
   CameraHardware,
   CameraDeployment,
@@ -94,10 +96,11 @@ export async function getCameraHardwareById(
  * Enhanced getCameraDeployments with proper filtering
  */
 export async function getCameraDeployments(
-  filters?: Partial<CameraFilters>
+  filters?: Partial<CameraFilters>,
+  supabaseOverride?: SupabaseClient<Database>
 ): Promise<CameraAPIResponse<CameraWithStatus[]>> {
   try {
-    const supabase = createClient();
+    const supabase = supabaseOverride ?? createClient();
     
     // Build deployment query
     let deploymentQuery = supabase

@@ -141,9 +141,10 @@ interface CamerasTabProps {
   tabs: TabConfig[]
   activeTab: string
   onTabChange: (key: string) => void
+  initialCameras?: CameraWithStatus[]
 }
 
-export function CamerasTab({ tabs, activeTab, onTabChange }: CamerasTabProps) {
+export function CamerasTab({ tabs, activeTab, onTabChange, initialCameras }: CamerasTabProps) {
   const searchParams = useSearchParams()
   const [filters, setFilters] = useState<CameraManagementFilters>(() => ({
     ...DEFAULT_FILTERS,
@@ -198,7 +199,9 @@ export function CamerasTab({ tabs, activeTab, onTabChange }: CamerasTabProps) {
     return filterObj
   }, [filters])
 
-  const { cameras, loading, error, refresh: refreshCameras } = useCameras(cameraFilters)
+  const { cameras: hookCameras, loading, error, refresh: refreshCameras } = useCameras(cameraFilters)
+  // Show server-loaded data while the hook performs its first fetch; hook takes over after.
+  const cameras = loading && initialCameras ? initialCameras : hookCameras
   const { alerts, loading: alertsLoading } = useCameraAlerts()
   const { createHardware, updateHardware } = useCameraHardware()
   const { seasonYears: availableSeasons } = useSeasonYears()

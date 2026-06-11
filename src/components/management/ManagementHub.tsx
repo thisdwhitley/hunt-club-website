@@ -8,6 +8,17 @@ import { StandsTab } from './StandsTab'
 import { HuntsTab } from './HuntsTab'
 import { SightingsTab } from './SightingsTab'
 import type { TabConfig } from '@/components/shared/ManagementHubToolbar'
+import type { CameraWithStatus } from '@/lib/cameras/types'
+import type { HuntWithDetails } from '@/lib/hunt-logging/hunt-service'
+import type { Stand } from '@/lib/stands/types'
+import type { SeasonStatus } from '@/app/actions/season'
+
+interface InitialManagementData {
+  initialCameras?: CameraWithStatus[]
+  initialStands?: Stand[]
+  initialHunts?: HuntWithDetails[]
+  initialSeasonStatus?: SeasonStatus
+}
 
 const TABS: TabConfig[] = [
   { key: 'cameras', label: 'Cameras', icon: 'camera' },
@@ -46,7 +57,12 @@ function TabPlaceholder({
   )
 }
 
-export default function ManagementHub() {
+export default function ManagementHub({
+  initialCameras,
+  initialStands,
+  initialHunts,
+  initialSeasonStatus,
+}: InitialManagementData) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const activeTab = searchParams.get('tab') ?? 'cameras'
@@ -56,15 +72,38 @@ export default function ManagementHub() {
   }
 
   if (activeTab === 'cameras') {
-    return <CamerasTab tabs={TABS} activeTab={activeTab} onTabChange={handleTabChange} />
+    return (
+      <CamerasTab
+        tabs={TABS}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        initialCameras={initialCameras}
+      />
+    )
   }
 
   if (activeTab === 'stands') {
-    return <StandsTab tabs={TABS} activeTab={activeTab} onTabChange={handleTabChange} />
+    return (
+      <StandsTab
+        tabs={TABS}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        initialStands={initialStands}
+        initialSeasonStatus={initialSeasonStatus}
+      />
+    )
   }
 
   if (activeTab === 'hunts') {
-    return <HuntsTab tabs={TABS} activeTab={activeTab} onTabChange={handleTabChange} />
+    return (
+      <HuntsTab
+        tabs={TABS}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        initialHunts={initialHunts}
+        initialSeasonStatus={initialSeasonStatus}
+      />
+    )
   }
 
   if (activeTab === 'sightings') {

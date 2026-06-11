@@ -2,6 +2,8 @@
 // MAJOR UPDATE: Now uses hunt_logs_with_temperature view for smart temperature display
 
 import { createClient } from '@/lib/supabase/client'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/types/database'
 import type {
   HuntLogInsert,
   HuntHarvest,
@@ -78,142 +80,104 @@ export interface ManagementStats {
   topMembers: Array<{ name: string, hunt_count: number }>
 }
 
+// Standalone function usable from both HuntService (browser client) and server components (server client).
+export async function fetchHunts(
+  supabase: SupabaseClient<Database>,
+  filters?: HuntFilters
+): Promise<HuntWithDetails[]> {
+  try {
+    let huntQuery = supabase
+      .from('hunt_logs_with_temperature')
+      .select('*')
+      .order('hunt_date', { ascending: false })
+      .order('created_at', { ascending: false })
+
+    if (filters?.member_id) huntQuery = huntQuery.eq('member_id', filters.member_id)
+    if (filters?.stand_id) huntQuery = huntQuery.eq('stand_id', filters.stand_id)
+    if (filters?.date_from) huntQuery = huntQuery.gte('hunt_date', filters.date_from)
+    if (filters?.date_to) huntQuery = huntQuery.lte('hunt_date', filters.date_to)
+    if (filters?.had_harvest !== undefined) {
+      if (filters.had_harvest) {
+        huntQuery = huntQuery.gt('harvest_count', 0)
+      } else {
+        huntQuery = huntQuery.eq('harvest_count', 0)
+      }
+    }
+    if (filters?.season) huntQuery = huntQuery.eq('hunting_season', filters.season)
+
+    const { data: hunts, error: huntError } = await huntQuery
+
+    if (huntError) {
+      console.error('Error fetching hunts:', huntError)
+      throw huntError
+    }
+
+    if (!hunts || hunts.length === 0) return []
+
+    // View types mark all columns nullable; the underlying table guarantees these are set.
+    const memberIds = [...new Set(hunts.map(h => h.member_id).filter((id): id is string => !!id))]
+    const standIds = [...new Set(hunts.map(h => h.stand_id).filter((id): id is string => !!id))]
+    const huntIds = hunts.map(h => h.id).filter((id): id is string => !!id)
+
+    const [membersResult, standsResult, harvestsResult, sightingsResult] = await Promise.all([
+      memberIds.length > 0
+        ? supabase.from('members').select('*').in('id', memberIds)
+        : { data: [], error: null },
+      standIds.length > 0
+        ? supabase.from('stands').select('*').in('id', standIds)
+        : { data: [], error: null },
+      supabase.from('hunt_harvests').select('*').in('hunt_log_id', huntIds),
+      supabase.from('hunt_sightings').select('*').in('hunt_log_id', huntIds),
+    ])
+
+    const membersMap = new Map((membersResult.data || []).map(member => [member.id, member]))
+    const standsMap = new Map((standsResult.data || []).map(stand => [stand.id, stand]))
+
+    const harvestsMap = new Map()
+    const sightingsMap = new Map()
+
+    ;(harvestsResult.data || []).forEach(harvest => {
+      if (!harvestsMap.has(harvest.hunt_log_id)) harvestsMap.set(harvest.hunt_log_id, [])
+      harvestsMap.get(harvest.hunt_log_id).push(harvest)
+    })
+
+    ;(sightingsResult.data || []).forEach(sighting => {
+      if (!sightingsMap.has(sighting.hunt_log_id)) sightingsMap.set(sighting.hunt_log_id, [])
+      sightingsMap.get(sighting.hunt_log_id).push(sighting)
+    })
+
+    // Cast: HuntWithDetails overrides id/hunt_date/member_id as non-nullable (invariant the View can't express).
+    return hunts.map(hunt => {
+      const memberId = hunt.member_id ?? ''
+      const memberData = membersMap.get(memberId)
+      const enrichedMember = memberData ? {
+        ...memberData,
+        display_name: memberData.display_name || memberData.full_name || memberData.email
+      } : null
+
+      return {
+        ...hunt,
+        member: enrichedMember,
+        stand: standsMap.get(hunt.stand_id ?? '') || null,
+        harvests: harvestsMap.get(hunt.id ?? '') || [],
+        sightings: sightingsMap.get(hunt.id ?? '') || [],
+      }
+    }) as HuntWithDetails[]
+  } catch (error) {
+    console.error('Error fetching hunts:', error)
+    throw error
+  }
+}
+
 export class HuntService {
   private supabase = createClient()
 
   // ===============================================
   // UPDATED CRUD OPERATIONS - Now uses hunt_logs_with_temperature view
   // ===============================================
-  
+
   async getHunts(filters?: HuntFilters): Promise<HuntWithDetails[]> {
-    try {
-      // Build the base hunt logs query
-      let huntQuery = this.supabase
-        .from('hunt_logs_with_temperature')
-        .select('*')
-        .order('hunt_date', { ascending: false })
-        .order('created_at', { ascending: false })
-
-      // Apply filters to hunt logs
-      if (filters?.member_id) {
-        huntQuery = huntQuery.eq('member_id', filters.member_id)
-      }
-      if (filters?.stand_id) {
-        huntQuery = huntQuery.eq('stand_id', filters.stand_id)
-      }
-      if (filters?.date_from) {
-        huntQuery = huntQuery.gte('hunt_date', filters.date_from)
-      }
-      if (filters?.date_to) {
-        huntQuery = huntQuery.lte('hunt_date', filters.date_to)
-      }
-      if (filters?.had_harvest !== undefined) {
-        if (filters.had_harvest) {
-          huntQuery = huntQuery.gt('harvest_count', 0)
-        } else {
-          huntQuery = huntQuery.eq('harvest_count', 0)
-        }
-      }
-      if (filters?.season) {
-        huntQuery = huntQuery.eq('hunting_season', filters.season)
-      }
-
-      // Execute the hunt logs query
-      const { data: hunts, error: huntError } = await huntQuery
-
-      if (huntError) {
-        console.error('Error fetching hunts:', huntError)
-        throw huntError
-      }
-
-      if (!hunts || hunts.length === 0) {
-        return []
-      }
-
-      // Get unique member IDs and stand IDs for batch queries
-      const memberIds = [...new Set(hunts.map(hunt => hunt.member_id).filter(Boolean))]
-      const standIds = [...new Set(hunts.map(hunt => hunt.stand_id).filter(Boolean))]
-      const huntIds = hunts.map(hunt => hunt.id)
-
-      // Batch fetch related data - SIMPLIFIED: only members table needed
-      const [membersResult, standsResult, harvestsResult, sightingsResult] = await Promise.all([
-        // Get member data from members table only
-        memberIds.length > 0 
-          ? this.supabase.from('members').select('*').in('id', memberIds)
-          : { data: [], error: null },
-        
-        // Get stands data
-        standIds.length > 0 
-          ? this.supabase.from('stands').select('*').in('id', standIds)
-          : { data: [], error: null },
-        
-        // Get harvests for these hunts
-        this.supabase.from('hunt_harvests').select('*').in('hunt_log_id', huntIds),
-        
-        // Get sightings for these hunts
-        this.supabase.from('hunt_sightings').select('*').in('hunt_log_id', huntIds)
-      ])
-
-      // ADD THIS DEBUG BLOCK RIGHT HERE:
-      console.log('🔍 HUNT SERVICE SIGHTINGS DEBUG')
-      console.log('🔍 Hunt IDs:', huntIds)
-      console.log('🔍 Sightings from database:', sightingsResult.data)
-      console.log('🔍 Sightings count:', sightingsResult.data?.length || 0)
-
-      // Create lookup maps for efficient joining
-      const membersMap = new Map((membersResult.data || []).map(member => [member.id, member]))
-      const standsMap = new Map((standsResult.data || []).map(stand => [stand.id, stand]))
-      
-      // Group harvests and sightings by hunt_log_id
-      const harvestsMap = new Map()
-      const sightingsMap = new Map()
-      
-      ;(harvestsResult.data || []).forEach(harvest => {
-        if (!harvestsMap.has(harvest.hunt_log_id)) {
-          harvestsMap.set(harvest.hunt_log_id, [])
-        }
-        harvestsMap.get(harvest.hunt_log_id).push(harvest)
-      })
-      
-      ;(sightingsResult.data || []).forEach(sighting => {
-        if (!sightingsMap.has(sighting.hunt_log_id)) {
-          sightingsMap.set(sighting.hunt_log_id, [])
-        }
-        sightingsMap.get(sighting.hunt_log_id).push(sighting)
-      })
-
-      console.log('🔍 SightingsMap keys:', Array.from(sightingsMap.keys()))
-      console.log('🔍 SightingsMap:', sightingsMap)
-
-      // Combine all data - SIMPLIFIED: no fallback logic needed
-      const enrichedHunts = hunts.map(hunt => {
-        const memberData = membersMap.get(hunt.member_id)
-        const huntSightings = sightingsMap.get(hunt.id) || []
-  
-        // ADD THIS DEBUG LINE:
-        console.log(`🔍 Hunt ${hunt.id} (${memberData?.display_name}): looking for sightings, found ${huntSightings.length}`)
-
-        // Create enriched member data with display_name
-        const enrichedMember = memberData ? {
-          ...memberData,
-          display_name: memberData.display_name || memberData.full_name || memberData.email
-        } : null
-
-        return {
-          ...hunt,
-          member: enrichedMember,
-          stand: standsMap.get(hunt.stand_id) || null,
-          harvests: harvestsMap.get(hunt.id) || [],
-          // sightings: sightingsMap.get(hunt.id) || []
-          sightings: huntSightings  // This should now have the sightings
-        }
-      })
-
-      return enrichedHunts
-    } catch (error) {
-      console.error('Error fetching hunts:', error)
-      throw error
-    }
+    return fetchHunts(this.supabase, filters)
   }
 
   async getHuntById(huntId: string): Promise<HuntWithDetails | null> {

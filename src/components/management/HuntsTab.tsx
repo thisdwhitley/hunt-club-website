@@ -137,13 +137,29 @@ interface HuntsTabProps {
   tabs: TabConfig[]
   activeTab: string
   onTabChange: (key: string) => void
+  initialHunts?: HuntWithDetails[]
+  initialSeasonStatus?: SeasonStatus
 }
 
-export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
-  const [allHunts, setAllHunts] = useState<HuntWithDetails[]>([])
-  const [seasons, setSeasons] = useState<string[]>([])
-  const [members, setMembers] = useState<Array<{ id: string; name: string }>>([])
-  const [loading, setLoading] = useState(true)
+function deriveSeasons(hunts: HuntWithDetails[]): string[] {
+  return [...new Set(hunts.map(h => h.hunt_date.substring(0, 4)))].sort((a, b) => b.localeCompare(a))
+}
+
+function deriveMembers(hunts: HuntWithDetails[]): Array<{ id: string; name: string }> {
+  const memberMap = new Map<string, string>()
+  hunts.forEach(h => {
+    if (h.member_id && !memberMap.has(h.member_id)) {
+      memberMap.set(h.member_id, h.member?.display_name || h.member?.full_name || 'Unknown')
+    }
+  })
+  return [...memberMap.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export function HuntsTab({ tabs, activeTab, onTabChange, initialHunts, initialSeasonStatus }: HuntsTabProps) {
+  const [allHunts, setAllHunts] = useState<HuntWithDetails[]>(() => initialHunts ?? [])
+  const [seasons, setSeasons] = useState<string[]>(() => initialHunts ? deriveSeasons(initialHunts) : [])
+  const [members, setMembers] = useState<Array<{ id: string; name: string }>>(() => initialHunts ? deriveMembers(initialHunts) : [])
+  const [loading, setLoading] = useState(!initialHunts)
   const [error, setError] = useState<string | null>(null)
 
   const [filters, setFilters] = useState<HuntManagementFilters>(DEFAULT_FILTERS)
@@ -158,7 +174,7 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
   const [showForm, setShowForm] = useState(false)
   const [editingHunt, setEditingHunt] = useState<HuntWithDetails | null>(null)
   const [formSubmitting, setFormSubmitting] = useState(false)
-  const [seasonStatus, setSeasonStatus] = useState<SeasonStatus | null>(null)
+  const [seasonStatus, setSeasonStatus] = useState<SeasonStatus | null>(initialSeasonStatus ?? null)
 
   const { stands } = useStands({ active: true })
 
@@ -166,25 +182,11 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
     try {
       setLoading(true)
       setError(null)
-      // Load everything — client-side filtering handles season/member/harvest
       const data = await huntService.getHunts({})
       setAllHunts(data)
       setCurrentPage(1)
-
-      // Derive seasons from hunt_date year (hunting_season field is not yet populated in DB)
-      const uniqueSeasons = [...new Set(
-        data.map(h => h.hunt_date.substring(0, 4))
-      )].sort((a, b) => b.localeCompare(a))
-      setSeasons(uniqueSeasons)
-
-      const memberMap = new Map<string, string>()
-      data.forEach(h => {
-        if (h.member_id && !memberMap.has(h.member_id)) {
-          memberMap.set(h.member_id, h.member?.display_name || h.member?.full_name || 'Unknown')
-        }
-      })
-      setMembers([...memberMap.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name)))
-
+      setSeasons(deriveSeasons(data))
+      setMembers(deriveMembers(data))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load hunts')
     } finally {
@@ -195,9 +197,11 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
   const reload = useCallback(() => loadAllHunts(), [loadAllHunts])
 
   useEffect(() => {
+    // Skip initial fetch when server-loaded data is available
+    if (initialHunts && initialSeasonStatus) return
     loadAllHunts()
     lookupSeasonStatus('deer').then(setSeasonStatus).catch(() => {})
-  }, [loadAllHunts])
+  }, [loadAllHunts, initialHunts, initialSeasonStatus])
 
   // Set default season filter from season service once both data and status are ready.
   // Active season: default to that season_year (e.g., '2025' during 2025-2026 season).

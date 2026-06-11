@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { lookupSeasonStatus } from '@/app/actions/season'
+import { lookupSeasonStatus, type SeasonStatus } from '@/app/actions/season'
 import { deactivateStand } from '@/app/actions/stands'
 import { getIcon } from '@/lib/shared/icons'
 import { ManagementHubToolbar } from '@/components/shared/ManagementHubToolbar'
@@ -171,13 +171,18 @@ interface StandsTabProps {
   tabs: TabConfig[]
   activeTab: string
   onTabChange: (key: string) => void
+  initialStands?: Stand[]
+  initialSeasonStatus?: SeasonStatus
 }
 
-export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
-  const [stands, setStands] = useState<Stand[]>([])
+export function StandsTab({ tabs, activeTab, onTabChange, initialStands, initialSeasonStatus }: StandsTabProps) {
+  const [stands, setStands] = useState<Stand[]>(() => initialStands ?? [])
   const [huntStats, setHuntStats] = useState<Record<string, StandHuntStats>>({})
-  const [effectiveSeasonYear, setEffectiveSeasonYear] = useState<number>(new Date().getFullYear())
-  const [loading, setLoading] = useState(true)
+  const [effectiveSeasonYear, setEffectiveSeasonYear] = useState<number>(() => {
+    if (initialSeasonStatus?.status === 'active') return initialSeasonStatus.season_year
+    return new Date().getFullYear()
+  })
+  const [loading, setLoading] = useState(!initialStands)
   const [error, setError] = useState<string | null>(null)
 
   const [filters, setFilters] = useState<StandManagementFilters>(DEFAULT_FILTERS)
@@ -223,7 +228,7 @@ export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
           .from('hunt_logs')
           .select('stand_id, harvest_count, hunt_type, hunt_date')
           .not('stand_id', 'is', null),
-        lookupSeasonStatus('deer'),
+        initialSeasonStatus ? Promise.resolve(initialSeasonStatus) : lookupSeasonStatus('deer'),
       ])
 
       if (!data) return
@@ -270,12 +275,12 @@ export function StandsTab({ tabs, activeTab, onTabChange }: StandsTabProps) {
     } catch (err) {
       console.error('Error loading hunt stats:', err)
     }
-  }, [supabase])
+  }, [supabase, initialSeasonStatus])
 
   useEffect(() => {
-    loadStands()
+    if (!initialStands) loadStands()
     loadHuntStats()
-  }, [loadStands, loadHuntStats])
+  }, [loadStands, loadHuntStats, initialStands])
 
   const filteredStands = useMemo(() => {
     let result = [...stands]
