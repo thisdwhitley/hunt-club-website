@@ -162,27 +162,9 @@ export interface UseStandsReturn {
   stands: Stand[]
   loading: boolean
   error: string | null
-  
-  // CRUD operations
-  createStand: (data: StandFormData) => Promise<Stand | null>
-  updateStand: (id: string, data: Partial<StandFormData>) => Promise<Stand | null>
-  deleteStand: (id: string) => Promise<boolean>
-  
-  // Utility operations
   refreshStands: () => Promise<void>
   getStandById: (id: string) => Stand | undefined
   getActiveStands: () => Stand[]
   getStandsByType: (type: StandType) => Stand[]
-  
-  // Statistics
   getStandStats: () => StandStats
-}
-
-export interface UseStandReturn {
-  stand: Stand | null
-  loading: boolean
-  error: string | null
-  updateStand: (data: Partial<StandFormData>) => Promise<Stand | null>
-  deleteStand: () => Promise<boolean>
-  refresh: () => Promise<void>
 }

@@ -9,7 +9,7 @@ import { BaseCard } from '@/components/shared/cards'
 import { formatDate, getHuntTypeBadge, parseDBDate } from '@/lib/utils/date'
 import { getIcon } from '@/lib/shared/icons'
 import type { IconName } from '@/lib/shared/icons'
-import type { Stand } from '@/lib/database/stands'
+import type { Stand } from '@/lib/stands/types'
 
 const HUNTING_COLORS = {
   oliveGreen: '#566E3D',

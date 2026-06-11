@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 
 // Import your Stand type from database service
-import type { Stand } from '@/lib/database/stands'
+import type { Stand } from '@/lib/stands/types'
 
 // Fallback helper functions if @/lib/stands doesn't exist
 const formatWalkingTime = (minutes: number | null): string => {

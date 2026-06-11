@@ -1,7 +1,7 @@
 // src/lib/utils/stands.ts
 // Utility functions for stand management
 
-import { Stand } from '@/lib/database/stands'
+import { Stand } from '@/lib/stands/types'
 import { formatDate } from '@/lib/utils/date'
 
 /**

@@ -5,7 +5,7 @@ import type * as LeafletLib from 'leaflet'
 import type { FeatureCollection, Geometry } from 'geojson'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/types/database'
-import type { Stand } from '@/lib/database/stands'
+import type { Stand } from '@/lib/stands/types'
 import type { CameraWithStatus } from '@/lib/cameras/types'
 import { getCameraDeployments } from '@/lib/cameras/database'
 import StandCardV2 from '@/components/stands/StandCardV2'
@@ -18,11 +18,17 @@ const PROPERTY_CENTER: [number, number] = [36.42712517693617, -79.51073582842501
 
 const FEATURE_STYLES: Record<string, LeafletLib.PathOptions> = {
   boundary:  { color: '#FE9920', weight: 1.5, dashArray: '6,4', fill: false, opacity: 0.9 },
-  trail:     { color: '#A0653A', weight: 2, dashArray: '4,4', opacity: 0.8, fill: false },
-  road:      { color: '#8B7355', weight: 3, opacity: 0.9, fill: false },
+  trail:     { color: '#A0653A', weight: 2, dashArray: '6,6', opacity: 1, fill: false },
+  road:      { color: '#8B7355', weight: 3, dashArray: '10,3', opacity: 1, fill: false },
   field:     { color: '#566E3D', weight: 1, fillColor: '#566E3D', fillOpacity: 0.15 },
   food_plot: { color: '#566E3D', weight: 1, fillColor: '#566E3D', fillOpacity: 0.15 },
   water:     { color: '#0C4767', weight: 2, opacity: 0.8, fill: false },
+}
+
+// Morning-mist case drawn beneath road/trail — 1px showing on each side for crisp framing
+const CASE_STYLES: Partial<Record<string, LeafletLib.PathOptions>> = {
+  road:  { color: '#E8E6E0', weight: 5, opacity: 1, fill: false },
+  trail: { color: '#E8E6E0', weight: 4, opacity: 1, fill: false },
 }
 
 type LayerKey = 'boundary' | 'trail' | 'road' | 'field' | 'water' | 'stands' | 'cameras'
@@ -78,6 +84,7 @@ export default function PropertyMapV2({ height = 'h-96 md:h-[600px]', previewFea
   const mapInstanceRef = useRef<LeafletLib.Map | null>(null)
   const tileLayerRef = useRef<LeafletLib.TileLayer | null>(null)
   const geoLayerRefs = useRef<Partial<Record<LayerKey, LeafletLib.GeoJSON>>>({})
+  const casedLayerRefs = useRef<Partial<Record<LayerKey, LeafletLib.GeoJSON>>>({})
   const standLayerRef = useRef<LeafletLib.LayerGroup | null>(null)
   const cameraLayerRef = useRef<LeafletLib.LayerGroup | null>(null)
   const previewLayerRef = useRef<LeafletLib.GeoJSON | null>(null)
@@ -184,8 +191,10 @@ export default function PropertyMapV2({ height = 'h-96 md:h-[600px]', previewFea
   useEffect(() => {
     if (!mapReady || !mapInstanceRef.current) return
 
-    // Clear existing feature layers
+    // Clear existing feature layers (case layers first, then color layers)
     for (const key of FEATURE_LAYER_KEYS) {
+      const existingCase = casedLayerRefs.current[key]
+      if (existingCase) { mapInstanceRef.current.removeLayer(existingCase); delete casedLayerRefs.current[key] }
       const existing = geoLayerRefs.current[key]
       if (existing) { mapInstanceRef.current.removeLayer(existing); delete geoLayerRefs.current[key] }
     }
@@ -212,7 +221,7 @@ export default function PropertyMapV2({ height = 'h-96 md:h-[600px]', previewFea
         })),
       }
 
-      const geoLayer = L.geoJSON(fc, {
+      const colorLayer = L.geoJSON(fc, {
         style: (feat) => ({
           ...baseStyle,
           ...(feat?.properties?.color ? { color: feat.properties.color as string } : {}),
@@ -229,16 +238,25 @@ export default function PropertyMapV2({ height = 'h-96 md:h-[600px]', previewFea
         },
       })
 
-      geoLayerRefs.current[layerKey] = geoLayer
+      // Add case layer first (renders below), then color layer on top
+      const caseStyle = CASE_STYLES[layerKey]
+      if (caseStyle && visibilityRef.current[layerKey]) {
+        const caseLayer = L.geoJSON(fc, { style: () => caseStyle })
+        casedLayerRefs.current[layerKey] = caseLayer
+        caseLayer.addTo(mapInstanceRef.current)
+      } else if (caseStyle) {
+        casedLayerRefs.current[layerKey] = L.geoJSON(fc, { style: () => caseStyle })
+      }
 
+      geoLayerRefs.current[layerKey] = colorLayer
       if (visibilityRef.current[layerKey]) {
-        geoLayer.addTo(mapInstanceRef.current)
+        colorLayer.addTo(mapInstanceRef.current)
       }
 
       // Fit map to boundary after first render
       if (layerKey === 'boundary') {
         try {
-          const bounds = geoLayer.getBounds()
+          const bounds = colorLayer.getBounds()
           if (bounds.isValid()) mapInstanceRef.current.fitBounds(bounds, { padding: [2, 2], maxZoom: 19 })
         } catch { /* ignore */ }
       }
@@ -343,6 +361,12 @@ export default function PropertyMapV2({ height = 'h-96 md:h-[600px]', previewFea
           else mapInstanceRef.current.removeLayer(cameraLayerRef.current)
         }
       } else {
+        // Toggle case layer first (below), then color layer on top
+        const caseLayer = casedLayerRefs.current[key]
+        if (caseLayer) {
+          if (next[key]) caseLayer.addTo(mapInstanceRef.current)
+          else mapInstanceRef.current.removeLayer(caseLayer)
+        }
         const layer = geoLayerRefs.current[key]
         if (layer) {
           if (next[key]) layer.addTo(mapInstanceRef.current)

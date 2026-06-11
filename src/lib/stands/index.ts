@@ -16,8 +16,7 @@ export type {
   StandStats,
   StandsResponse,
   StandResponse,
-  UseStandsReturn,
-  UseStandReturn
+  UseStandsReturn
 } from './types'
 
 // Validation schemas and types
@@ -121,7 +120,7 @@ export {
 }
 
 // Hooks (re-export from hooks directory)
-export { useStands, useStand } from '../../hooks/useStands'
+export { useStands } from '../../hooks/useStands'
 
 // Convenience re-exports for common operations (now using imported functions)
 export const StandHelpers = {

@@ -305,7 +305,7 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
         if (data.had_harvest && data.harvest?.animal_type) {
           await upsertHarvestDetails(editingHunt.id, {
             animal_type: data.harvest.animal_type,
-            gender: data.harvest.gender ?? null,
+            gender: (data.harvest.gender || null),
             estimated_weight: data.harvest.estimated_weight ?? null,
             shot_distance_yards: data.harvest.shot_distance_yards ?? null,
             antler_points: data.harvest.antler_points ?? null,
@@ -331,7 +331,7 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
         if (data.had_harvest && data.harvest?.animal_type) {
           await saveHarvestDetails(huntId, {
             animal_type: data.harvest.animal_type,
-            gender: data.harvest.gender ?? null,
+            gender: (data.harvest.gender || null),
             estimated_weight: data.harvest.estimated_weight ?? null,
             shot_distance_yards: data.harvest.shot_distance_yards ?? null,
             antler_points: data.harvest.antler_points ?? null,
@@ -700,37 +700,39 @@ export function HuntsTab({ tabs, activeTab, onTabChange }: HuntsTabProps) {
 
       {/* Add / Edit Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-forest-shadow">
-                {editingHunt ? 'Edit Hunt' : 'Add Hunt'}
-              </h2>
-              <button
-                onClick={() => { setShowForm(false); setEditingHunt(null) }}
-                className="p-2 hover:bg-morning-mist rounded-lg transition-colors"
-              >
-                <XIcon className="w-5 h-5 text-weathered-wood" />
-              </button>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4">
+          <div
+            className="absolute inset-0 bg-forest-shadow/50 backdrop-blur-sm"
+            onClick={() => { setShowForm(false); setEditingHunt(null) }}
+          />
+          <div className="relative bg-white rounded-lg club-shadow w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            <button
+              onClick={() => { setShowForm(false); setEditingHunt(null) }}
+              className="absolute top-3 right-3 z-10 p-1.5 text-weathered-wood hover:text-forest-shadow transition-colors bg-white/80 hover:bg-white rounded-full shadow-sm"
+              aria-label="Close modal"
+            >
+              <XIcon className="w-5 h-5" />
+            </button>
+            <div className="max-h-[90vh] overflow-y-auto">
+              <HuntEntryForm
+                stands={stands}
+                onSubmit={handleFormSubmit}
+                onCancel={() => { setShowForm(false); setEditingHunt(null) }}
+                isSubmitting={formSubmitting}
+                hunt={editingHunt ? {
+                  ...editingHunt,
+                  harvest: editingHunt.harvests?.[0] ? {
+                    animal_type: editingHunt.harvests[0].animal_type,
+                    gender: editingHunt.harvests[0].gender as 'Buck' | 'Doe' | 'Unknown' | null | undefined,
+                    estimated_weight: editingHunt.harvests[0].estimated_weight,
+                    shot_distance_yards: editingHunt.harvests[0].shot_distance_yards,
+                    antler_points: editingHunt.harvests[0].antler_points,
+                    recovery_notes: editingHunt.harvests[0].recovery_notes ?? undefined,
+                  } : undefined,
+                } as unknown as Partial<HuntFormData> : undefined}
+                mode={editingHunt ? 'edit' : 'create'}
+              />
             </div>
-            <HuntEntryForm
-              stands={stands}
-              onSubmit={handleFormSubmit}
-              onCancel={() => { setShowForm(false); setEditingHunt(null) }}
-              isSubmitting={formSubmitting}
-              hunt={editingHunt ? {
-                ...editingHunt,
-                harvest: editingHunt.harvests?.[0] ? {
-                  animal_type: editingHunt.harvests[0].animal_type,
-                  gender: editingHunt.harvests[0].gender as 'Buck' | 'Doe' | 'Unknown' | null | undefined,
-                  estimated_weight: editingHunt.harvests[0].estimated_weight,
-                  shot_distance_yards: editingHunt.harvests[0].shot_distance_yards,
-                  antler_points: editingHunt.harvests[0].antler_points,
-                  recovery_notes: editingHunt.harvests[0].recovery_notes ?? undefined,
-                } : undefined,
-              } as unknown as Partial<HuntFormData> : undefined}
-              mode={editingHunt ? 'edit' : 'create'}
-            />
           </div>
         </div>
       )}

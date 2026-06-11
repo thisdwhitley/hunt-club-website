@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import HuntEntryForm from '@/components/hunt-logging/HuntEntryForm'
 import { type HuntFormData } from '@/lib/hunt-logging/hunt-validation'
+import { createHunt, saveSightings, saveHarvestDetails } from '@/app/actions/hunts'
 import { formatDate } from '@/lib/utils/date'
 
 // ===========================================
@@ -529,10 +530,6 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
   }
 
   const handleHuntSubmit = async (formData: HuntFormData) => {
-    console.log('🎯 ModalSystem received formData:', formData)
-    console.log('🎯 formData.member_id:', formData.member_id)
-    console.log('🎯 user.id fallback:', user?.id)
-
     if (!user) {
       setError('User not authenticated')
       return
@@ -542,10 +539,8 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true)
       setError(null)
 
-      // Insert hunt log
-      const huntData = {
-        // member_id: user.id,
-        member_id: formData.member_id ? formData.member_id : user.id,
+      const huntId = await createHunt({
+        member_id: formData.member_id || user.id,
         stand_id: formData.stand_id,
         hunt_date: formData.hunt_date,
         season: formData.hunt_date.substring(0, 4),
@@ -554,79 +549,23 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
         harvest_count: formData.had_harvest ? 1 : 0,
         hunt_type: formData.hunt_type || 'AM',
         notes: formData.notes || null,
-        had_harvest: formData.had_harvest || false
+        had_harvest: formData.had_harvest || false,
+        hunting_season: (formData.hunting_season === '' ? null : (formData.hunting_season ?? null)) as string | null,
+      })
+
+      if (formData.sightings && formData.sightings.length > 0) {
+        await saveSightings(huntId, formData.sightings)
       }
 
-      console.log('🎯 Final huntData being sent to database:', huntData)
-      console.log('🎯 Final huntData.member_id specifically:', huntData.member_id)
-
-      const { data: huntLog, error: huntError } = await supabase
-        .from('hunt_logs')
-        .insert(huntData)
-        .select()
-        .single()
-
-      console.log('🎯 Database insert result - huntLog:', huntLog)
-      console.log('🎯 Database insert error:', huntError)
-
-      // Add sightings debugging here:
-      console.log('🔍 SIGHTINGS DEBUG START')
-      console.log('🔍 formData.sightings exists:', !!formData.sightings)
-      console.log('🔍 formData.sightings:', formData.sightings)
-      console.log('🔍 formData.sightings length:', formData.sightings?.length)
-
-      if (huntError) throw huntError
-
-      // Insert sightings if any
-      if (formData.sightings && formData.sightings.length > 0) {
-
-        console.log('🔍 Entering sightings insertion block')  
-  
-        const sightingsData = formData.sightings.map(sighting => ({
-          hunt_log_id: huntLog.id,
-          animal_type: sighting.animal_type,
-          count: sighting.count,
-          gender: sighting.gender || null,
-          behavior: sighting.behavior || null,
-          time_observed: sighting.time_observed || null
-        }))
-
-        console.log('🔍 Prepared sightingsData for database:', sightingsData)
-
-
-        const { error: sightingsError } = await supabase
-          .from('hunt_sightings')
-          .insert(sightingsData)
-
-        console.log('🔍 Sightings insert error:', sightingsError)
-        
-        if (sightingsError) {
-            console.error('🔍 Sightings insertion failed:', sightingsError)
-            throw sightingsError
-          } else {
-            console.log('🔍 Sightings inserted successfully')
-          }
-        } else {
-          console.log('🔍 No sightings to insert')
-        }
-        console.log('🔍 SIGHTINGS DEBUG END')
-      //   if (sightingsError) throw sightingsError
-      // }
-
-      // Insert harvest details if any
       if (formData.had_harvest && formData.harvest?.animal_type) {
-        const { error: harvestError } = await supabase
-          .from('hunt_harvests')
-          .insert({
-            hunt_log_id: huntLog.id,
-            animal_type: formData.harvest.animal_type,
-            gender: formData.harvest.gender ?? null,
-            estimated_weight: formData.harvest.estimated_weight ?? null,
-            shot_distance_yards: formData.harvest.shot_distance_yards ?? null,
-            antler_points: formData.harvest.antler_points ?? null,
-            recovery_notes: formData.harvest.recovery_notes ?? null,
-          })
-        if (harvestError) throw harvestError
+        await saveHarvestDetails(huntId, {
+          animal_type: formData.harvest.animal_type,
+          gender: (formData.harvest.gender || null),
+          estimated_weight: formData.harvest.estimated_weight ?? null,
+          shot_distance_yards: formData.harvest.shot_distance_yards ?? null,
+          antler_points: formData.harvest.antler_points ?? null,
+          recovery_notes: formData.harvest.recovery_notes ?? null,
+        })
       }
 
       setShowHuntSuccess(true)

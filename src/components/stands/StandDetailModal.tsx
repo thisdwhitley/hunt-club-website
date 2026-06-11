@@ -7,7 +7,7 @@ import React from 'react'
 import { formatDate, parseDBDate } from '@/lib/utils/date'
 import { getIcon } from '@/lib/shared/icons'
 import type { IconName } from '@/lib/shared/icons'
-import type { Stand } from '@/lib/database/stands'
+import type { Stand } from '@/lib/stands/types'
 
 const XIcon = getIcon('close')
 const MapPinIcon = getIcon('mapPin')

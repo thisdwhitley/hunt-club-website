@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import type { Feature, Geometry, FeatureCollection } from 'geojson'
 import { createClient } from '@/lib/supabase/client'
 
@@ -117,14 +117,14 @@ export default function ImportFeaturesModal({ onClose, onSaved, onPreviewUpdate 
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
-  const pushPreview = useCallback((feats: ParsedFeature[]) => {
-    const included = feats.filter(f => f.include)
+  useEffect(() => {
+    const included = features.filter(f => f.include)
     onPreviewUpdate(
       included.length
-        ? included.map(f => ({ type: 'Feature', geometry: f.geometry, properties: { name: f.name } }))
+        ? included.map(f => ({ type: 'Feature' as const, geometry: f.geometry, properties: { name: f.name } }))
         : null
     )
-  }, [onPreviewUpdate])
+  }, [features, onPreviewUpdate])
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -142,7 +142,6 @@ export default function ImportFeaturesModal({ onClose, onSaved, onPreviewUpdate 
           return
         }
         setFeatures(parsed)
-        pushPreview(parsed)
         setStep('review')
       } catch {
         setParseError('Could not parse file. Make sure it is valid GeoJSON or GPX.')
@@ -152,11 +151,7 @@ export default function ImportFeaturesModal({ onClose, onSaved, onPreviewUpdate 
   }
 
   const updateFeature = (id: string, changes: Partial<ParsedFeature>) => {
-    setFeatures(prev => {
-      const next = prev.map(f => f.id === id ? { ...f, ...changes } : f)
-      pushPreview(next)
-      return next
-    })
+    setFeatures(prev => prev.map(f => f.id === id ? { ...f, ...changes } : f))
   }
 
   const handleSave = async () => {
@@ -180,7 +175,7 @@ export default function ImportFeaturesModal({ onClose, onSaved, onPreviewUpdate 
 
     const { error } = await supabase
       .from('property_features')
-      .upsert(toInsert, { onConflict: 'name,feature_type' })
+      .insert(toInsert)
 
     if (error) {
       setSaveError(error.message)

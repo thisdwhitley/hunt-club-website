@@ -558,7 +558,6 @@ export default function HuntEntryForm({ stands, onSubmit, onCancel, isSubmitting
               {...register('harvest.gender')}
               className="w-full p-2 border border-weathered-wood/30 rounded-lg bg-white text-forest-shadow focus:ring-2 focus:ring-olive-green focus:border-olive-green text-sm"
             >
-              <option value="">Unknown</option>
               {getGenderOptions(watchedAnimalType).map(g => <option key={g} value={g}>{g}</option>)}
             </select>
           </div>
