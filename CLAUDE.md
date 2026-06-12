@@ -130,7 +130,7 @@ const { data, error } = await supabase.from('table_name').select()
 
 **Which client to use for new service files:**
 - **Reference / slow-changing data** (season calendar, hardware lists): always use `createServerSupabaseClient`. These service functions live in `src/lib/[feature]/index.ts` with no `'use client'` directive and are called from Server Components or Server Actions only.
-- **User-interactive / filtered data** (cameras list, hunts list): reads use the browser client in `database.ts`; mutations use Server Actions in `src/app/actions/[domain].ts` with the server client. Cameras fully migrated (#151, #152 partial); hunts and stands mutations still use browser client — migration tracked in #152.
+- **User-interactive / filtered data** (cameras list, hunts list): reads use the browser client in `database.ts`; mutations use Server Actions in `src/app/actions/[domain].ts` with the server client. Fully migrated for cameras, hunts, and stands (#151, #152 complete).
 - **Never** create a module-level singleton `const supabase = createClient()` in new service files — create the client inside each function or accept it as a parameter (#151 complete).
 
 **Season service — `src/lib/seasons/index.ts`:**
@@ -206,8 +206,31 @@ export async function createCameraDeployment(data: CameraDeploymentFormData) {
 **Read vs. mutation split:**
 - **Reads (SELECT)** stay in `src/lib/[domain]/database.ts` using the browser client — called from hooks
 - **Mutations (INSERT/UPDATE/DELETE/RPC)** live in `src/app/actions/[domain].ts` — called from hooks and components
-- Hooks import reads from `database.ts` and mutations from `@/app/actions/[domain]`
-- This split is complete for cameras; hunts and stands follow the same pattern (remaining #152 scope)
+- **Cached reference data** lives in `src/lib/[domain]/server.ts` — server-only, wrapped with `unstable_cache`
+- Hooks import reads from `database.ts`, mutations from `@/app/actions/[domain]`, and cached reference data via thin Server Action wrappers in the same actions file
+- This split is complete for cameras and seasons
+
+**Caching — slow-changing reference data:**
+
+Use `cache()` from React for per-request deduplication (data that changes daily at most, uses the cookie-based server client):
+```typescript
+import { cache } from 'react'
+export const getCurrentSeason = cache(async (species: SeasonSpecies) => { ... })
+```
+
+Use `unstable_cache` from Next.js for cross-request caching (data that changes only on admin action):
+```typescript
+import { unstable_cache } from 'next/cache'
+export const getSeasonsByYear = unstable_cache(
+  async (year: number) => { ... },  // must use createServiceSupabaseClient(), NOT createServerSupabaseClient()
+  ['seasons-by-year'],
+  { revalidate: 3600, tags: ['season-calendar'] }
+)
+```
+
+**`createServiceSupabaseClient()` is required inside `unstable_cache`** — the cache function runs outside the request context so `cookies()` is unavailable. All three relevant tables (`season_calendar`, `camera_hardware`, `camera_deployments`) require `authenticated` role via RLS, so the anonymous key alone is insufficient. The service client in `src/lib/supabase/server.ts` uses `SUPABASE_SERVICE_ROLE_KEY`. Never use this client for user-specific or mutable operations.
+
+**Cache invalidation — add `revalidateTag` to every mutation that could affect cached data.** For `camera-hardware` this means: `createCameraHardware`, `updateCameraHardware`, `softDeleteCameraHardware`, `hardDeleteCameraHardware`, `createCameraDeployment`, `updateCameraDeployment`, `deactivateCameraDeployment`, `deactivateAllActiveDeployments`, `importDeployments`. For `season-calendar`: any future CRUD on `season_calendar` (coming in #147).
 
 **Authentication (use `useAuth` hook):**
 ```typescript
