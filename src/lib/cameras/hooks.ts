@@ -27,8 +27,6 @@ import {
   getMissingCameras,
   getCameraStats,
   isDeviceIdAvailable,
-  getAvailableHardware,
-  getSeasonYears
 } from './database';
 import {
   createCameraHardware,
@@ -36,6 +34,8 @@ import {
   softDeleteCameraHardware,
   addStatusReport,
   detectMissingCameras,
+  fetchSeasonYears,
+  fetchAvailableHardware,
 } from '@/app/actions/cameras';
 
 // ============================================================================
@@ -208,12 +208,12 @@ export function useAvailableHardware() {
     try {
       setLoading(true);
       setError(null);
-      
-      const result = await getAvailableHardware();
+
+      const result = await fetchAvailableHardware();
       if (!result.success) {
         throw new Error(result.error || 'Failed to fetch available hardware');
       }
-      
+
       setHardware(result.data || []);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load available hardware';
@@ -243,7 +243,7 @@ export function useSeasonYears() {
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await getSeasonYears();
+      const result = await fetchSeasonYears();
       if (result.success) setSeasonYears(result.data || []);
     } finally {
       setLoading(false);

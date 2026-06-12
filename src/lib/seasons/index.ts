@@ -1,4 +1,6 @@
-import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { cache } from 'react'
+import { unstable_cache } from 'next/cache'
+import { createServerSupabaseClient, createServiceSupabaseClient } from '@/lib/supabase/server'
 import { formatForDB } from '@/lib/utils/date'
 import type { SeasonCalendar, SeasonSpecies, SeasonType } from '@/types/database'
 
@@ -24,10 +26,12 @@ const ZONE_FILTER = 'zone.eq.central,zone.is.null'
  * If passing a date derived from a DB string, use parseDBDate() — NOT new Date(dbString).
  * new Date("YYYY-MM-DD") parses as UTC midnight, which is the previous evening in Eastern time.
  */
-export async function getCurrentSeason(
+// cache() deduplicates calls within a single server request — if getCurrentSeason('deer')
+// is called multiple times during one page render, only one DB query fires.
+export const getCurrentSeason = cache(async (
   species: SeasonSpecies,
   date?: Date
-): Promise<SeasonCalendar | null> {
+): Promise<SeasonCalendar | null> => {
   const supabase = await createServerSupabaseClient()
   const dateStr = date ? formatForDB(date) : formatForDB(new Date())
 
@@ -47,7 +51,7 @@ export async function getCurrentSeason(
     return null
   }
   return data
-}
+})
 
 /**
  * Returns the next season opener for a species after a given date (default: today).
@@ -88,23 +92,30 @@ export async function getNextSeasonOpener(
 
 /**
  * Returns all season rows for a given year, ordered by open date.
+ * Cached across requests — revalidates when 'season-calendar' tag is invalidated
+ * (e.g. after admin CRUD in #147) or after 1 hour.
  */
-export async function getSeasonsByYear(season_year: number): Promise<SeasonCalendar[]> {
-  const supabase = await createServerSupabaseClient()
+export const getSeasonsByYear = unstable_cache(
+  async (season_year: number): Promise<SeasonCalendar[]> => {
+    // Uses service client: unstable_cache runs outside request context (no cookies available)
+    const supabase = createServiceSupabaseClient()
 
-  const { data, error } = await supabase
-    .from('season_calendar')
-    .select('*')
-    .eq('season_year', season_year)
-    .or(ZONE_FILTER)
-    .order('opens', { ascending: true })
+    const { data, error } = await supabase
+      .from('season_calendar')
+      .select('*')
+      .eq('season_year', season_year)
+      .or(ZONE_FILTER)
+      .order('opens', { ascending: true })
 
-  if (error) {
-    console.error('getSeasonsByYear error:', error.message)
-    return []
-  }
-  return data ?? []
-}
+    if (error) {
+      console.error('getSeasonsByYear error:', error.message)
+      return []
+    }
+    return data ?? []
+  },
+  ['seasons-by-year'],
+  { revalidate: 3600, tags: ['season-calendar'] }
+)
 
 /**
  * Returns the season row that a specific hunt date falls within, for a given species.

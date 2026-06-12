@@ -1,7 +1,8 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { getSeasonYearsCached, getAvailableHardwareCached } from '@/lib/cameras/server'
 import type {
   CameraHardware,
   CameraDeployment,
@@ -12,6 +13,28 @@ import type {
   CameraAPIResponse,
 } from '@/lib/cameras/types'
 import type { DeploymentImportRow, DeploymentImportResult } from '@/lib/cameras/database'
+
+// ============================================================================
+// REFERENCE DATA READS (cached via unstable_cache in server.ts)
+// ============================================================================
+
+export async function fetchSeasonYears(): Promise<CameraAPIResponse<number[]>> {
+  try {
+    const years = await getSeasonYearsCached()
+    return { success: true, data: years }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to fetch season years' }
+  }
+}
+
+export async function fetchAvailableHardware(): Promise<CameraAPIResponse<CameraHardware[]>> {
+  try {
+    const hardware = await getAvailableHardwareCached()
+    return { success: true, data: hardware }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to fetch available hardware' }
+  }
+}
 
 // ============================================================================
 // CAMERA HARDWARE MUTATIONS
@@ -34,6 +57,7 @@ export async function createCameraHardware(
     }
 
     revalidatePath('/management/cameras')
+    revalidateTag('camera-hardware')
     return {
       success: true,
       data: newHardware,
@@ -66,6 +90,7 @@ export async function updateCameraHardware(
     }
 
     revalidatePath('/management/cameras')
+    revalidateTag('camera-hardware')
     return {
       success: true,
       data: updatedHardware,
@@ -106,6 +131,7 @@ export async function softDeleteCameraHardware(
     }
 
     revalidatePath('/management/cameras')
+    revalidateTag('camera-hardware')
     return { success: true, message: 'Camera hardware deactivated successfully (data preserved)' }
   } catch (error) {
     console.error('Error in softDeleteCameraHardware:', error)
@@ -149,6 +175,7 @@ export async function hardDeleteCameraHardware(
     }
 
     revalidatePath('/management/cameras')
+    revalidateTag('camera-hardware')
     return { success: true, message: 'Camera hardware and all associated data deleted permanently' }
   } catch (error) {
     console.error('Error in hardDeleteCameraHardware:', error)
@@ -191,6 +218,7 @@ export async function createCameraDeployment(
     }
 
     revalidatePath('/management/cameras')
+    revalidateTag('camera-hardware')
     return {
       success: true,
       data: newDeployment,
@@ -250,6 +278,7 @@ export async function deactivateCameraDeployment(
     }
 
     revalidatePath('/management/cameras')
+    revalidateTag('camera-hardware')
     return { success: true, message: 'Camera deployment deactivated successfully' }
   } catch (error) {
     console.error('Error in deactivateCameraDeployment:', error)
