@@ -251,6 +251,7 @@ export async function updateCameraDeployment(
     }
 
     revalidatePath('/management/cameras')
+    revalidateTag('camera-hardware')
     return {
       success: true,
       data: updatedDeployment,
@@ -301,6 +302,7 @@ export async function deactivateAllActiveDeployments(): Promise<CameraAPIRespons
     }
 
     revalidatePath('/management/cameras')
+    revalidateTag('camera-hardware')
     return { success: true, data: { count: data?.length ?? 0 } }
   } catch (error) {
     console.error('Error in deactivateAllActiveDeployments:', error)
@@ -395,6 +397,7 @@ export async function importDeployments(
   }
 
   revalidatePath('/management/cameras')
+  revalidateTag('camera-hardware')
   return { success: true, data: results }
 }
 
