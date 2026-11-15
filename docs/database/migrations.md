@@ -35,6 +35,51 @@
 
 ---
 
+### 2026-11-15: Import 2018-2024 hunt history (data migration)
+**Type**: Data Migration
+**Affected Tables**: hunt_logs, hunt_sightings, hunt_harvests, stands, members (plus one auth.users account)
+**Breaking Changes**: No
+**Rollback Available**: Yes (see below)
+**Schema Changes**: None
+
+**Purpose**: Bring the club's pre-website hunt records into the site so seasons can be compared and analyzed (AM vs PM, stands, weather). Sources: the 2018-2020 Google Sheets, the 2021-2023 Google Form responses, and harvest entries from the "hunting+past" Google Calendar. Raw copies, mappings and every correction live in `data/history/` (see its README).
+
+**Changes Made**:
+- Created a shared, login-less **Guest** account through the Supabase admin API (`guest@hunt-club.invalid`, random password that was never stored) and set its `members.role` to `guest`. Guest hunters without accounts (Glenn, Ben) are logged under it, with `Guest: <name>` at the start of the hunt notes.
+- Created 7 inactive historical stands: Old Trail Stand, New Trail Stand, Daniel's Stand, Swamp Stand, Red Blind, Black Blind, Popup Blind.
+- Inserted 204 `hunt_logs` rows (2018-2024), 83 `hunt_sightings` rows and 15 `hunt_harvests` rows. `season` = season start year; `hunting_season` left NULL until `season_calendar` has 2018-2024 dates.
+- Recalculated `total_hunts`, `total_harvests`, `last_used_date`, `last_hunted(_by)`, `last_harvest(_by)` and `success_rate` on all 21 stands from the full hunt log. The stored values were badly inflated before this (e.g. Jimmy's Ridge 28 stored vs 1 actual); see the stand statistics entry in `docs/KNOWN_ISSUES.md`.
+- Related one-row fix the same day: hunt `7b4090c4` (2026-11-12 PM, Shit Stand harvest) moved from the Admin account to Daniel, along with Shit Stand `last_hunted_by` / `last_harvest_by`.
+
+**Migration Script**: `scripts/history/build-history.js` (raw CSVs to normalized CSVs) and `scripts/history/load-history.js --apply` (normalized CSVs to the database). The loader is idempotent: `data/history/loaded.csv` records `source_ref -> hunt_log_id` for every inserted hunt.
+
+**Result by season** (sits / harvests): 2018 43/3, 2019 39/1, 2020 55/6, 2021 23/1, 2022 3/0 (mostly unlogged), 2023 40/3, 2024 1/1. `hunt_logs` total went from 65 to 269.
+
+**Rollback**:
+```sql
+-- 1. delete the imported hunts (sightings and harvests cascade); ids are in data/history/loaded.csv
+DELETE FROM hunt_logs WHERE id IN (/* hunt_log_id values from loaded.csv */);
+-- 2. delete the historical stands
+DELETE FROM stands WHERE active = false AND name IN
+  ('Old Trail Stand','New Trail Stand','Daniel''s Stand','Swamp Stand','Red Blind','Black Blind','Popup Blind');
+```
+Then run `node scripts/history/load-history.js --recalc-only --apply` to recalculate stand statistics.
+
+**Verification Steps**:
+- [x] 204 manifest rows, 204 matching hunt_logs rows, 15 harvest hunts with 15 hunt_harvests rows, 83 sightings
+- [x] Per-season sit/harvest counts match the build output
+- [x] Re-running the loader reports 0 hunts to insert and no stand changes
+
+**Files Modified**:
+- data/history/ (new)
+- scripts/history/ (new)
+- docs/database/migrations.md (this entry)
+- docs/KNOWN_ISSUES.md (stand statistics root cause)
+
+**Claude Context**: Include this entry when working with pre-2025 hunts, the Guest account, or stand statistics. Imported hunts are identifiable through `data/history/loaded.csv`, not a database column.
+
+---
+
 ### 2026-06-09: Harden function search_path + revoke handle_new_user (security fix)
 **Type**: Security  
 **Affected Objects**: `populate_hunt_weather_on_insert`, `update_hunt_logs_weather` (functions), `handle_new_user` (privilege revoke)  

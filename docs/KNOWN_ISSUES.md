@@ -32,7 +32,7 @@ Free storage space is being stored incorrectly. The app shows e.g. "289 MB free"
 ## Stand Management
 
 ### Stand Activity Statistics Accuracy
-**Status:** Known Limitation - Requires Investigation
+**Status:** Root cause found 2026-11-15 - trigger fix not yet done
 **Priority:** Medium
 **Location:** `stands` table (columns: `total_hunts`, `total_harvests`, `last_hunted`, `last_harvest`, `success_rate`)
 
@@ -52,8 +52,18 @@ Stand activity statistics (total_hunts, total_harvests, success_rate) are showin
 - Consider adding database function to recalculate all stand statistics from hunt_logs
 - Add validation checks or scheduled jobs to detect drift between hunt_logs and stand statistics
 
+**Root cause (found 2026-11-15 during the history import):**
+1. Two AFTER INSERT triggers on `hunt_logs` both update the same counters. `trigger_update_stand_activity` (`update_stand_activity_on_hunt`) and `update_stand_stats` (`update_stand_stats_from_hunt`) each add 1 to `stands.total_hunts`, so every hunt is counted twice.
+2. `update_stand_activity_on_hunt` has no DELETE handling, so deleted hunts (including test hunts) are never subtracted.
+3. `total_hunts + 1` stays NULL when the column is NULL, so stands created with NULL totals never count anything.
+4. `update_stand_activity_on_hunt` sets `last_hunted` / `last_hunted_by` to the inserted hunt even when it is older than the current value.
+
+Before the fix, stored totals were far off. For example, Jimmy's Ridge had 28 stored vs 1 actual, and Creek Stand 32 vs 3.
+
+**Current state:** All stand statistics were recalculated from `hunt_logs` on 2026-11-15 (`node scripts/history/load-history.js --recalc-only --apply` does this again at any time). They will drift again with new hunts until the triggers are fixed. That fix (drop one trigger, handle DELETE, COALESCE NULLs, only move `last_hunted` forward) is a database function change and must follow the schema-change process in CLAUDE.md.
+
 **Workaround:**
-Query hunt_logs directly for accurate counts until stand statistics are verified and corrected.
+Query hunt_logs directly for accurate counts (the stand cards already do), or re-run the recalculation above.
 
 ---
 

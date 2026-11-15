@@ -1,0 +1,84 @@
+source_ref,seq,animal_type,count,gender,estimated_age,time_observed,direction,notes
+sheets/2018-hunting.csv#2,1,Deer,1,Unknown,fawn,19:40,,Fawn
+sheets/2018-hunting.csv#3,1,Deer,1,Doe,,07:30,,Doe
+sheets/2018-hunting.csv#3,2,Fox,1,Unknown,,08:40,,Fox
+sheets/2018-hunting.csv#9,1,Deer,1,Doe,,17:45,,Doe
+sheets/2018-hunting.csv#9,2,Deer,1,Buck,,18:15,,4-pt
+sheets/2018-hunting.csv#9,3,Deer,1,Doe,,18:20,,Doe
+sheets/2018-hunting.csv#10,1,Deer,3,Doe,,,,(3) Doe
+sheets/2018-hunting.csv#12,1,Deer,1,Doe,,08:45,,Doe
+sheets/2018-hunting.csv#14,1,Deer,1,Buck,,08:35,,4-pt
+sheets/2018-hunting.csv#16,1,Turkey,12,Unknown,,09:30,,12+ turkeys
+sheets/2018-hunting.csv#18,1,Deer,1,Buck,,17:23,,6-pt
+sheets/2018-hunting.csv#20,1,Deer,1,Buck,,07:30,,cow-horn
+sheets/2018-hunting.csv#22,1,Turkey,6,Unknown,,,,6 turkeys
+sheets/2018-hunting.csv#27,1,Deer,1,Buck,,09:15,,8-pt
+sheets/2018-hunting.csv#27,2,Turkey,1,Unknown,,09:30,,turkeys
+sheets/2018-hunting.csv#28,1,Turkey,1,Unknown,,08:15,,turkeys
+sheets/2018-hunting.csv#28,2,Coyote,1,Unknown,,09:15,,canine
+sheets/2018-hunting.csv#37,1,Turkey,5,Unknown,,15:50,,5 turkeys
+sheets/2018-hunting.csv#40,1,Dog,2,Unknown,,09:00,,2 dogs
+sheets/2018-hunting.csv#41,1,Deer,1,Doe,,17:05,,Doe
+sheets/2018-hunting.csv#42,1,Cat,1,Unknown,,,,cat
+sheets/2018-hunting.csv#43,1,Turkey,5,Unknown,,16:45,,5 turkeys
+sheets/2019-hunting.csv#1,1,Deer,2,Doe,,19:30,,2x doe
+sheets/2019-hunting.csv#4,1,Deer,2,Doe,,19:30,,2x doe
+sheets/2019-hunting.csv#5,1,Deer,1,Unknown,fawn,19:05,,fawn
+sheets/2019-hunting.csv#7,1,Deer,2,Unknown,yearling,18:00,,2 yearling
+sheets/2019-hunting.csv#7,2,Deer,2,Doe,,,,2 doe
+sheets/2019-hunting.csv#8,1,Deer,1,Buck,,07:00,,6 pt
+sheets/2019-hunting.csv#11,1,Deer,1,Buck,,18:18,,buck
+sheets/2019-hunting.csv#23,1,Deer,1,Doe,,09:33,,doe
+sheets/2019-hunting.csv#24,1,Deer,1,Buck,,18:30,,cow horn
+sheets/2019-hunting.csv#25,1,Deer,1,Buck,,17:45,,6 pt
+sheets/2019-hunting.csv#28,1,Deer,1,Doe,,16:15,,doe
+sheets/2019-hunting.csv#30,1,Deer,1,Buck,yearling,16:45,,button buck
+sheets/2019-hunting.csv#32,1,Deer,1,Buck,yearling,08:35,,baby buck
+sheets/2019-hunting.csv#34,1,Deer,1,Buck,,16:08,,8 pt
+sheets/2020-hunting.csv#1,1,Deer,1,Doe,,,,doe
+sheets/2020-hunting.csv#3,1,Deer,1,Doe,,,,doe
+sheets/2020-hunting.csv#3,2,Deer,1,Buck,,,,spike
+sheets/2020-hunting.csv#6,1,Deer,1,Doe,,,,doe
+sheets/2020-hunting.csv#7,1,Deer,1,Doe,,19:00,,doe
+sheets/2020-hunting.csv#7,2,Deer,1,Buck,yearling,19:15,,button
+sheets/2020-hunting.csv#13,1,Deer,1,Unknown,yearling,,,yearling
+sheets/2020-hunting.csv#17,1,Deer,1,Doe,,18:15,,doe
+sheets/2020-hunting.csv#20,1,Coyote,1,Unknown,,15:30,,coyote
+sheets/2020-hunting.csv#27,1,Deer,2,Doe,,07:45,,(2) does
+sheets/2020-hunting.csv#28,1,Deer,3,Doe,,18:15,,(3) does
+sheets/2020-hunting.csv#29,1,Deer,1,Buck,,06:22,,buck
+sheets/2020-hunting.csv#29,2,Deer,1,Doe,,,,doe
+sheets/2020-hunting.csv#30,1,Deer,1,Doe,,17:42,,doe
+sheets/2020-hunting.csv#34,1,Deer,1,Doe,,06:49,,doe
+sheets/2020-hunting.csv#40,1,Deer,1,Buck,,17:10,,buck
+sheets/2020-hunting.csv#42,1,Deer,1,Buck,,06:50,,buck
+sheets/2020-hunting.csv#44,1,Deer,3,Doe,,16:30,,(3) does
+sheets/2020-hunting.csv#47,1,Deer,1,Unknown,,06:30,,deer
+sheets/2020-hunting.csv#48,1,Deer,2,Doe,,,,(2) does
+sheets/2020-hunting.csv#56,1,Deer,1,Unknown,,,,deer
+forms/2021-hunt-observations.csv#9,1,Deer,1,Doe,,07:04,,
+forms/2021-hunt-observations.csv#10,1,Deer,2,Buck,1 Year Old,16:17,,
+forms/2021-hunt-observations.csv#10,2,Deer,1,Doe,,18:30,,
+forms/2021-hunt-observations.csv#15,1,Deer,1,Buck,,17:09,,
+forms/2021-hunt-observations.csv#21,1,Deer,1,Buck,,08:51,,
+forms/2021-hunt-observations.csv#22,1,Deer,1,Doe,,17:20,,
+forms/2022-hunt-observations.csv#3,1,Deer,2,Buck,"2 Year Old, 3 Year Old",18:00,NW,
+forms/2022-hunt-observations.csv#4,1,Deer,1,Doe,,07:00,NW,
+forms/2023-hunt-observations.csv#1,1,Deer,1,Doe,,19:26,,
+forms/2023-hunt-observations.csv#6,1,Deer,2,Doe,,17:30,,
+forms/2023-hunt-observations.csv#8,1,Deer,1,Doe,,07:20,,
+forms/2023-hunt-observations.csv#11,1,Deer,1,Buck,,19:20,,
+forms/2023-hunt-observations.csv#14,1,Deer,1,Buck,,08:50,,
+forms/2023-hunt-observations.csv#15,1,Deer,2,Buck,,17:40,,
+forms/2023-hunt-observations.csv#17,1,Deer,1,Unknown,,,,sighting reported without counts
+forms/2023-hunt-observations.csv#18,1,Deer,1,Buck,,18:45,,
+forms/2023-hunt-observations.csv#22,1,Deer,1,Buck,,06:00,,
+forms/2023-hunt-observations.csv#24,1,Deer,1,Buck,,18:40,,
+forms/2023-hunt-observations.csv#26,1,Deer,1,Buck,,18:20,,
+forms/2023-hunt-observations.csv#27,1,Deer,1,Buck,,,,
+forms/2023-hunt-observations.csv#31,1,Deer,1,Buck,,07:21,,
+forms/2023-hunt-observations.csv#32,1,Deer,2,Buck,,07:40,,
+forms/2023-hunt-observations.csv#34,1,Deer,1,Doe,,08:30,,
+forms/2023-hunt-observations.csv#35,1,Deer,5,Doe,,17:30,,reported as 5+
+calendar/harvests.csv#3,1,Deer,1,Buck,,07:22,,5pt
+calendar/harvests.csv#14,1,Deer,1,Buck,,17:18,,8pt

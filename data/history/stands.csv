@@ -1,0 +1,22 @@
+old_name,stand,status,type,notes
+Shit Stand,Shit Stand,existing,,
+Penny Loafer,Penny Loafer,existing,,
+Jim's Ridge,Jimmy’s Ridge,existing,,
+Tripod Stand,Tripod,existing,,
+Oak Ridge,Oak Ridge Stand,existing,,
+Bale Blind,Bale Blind,existing,,movable blind
+Creek Stand,Creek Stand,existing,,
+Front Field Blind,The Tollbooth,existing,,
+New Field Stand,Wild West Stand,existing,,tree stand on the new field; moved across Hogan's in 2026 and renamed
+Swamp Road Stand,Mrs Herrs Ridge Stand,existing,,was on the swamp road; moved to Mrs Herrs Ridge
+Trail Stand,Old Trail Stand,new_inactive,ladder_stand,bottom of the field; same stand as (Old) Trail Stand
+(Old) Trail Stand (bottom of field),Old Trail Stand,new_inactive,ladder_stand,
+(New) Trail Stand,New Trail Stand,new_inactive,ladder_stand,over what is now the Bale Blind field; no stand there now
+New Trail Stand,New Trail Stand,new_inactive,ladder_stand,
+Daniel's Stand,Daniel's Stand,new_inactive,ladder_stand,back in the swamp; abandoned
+Swamp Stand,Swamp Stand,new_inactive,ladder_stand,in the swamp; not the Swamp Road Stand; gone
+Red Blind,Red Blind,new_inactive,ground_blind,on the land when the club started; collapsed
+Black Blind,Black Blind,new_inactive,ground_blind,on the land when the club started; collapsed
+Popup - fallen tree,Popup Blind,new_inactive,ground_blind,movable popup blind
+UNKNOWN,,no_stand,,
+,,no_stand,,
