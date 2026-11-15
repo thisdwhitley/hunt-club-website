@@ -1,6 +1,6 @@
 # Plan: Hunt reports page (`/reports`)
 
-**Status:** Draft, waiting on the decisions at the bottom (2026-11-15)
+**Status:** Decisions 2-4 made 2026-11-15; route (decision 1) awaiting confirmation
 **Issues:** #117 (stand AM/PM and season-type breakdown), #115 (season summary, partly). Later phases: #119 (weather), #118 (sightings).
 **Builds on:** PR #172 (2018-2024 history import), PR #173 (season dates and weather backfill)
 
@@ -67,7 +67,7 @@ Route `/reports`, members only (same auth as `/management`). Read-only: manageme
 `/management` (#24, #115).
 
 1. **Filters** (sticky toolbar, same pattern as the cameras page: `sticky top-[68px] z-10`):
-   seasons (multi-select), season type, hunter, stand (with "include inactive"), and a
+   seasons (multi-select, defaulting per decision 2), season type, hunter, stand (with "include inactive"), and a
    "data quality rules" popover with the toggles above. Filters live in URL search params so a view can be bookmarked or shared.
 2. **Summary tiles:** sits, saw-deer %, deer per sit, harvests, each with its sit count.
 3. **AM vs PM:** the headline table (sits, saw deer %, deer/sit, bucks/sit, does/sit, harvests, harvest rate).
@@ -108,9 +108,16 @@ system in CLAUDE.md (no new palette). The icon registry, not direct lucide impor
 - Sightings analytics (#118), member breakdown and milestones (#115), and charts. Charts need a library;
   none is installed, so that's a dependency decision when it comes.
 
-## Decisions needed
+## Decisions
 
-1. **Route:** `/reports` (what #115 and #117 assume), or something else like `/analysis`?
-2. **Default scope:** all seasons with the data-quality rules on (2022 and calendar-only hunts excluded), or the current season by default?
-3. **Charts in v1?** Recommendation: no. Tables first, as #117 suggests, and charts in phase 4.
-4. **Who sees it:** all logged-in members (recommended), or admins only?
+1. **Route:** recommended `/reports` as its own read-only page, separate from `/management` (editing), as #115
+   and #24 intend. It gets a "Reports" nav link next to Property Map. The alternative is a Reports tab inside
+   `/management`. *Awaiting confirmation.*
+2. **Default scope (decided 2026-11-15):** if deer season is open today, default to the current season;
+   otherwise default to the most recent season that has started. For example, spring 2027 shows the 2026
+   season, and early September before archery opens still shows last season. Use `getCurrentSeason('deer')`
+   from `src/lib/seasons`; when it returns null, take the latest deer `season_year` whose `opens` is on or
+   before today. Other seasons, or all seasons, can be picked in the season filter. The data-quality rules
+   still apply when more than one season is selected.
+3. **Charts (decided):** not in v1. Tables only; charts in phase 4.
+4. **Access (decided):** all logged-in members.
