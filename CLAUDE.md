@@ -789,6 +789,33 @@ The `STAND_TYPES`, `TIME_OF_DAY_OPTIONS`, and `FEATURE_ICONS` constants store `L
 
 **Sightings:** captured in `hunt_sightings` table (linked to `hunt_logs`). The management SightingsTab (`src/components/management/SightingsTab.tsx`) allows browsing and inline editing all sightings. The hunt entry form captures sightings inline (#112, closed 2026-05-19). Cross-stand sighting analytics (issue #23) still require future schema work.
 
+### Reports (`/reports`)
+
+Read-only hunt analysis for all logged-in members (`/reports` is in the middleware's protected routes). Management (editing) stays in `/management`. The plan and its decisions are in `docs/plans/reports-page.md`.
+
+**Architecture:**
+- `src/app/reports/page.tsx` (Server Component) loads every sit with `getReportSits()` (`src/lib/reports/data.ts`) and works out the default season. Then it hands everything to `ReportsView` (client).
+- The data is small (hundreds of sits), so the client filters and aggregates in the browser. Filters live in URL params (`season`, `type`, `hunter`, `stand`, `inactive`, `incomplete`, `calrates`).
+- `src/lib/reports/` holds pure, isomorphic modules (`types.ts`, `build.ts`, `metrics.ts`, `data-quality.ts`) that both server and client import. Only `data.ts` touches Supabase.
+- No schema changes and no views. Revisit (a SQL view or RPC) only if sits reach the thousands.
+
+**Metric definitions (`metrics.ts`, keep in sync with the plan doc):**
+- Sit = one `hunt_logs` row. Saw deer = at least one `hunt_sightings` row with `animal_type = 'Deer'`. Deer per sit = deer seen / sits.
+- Harvest rate = sits with a harvest / sits. `harvests` is the total and includes calendar-only harvests.
+- `SMALL_SAMPLE = 10`: below that, rows are faded and marked "small sample".
+- Morning/evening stand label: 10+ sits on each side and a 15-point difference in saw-deer rate (`LEAN_MIN_SITS`, `LEAN_MIN_DIFF`).
+
+**Default season:** the current deer season if one is open today (`getCurrentSeason('deer')`), otherwise the most recent season that has started. Spring shows last season.
+
+**Data-quality rules (`data-quality.ts`, the only place they're defined):**
+- `INCOMPLETE_SEASONS` (2022) are dropped from "All seasons" unless toggled on. Picking the season explicitly always shows it.
+- Calendar-only hunts (notes start with `From calendar entry`, from the 2018-2024 import) count in harvest totals but not in rates unless toggled.
+- `SEASON_NOTES` footnote 2019 (estimated dates), 2021 (Oct-Dec only) and 2024.
+- Inactive stands are hidden from the stand table by default, but their sits always count in the totals.
+- Guests under the shared Guest account are grouped as "Guests", with real names from `Guest: <name>` in the notes.
+
+**Acceptance check:** `node scripts/reports/check-metrics.mts` (Node 22.18+, runs TypeScript directly, read-only with the service key). It reproduces the old spreadsheets' own AM/PM tallies and the plan's preview numbers through the same functions the page uses. Run it after changing `build.ts`, `metrics.ts` or `data-quality.ts`.
+
 ### HuntsTab — Season Filtering
 
 **Two separate "season" fields exist on `hunt_logs` — never conflate them:**

@@ -41,7 +41,8 @@ export async function updateSession(request: NextRequest) {
     '/hunts/edit',
     '/maintenance/create',
     '/maintenance/edit',
-    '/profile'
+    '/profile',
+    '/reports'
   ]
 
   const pathname = request.nextUrl.pathname

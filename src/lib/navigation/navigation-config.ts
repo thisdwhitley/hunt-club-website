@@ -12,6 +12,7 @@ import {
   CheckSquare,
   User,
   Settings,
+  BarChart3,
   type LucideIcon
 } from 'lucide-react'
 
@@ -55,6 +56,12 @@ export const navigationItems: NavigationItem[] = [
     href: '/property-map',
     icon: MapPin,
     description: 'Interactive property map'
+  },
+  {
+    name: 'Reports',
+    href: '/reports',
+    icon: BarChart3,
+    description: 'Hunt reports: AM vs PM, stands, seasons'
   },
   {
     name: 'Maintenance',

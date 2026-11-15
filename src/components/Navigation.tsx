@@ -15,6 +15,7 @@ import { ICONS } from '@/lib/shared/icons'
 const navigationItems = [
   { name: 'Calendar', href: '/calendar', icon: 'calendar' as const },
   { name: 'Property Map', href: '/property-map', icon: 'map' as const },
+  { name: 'Reports', href: '/reports', icon: 'analytics' as const },
   { name: 'Hunt Logs', href: '/hunts', icon: 'hunts' as const },
 ]
 

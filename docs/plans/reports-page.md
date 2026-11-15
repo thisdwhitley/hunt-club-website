@@ -1,6 +1,6 @@
 # Plan: Hunt reports page (`/reports`)
 
-**Status:** Decisions 2-4 made 2026-11-15; route (decision 1) awaiting confirmation
+**Status:** v1 (phases 1-3) implemented 2026-11-15 on branch feat/reports-page. Phase 4 open.
 **Issues:** #117 (stand AM/PM and season-type breakdown), #115 (season summary, partly). Later phases: #119 (weather), #118 (sightings).
 **Builds on:** PR #172 (2018-2024 history import), PR #173 (season dates and weather backfill)
 
@@ -67,7 +67,7 @@ Route `/reports`, members only (same auth as `/management`). Read-only: manageme
 `/management` (#24, #115).
 
 1. **Filters** (sticky toolbar, same pattern as the cameras page: `sticky top-[68px] z-10`):
-   seasons (multi-select, defaulting per decision 2), season type, hunter, stand (with "include inactive"), and a
+   season (single select with "All seasons" in v1, defaulting per decision 2; the URL already accepts a comma list for a later multi-select), season type, hunter, stand (with "include inactive"), and a
    "data quality rules" popover with the toggles above. Filters live in URL search params so a view can be bookmarked or shared.
 2. **Summary tiles:** sits, saw-deer %, deer per sit, harvests, each with its sit count.
 3. **AM vs PM:** the headline table (sits, saw deer %, deer/sit, bucks/sit, does/sit, harvests, harvest rate).
@@ -112,7 +112,7 @@ system in CLAUDE.md (no new palette). The icon registry, not direct lucide impor
 
 1. **Route:** recommended `/reports` as its own read-only page, separate from `/management` (editing), as #115
    and #24 intend. It gets a "Reports" nav link next to Property Map. The alternative is a Reports tab inside
-   `/management`. *Awaiting confirmation.*
+   `/management`. *Decided 2026-11-15: `/reports`.*
 2. **Default scope (decided 2026-11-15):** if deer season is open today, default to the current season;
    otherwise default to the most recent season that has started. For example, spring 2027 shows the 2026
    season, and early September before archery opens still shows last season. Use `getCurrentSeason('deer')`
