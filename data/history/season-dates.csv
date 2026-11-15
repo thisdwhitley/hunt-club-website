@@ -1,0 +1,22 @@
+season_year,species,season_type,zone,opens,closes,confidence,notes
+2018,deer,archery,central,2018-09-08,2018-10-26,confirmed,NCWRC Central deer season 2018-19 (Archery Sept. 8 - Oct. 26)
+2018,deer,blackpowder,central,2018-10-27,2018-11-09,confirmed,NCWRC Central deer season 2018-19 (Muzzleloader Oct. 27 - Nov. 9)
+2018,deer,gun,central,2018-11-10,2019-01-01,confirmed,NCWRC Central deer season 2018-19 (Gun Nov. 10 - Jan. 1)
+2019,deer,archery,central,2019-09-07,2019-10-25,estimated,No published source found. Derived from the 2018-2025 pattern (archery opens the Saturday nearest Sept. 10; 7 weeks of archery; 2 weeks of blackpowder; gun to Jan. 1)
+2019,deer,blackpowder,central,2019-10-26,2019-11-08,estimated,No published source found. Derived from the 2018-2025 pattern
+2019,deer,gun,central,2019-11-09,2020-01-01,estimated,No published source found. Derived from the 2018-2025 pattern
+2020,deer,archery,central,2020-09-12,2020-10-30,tentative,Opener from the NCWRC 2020-21 quick reference (club calendar); close is the day before blackpowder opens
+2020,deer,blackpowder,central,2020-10-31,2020-11-13,tentative,Opener from the NCWRC 2020-21 quick reference (club calendar); close is the day before gun opens
+2020,deer,gun,central,2020-11-14,2021-01-01,tentative,Opener from the NCWRC 2020-21 quick reference (club calendar); close assumed Jan. 1 like every other year
+2021,deer,archery,central,2021-09-11,2021-10-29,confirmed,NCWRC 2021-22 Deer Season PDF (club calendar)
+2021,deer,blackpowder,central,2021-10-30,2021-11-12,confirmed,NCWRC 2021-22 Deer Season PDF (club calendar)
+2021,deer,gun,central,2021-11-13,2022-01-01,confirmed,NCWRC 2021-22 Deer Season PDF (club calendar)
+2022,deer,archery,central,2022-09-10,2022-10-28,confirmed,NCWRC 2022-23 Deer Season Dates PDF (club calendar)
+2022,deer,blackpowder,central,2022-10-29,2022-11-11,confirmed,NCWRC 2022-23 Deer Season Dates PDF (club calendar)
+2022,deer,gun,central,2022-11-12,2023-01-02,confirmed,NCWRC 2022-23 Deer Season Dates PDF (club calendar); Jan. 1 2023 was a Sunday
+2023,deer,archery,central,2023-09-09,2023-10-27,confirmed,NCWRC 2023-24 proposed dates (club calendar); matches published 2023-24 season tables
+2023,deer,blackpowder,central,2023-10-28,2023-11-10,confirmed,NCWRC 2023-24 proposed dates (club calendar); matches published 2023-24 season tables
+2023,deer,gun,central,2023-11-11,2024-01-01,confirmed,NCWRC 2023-24 proposed dates (club calendar); matches published 2023-24 season tables
+2024,deer,archery,central,2024-09-07,2024-11-01,confirmed,NCWRC 2024-25 Inland Fishing Hunting & Trapping digest (Central archery Sept. 7 - Nov. 1)
+2024,deer,blackpowder,central,2024-11-02,2024-11-15,tentative,Secondary sources (2024-25 season tables); not confirmed in the official digest
+2024,deer,gun,central,2024-11-16,2025-01-01,tentative,Secondary sources (2024-25 season tables); not confirmed in the official digest

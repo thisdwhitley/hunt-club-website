@@ -94,6 +94,19 @@ Rollback: delete the `hunt_logs` ids in `loaded.csv` (sightings and harvests are
 them), delete the inactive stands the load created, then run
 `load-history.js --recalc-only --apply` to recalculate stand statistics.
 
+## Season dates and weather
+
+```bash
+NODE_PATH=node_modules node scripts/history/load-seasons.js [--apply]   # season_calendar 2018-2024 + label hunts
+node scripts/history/backfill-weather.js [--apply] [--limit N]         # Visual Crossing weather for old hunt dates
+```
+
+- `season-dates.csv` holds the NC central-zone deer seasons for 2018-2024, with the source and
+  confidence of each row. 2019 is estimated (no published source found).
+- The weather backfill fetches each hunt date plus the day before it (for pressure trend). It costs
+  24 Visual Crossing records per day, so it runs 38 days at a time to stay under the free tier's
+  1000/day. Run it once a day until it reports 0 remaining.
+
 ## Corrections
 
 Each row in `corrections.csv` is `source_ref, field, value, reason`. Fields:

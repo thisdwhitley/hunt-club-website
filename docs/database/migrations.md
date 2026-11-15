@@ -35,6 +35,44 @@
 
 ---
 
+### 2026-11-15: Backfill 2018-2024 season dates and weather for imported hunts (data migration)
+**Type**: Data Migration
+**Affected Tables**: season_calendar, hunt_logs, daily_weather_snapshots, daily_collection_log
+**Breaking Changes**: No
+**Rollback Available**: Yes (see below)
+**Schema Changes**: None
+
+**Purpose**: Make the imported 2018-2024 hunts usable in season and weather analysis.
+
+**Changes Made**:
+- Inserted 21 `season_calendar` rows (deer, central zone, 2018-2024; archery/blackpowder/gun). Source and confidence for each row are in `data/history/season-dates.csv`. 2018 and 2021-2023 are `confirmed`, 2020 and the 2024 blackpowder/gun rows are `tentative`, and 2019 is `estimated` (no published source found; derived from the 2018-2025 pattern where archery opens the Saturday nearest Sept. 10).
+- Set `hunting_season` (season type) and `season` (season year) on all 204 pre-2025 hunts from those rows. No hunt fell outside a season.
+- Weather backfill: `daily_weather_snapshots` rows for each pre-2025 hunt date and the day before it (for pressure trend), 149 days total, collected with the same `WeatherCollectionService` as the daily job. `trigger_update_hunt_logs_weather` fills each hunt's weather when its date's snapshot lands. **In progress:** Visual Crossing bills 24 records per day and the free tier is 1000/day, so the backfill runs in batches of 38 days. Batch 1 (2018-09-07 .. 2019-11-02) is done: 69 of 204 old hunts have weather. Run `node scripts/history/backfill-weather.js --apply` once a day until it reports 0 remaining (about 3 more runs).
+
+**Migration Scripts**: `scripts/history/load-seasons.js --apply` and `scripts/history/backfill-weather.js --apply`. Both do a dry run by default and skip what already exists.
+
+**Rollback**:
+```sql
+DELETE FROM season_calendar WHERE species = 'deer' AND season_year BETWEEN 2018 AND 2024;
+UPDATE hunt_logs SET hunting_season = NULL WHERE hunt_date < '2025-01-01';
+DELETE FROM daily_weather_snapshots WHERE date < '2025-01-01';
+-- hunt weather columns would also need clearing (temperature_high/low, moon_illumination, weather_conditions, weather_fetched_at ...) for hunt_date < 2025-01-01
+```
+
+**Verification Steps**:
+- [x] Re-running `load-seasons.js` reports 0 rows to insert and 0 hunts to label
+- [x] 2018-11-10 hunts show temperature, moon, pressure trend (`rising`) and sky summary after batch 1
+- [ ] `backfill-weather.js` reports 0 remaining (after the remaining batches)
+
+**Files Modified**:
+- data/history/season-dates.csv (new)
+- scripts/history/load-seasons.js, scripts/history/backfill-weather.js (new)
+- data/history/README.md, docs/database/migrations.md
+
+**Claude Context**: Season-type analysis for 2019 rests on estimated dates. Weather on old hunts comes from the same pipeline as current hunts, so it is directly comparable.
+
+---
+
 ### 2026-11-15: Import 2018-2024 hunt history (data migration)
 **Type**: Data Migration
 **Affected Tables**: hunt_logs, hunt_sightings, hunt_harvests, stands, members (plus one auth.users account)
