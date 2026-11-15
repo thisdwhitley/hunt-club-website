@@ -1,0 +1,27 @@
+source_ref,field,value,reason
+sheets/2019-hunting.csv#25,shot_outcome,wounded_not_recovered,"notes: ""Hit but unable to find him"""
+sheets/2019-hunting.csv#34,harvest_description,8pt,matches calendar =[ 2019 JBD #1 PM ]=
+sheets/2020-hunting.csv#7,harvest_description,button buck,"notes: ""got the button buck at 7:15"""
+sheets/2020-hunting.csv#17,shot_outcome,miss,"notes: ""missed doe at 40yds"""
+sheets/2020-hunting.csv#28,harvest_description,doe (big),"notes: ""got a big doe at 6:15"""
+sheets/2020-hunting.csv#29,shot_outcome,miss,"notes: ""missed the buck"""
+sheets/2020-hunting.csv#34,harvest_description,doe,matches calendar =[ 2020 DSW #1 AM ]=
+sheets/2020-hunting.csv#40,harvest_description,4pt,"notes: ""smallish 4 pt""; calendar =[ 2020 DSW #2 PM ]="
+sheets/2020-hunting.csv#42,harvest_description,8pt,"notes: ""8 pt""; calendar =[ 2020 DSW #3 AM ]="
+sheets/2020-hunting.csv#44,harvest_description,doe (big),"notes: ""big doe"""
+sheets/2020-hunting.csv#56,sightings,deer,the spreadsheet turned the sightings cell into a date (2020-04-06); original text unreadable but the notes describe a deer
+forms/2021-hunt-observations.csv#1,skip,,form test (confirmed by Daniel 2026-11-15)
+forms/2021-hunt-observations.csv#2,skip,,form test (confirmed by Daniel 2026-11-15)
+forms/2021-hunt-observations.csv#3,skip,,form test (confirmed by Daniel 2026-11-15)
+forms/2021-hunt-observations.csv#8,skip,,Gene did not actually hunt in 2021 (per Daniel 2026-11-15)
+forms/2022-hunt-observations.csv#1,skip,,re-entered with more detail as row 3
+forms/2022-hunt-observations.csv#2,skip,,re-entered with more detail as row 4
+forms/2023-hunt-observations.csv#14,harvest_description,3pt,"harvest notes ""3 point rack""; calendar calls the spot Bale Blind field (same place as New Trail Stand, per Daniel)"
+forms/2023-hunt-observations.csv#26,harvest_description,3pt? cow-horn,from calendar =[ 2023 DSW #2 PM ]=
+calendar/harvests.csv#3,hunt_date,2021-11-11,calendar series was created starting 2018-11-11; title says 2021 and Daniel confirmed a separate 2021-11-11 harvest
+calendar/harvests.csv#3,stand,Bale Blind,"calendar: ""Bail Blind (lower field)"""
+calendar/harvests.csv#14,stand,Penny Loafer,"calendar: ""Penny Loafer Stand"""
+forms/2021-hunt-observations.csv#29,skip,,"test entry, not a real hunt (per Daniel 2026-11-15)"
+forms/2021-hunt-observations.csv#7,skip,,"test entry, not a real hunt (per Daniel 2026-11-15)"
+forms/2023-hunt-observations.csv#5,skip,,"test entry, not a real hunt (per Daniel 2026-11-15)"
+forms/2023-hunt-observations.csv#18,harvest_description,unknown (recovered after tracking),"real harvest, recovered (per Daniel 2026-11-15); deer not described"

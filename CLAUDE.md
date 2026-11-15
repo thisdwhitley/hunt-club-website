@@ -61,11 +61,18 @@ npm run cuddeback:test     # Test sync in debug mode
 
 ## MCP Servers
 
-Two MCP servers are configured at user scope (`~/.claude/`) and available in all sessions:
+MCP servers are configured per machine, so check with `claude mcp list` (or `/mcp`) at the start of a session. Don't assume both are present. As of 2026-11-15 the workbench container (code-server on the QNAP) has the GitHub MCP but not the Supabase MCP. There, use the service-key Node scripts (see `scripts/history/load-history.js` for the pattern) or `npm run db:*` instead.
 
 ### GitHub MCP
 
 Gives Claude direct access to the GitHub API — issues, PRs, commits, branches, and more.
+
+**Setup:** GitHub's hosted server, added at user scope with a fine-grained personal access token (Issues and Pull requests: read/write; Contents: read):
+```bash
+claude mcp add --transport http --scope user github https://api.githubcopilot.com/mcp/ \
+  --header "Authorization: Bearer <token>"
+```
+If tools fail with "Bad credentials", the token has expired. Create a new one and re-run the command after `claude mcp remove github -s user`. The old `@modelcontextprotocol/server-github` package is deprecated, so don't reinstall it. Git push/pull uses SSH keys and doesn't depend on this token.
 
 **Example prompts:**
 ```

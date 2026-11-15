@@ -1,0 +1,210 @@
+source_ref,source,hunt_date,hunt_type,hunter,stand,original_stand,had_harvest,harvest_count,harvest_description,shot_outcome,notes
+sheets/2018-hunting.csv#1,sheet,2018-09-08,PM,Glenn,Shit Stand,Shit Stand,false,0,,,
+sheets/2018-hunting.csv#2,sheet,2018-09-08,PM,Jim,Oak Ridge Stand,Oak Ridge,false,0,,,
+sheets/2018-hunting.csv#3,sheet,2018-10-07,AM,Jim,Shit Stand,Shit Stand,false,0,,,
+sheets/2018-hunting.csv#4,sheet,2018-10-13,AM,Daniel,Oak Ridge Stand,Oak Ridge,false,0,,,
+sheets/2018-hunting.csv#5,sheet,2018-10-13,PM,Daniel,Shit Stand,Shit Stand,false,0,,,
+sheets/2018-hunting.csv#6,sheet,2018-10-21,AM,Jim,Shit Stand,Shit Stand,false,0,,,
+sheets/2018-hunting.csv#8,sheet,2018-10-27,AM,Daniel,Shit Stand,Shit Stand,false,0,,,
+sheets/2018-hunting.csv#7,sheet,2018-10-27,AM,Joe,Oak Ridge Stand,Oak Ridge,false,0,,,
+sheets/2018-hunting.csv#11,sheet,2018-10-27,PM,Daniel,Jimmy’s Ridge,Jim's Ridge,false,0,,,
+sheets/2018-hunting.csv#9,sheet,2018-10-27,PM,Jim,Shit Stand,Shit Stand,false,0,,miss,
+sheets/2018-hunting.csv#10,sheet,2018-10-27,PM,Joe,Daniel's Stand,Daniel's Stand,false,0,,,
+sheets/2018-hunting.csv#14,sheet,2018-10-28,AM,Daniel,Oak Ridge Stand,Oak Ridge,false,0,,wounded_not_recovered,Crossing N>S (away from Finch's) on trail ~40yds in front of stand
+sheets/2018-hunting.csv#12,sheet,2018-10-28,AM,Jim,Bale Blind,Bale Blind,false,0,,miss,
+sheets/2018-hunting.csv#13,sheet,2018-10-28,AM,Joe,Shit Stand,Shit Stand,false,0,,,
+sheets/2018-hunting.csv#16,sheet,2018-11-10,AM,Daniel,Daniel's Stand,Daniel's Stand,false,0,,,
+sheets/2018-hunting.csv#15,sheet,2018-11-10,AM,Joe,Swamp Stand,Swamp Stand,false,0,,,
+sheets/2018-hunting.csv#18,sheet,2018-11-10,PM,Daniel,Shit Stand,Shit Stand,true,1,6-pt,harvest,Crossing NE>SW (away from Finch's) on trail back to swamp
+sheets/2018-hunting.csv#17,sheet,2018-11-10,PM,Joe,Daniel's Stand,Daniel's Stand,false,0,,,
+sheets/2018-hunting.csv#20,sheet,2018-11-11,AM,Daniel,Oak Ridge Stand,Oak Ridge,true,1,cow-horn,harvest,"Climbed gully behind stand S>N (toward Finch's), then stopped on trail behind stand"
+sheets/2018-hunting.csv#19,sheet,2018-11-11,AM,Joe,Shit Stand,Shit Stand,false,0,,,
+sheets/2018-hunting.csv#23,sheet,2018-11-23,PM,Daniel,Black Blind,Black Blind,false,0,,,
+sheets/2018-hunting.csv#21,sheet,2018-11-23,PM,Jim,Bale Blind,Bale Blind,false,0,,,
+sheets/2018-hunting.csv#22,sheet,2018-11-23,PM,John,Shit Stand,Shit Stand,false,0,,,
+sheets/2018-hunting.csv#26,sheet,2018-11-24,AM,Daniel,Oak Ridge Stand,Oak Ridge,false,0,,,
+sheets/2018-hunting.csv#24,sheet,2018-11-24,AM,Jim,Bale Blind,Bale Blind,false,0,,,
+sheets/2018-hunting.csv#25,sheet,2018-11-24,AM,John,Jimmy’s Ridge,Jim's Ridge,false,0,,,
+sheets/2018-hunting.csv#28,sheet,2018-12-07,AM,Daniel,Daniel's Stand,Daniel's Stand,false,0,,,Bigger than a fox but smaller than what I thought a coyote would be. And orangish...
+sheets/2018-hunting.csv#27,sheet,2018-12-07,AM,Jim,Swamp Stand,Swamp Stand,false,0,,,
+sheets/2018-hunting.csv#30,sheet,2018-12-07,PM,Daniel,Swamp Stand,Swamp Stand,false,0,,,
+sheets/2018-hunting.csv#29,sheet,2018-12-07,PM,Jim,Old Trail Stand,Trail Stand,false,0,,,
+sheets/2018-hunting.csv#31,sheet,2018-12-22,AM,Joe,,UNKNOWN,false,0,,,
+sheets/2018-hunting.csv#32,sheet,2018-12-22,AM,John,,UNKNOWN,false,0,,,
+sheets/2018-hunting.csv#33,sheet,2018-12-22,PM,Joe,,UNKNOWN,false,0,,,
+sheets/2018-hunting.csv#34,sheet,2018-12-22,PM,John,,UNKNOWN,false,0,,,
+sheets/2018-hunting.csv#37,sheet,2018-12-28,PM,Daniel,Shit Stand,Shit Stand,false,0,,,
+sheets/2018-hunting.csv#35,sheet,2018-12-28,PM,Jim,Bale Blind,Bale Blind,false,0,,,
+sheets/2018-hunting.csv#36,sheet,2018-12-28,PM,John,Tripod,Tripod Stand,false,0,,,
+sheets/2018-hunting.csv#40,sheet,2018-12-29,AM,Daniel,Bale Blind,Bale Blind,false,0,,,
+sheets/2018-hunting.csv#38,sheet,2018-12-29,AM,Jim,Shit Stand,Shit Stand,false,0,,,
+sheets/2018-hunting.csv#39,sheet,2018-12-29,AM,John,,UNKNOWN,false,0,,,
+sheets/2018-hunting.csv#43,sheet,2018-12-29,PM,Daniel,Old Trail Stand,Trail Stand,false,0,,,"I also spooked 2 deer on my way out ~5:15, they were below the black blind"
+sheets/2018-hunting.csv#41,sheet,2018-12-29,PM,Jim,Tripod,Tripod Stand,true,1,Doe,harvest,
+sheets/2018-hunting.csv#42,sheet,2018-12-29,PM,John,,UNKNOWN,false,0,,,
+sheets/2019-hunting.csv#1,sheet,2019-09-13,PM,Jim,Shit Stand,Shit Stand,false,0,,,Came up from trail-to-swamp or from behind stand (opposite door)
+sheets/2019-hunting.csv#3,sheet,2019-09-14,AM,Daniel,Oak Ridge Stand,Oak Ridge,false,0,,,
+sheets/2019-hunting.csv#2,sheet,2019-09-14,AM,Jim,Jimmy’s Ridge,Jim's Ridge,false,0,,,
+sheets/2019-hunting.csv#5,sheet,2019-09-14,PM,Daniel,Shit Stand,Shit Stand,false,0,,,Came up from trail-to-swamp or from behind stand (opposite door)
+sheets/2019-hunting.csv#4,sheet,2019-09-14,PM,Jim,Oak Ridge Stand,Oak Ridge,false,0,,,"Smelled and spooked, came up hill opposite Finch's"
+sheets/2019-hunting.csv#6,sheet,2019-09-15,AM,Jim,Jimmy’s Ridge,Jim's Ridge,false,0,,,
+sheets/2019-hunting.csv#7,sheet,2019-09-20,PM,Jim,Red Blind,Red Blind,false,0,,,
+sheets/2019-hunting.csv#9,sheet,2019-10-05,AM,Daniel,Red Blind,Red Blind,false,0,,,
+sheets/2019-hunting.csv#8,sheet,2019-10-05,AM,Jim,Shit Stand,Shit Stand,false,0,,,"Came from Finch's direction, towards red stand, then down towards swamp"
+sheets/2019-hunting.csv#11,sheet,2019-10-05,PM,Daniel,Daniel's Stand,Daniel's Stand,false,0,,,Walking 40 yards to right of stand towards swamp stand (couldn't get a clear shot)
+sheets/2019-hunting.csv#10,sheet,2019-10-05,PM,Jim,Swamp Stand,Swamp Stand,false,0,,,
+sheets/2019-hunting.csv#13,sheet,2019-10-06,AM,Daniel,Shit Stand,Shit Stand,false,0,,,
+sheets/2019-hunting.csv#12,sheet,2019-10-06,AM,Jim,Jimmy’s Ridge,Jim's Ridge,false,0,,,
+sheets/2019-hunting.csv#16,sheet,2019-10-12,AM,Daniel,Old Trail Stand,Trail Stand,false,0,,,
+sheets/2019-hunting.csv#15,sheet,2019-10-12,AM,Graham,Shit Stand,Shit Stand,false,0,,,
+sheets/2019-hunting.csv#14,sheet,2019-10-12,AM,Jim,Shit Stand,Shit Stand,false,0,,,
+sheets/2019-hunting.csv#19,sheet,2019-10-12,PM,Daniel,Old Trail Stand,Trail Stand,false,0,,,
+sheets/2019-hunting.csv#18,sheet,2019-10-12,PM,Graham,Jimmy’s Ridge,Jim's Ridge,false,0,,,
+sheets/2019-hunting.csv#17,sheet,2019-10-12,PM,Jim,Jimmy’s Ridge,Jim's Ridge,false,0,,,
+sheets/2019-hunting.csv#22,sheet,2019-10-13,AM,Daniel,Oak Ridge Stand,Oak Ridge,false,0,,,
+sheets/2019-hunting.csv#21,sheet,2019-10-13,AM,Graham,Shit Stand,Shit Stand,false,0,,,
+sheets/2019-hunting.csv#20,sheet,2019-10-13,AM,Jim,Shit Stand,Shit Stand,false,0,,,
+sheets/2019-hunting.csv#23,sheet,2019-11-02,AM,Daniel,Shit Stand,Shit Stand,false,0,,,"Walking down the trail at door side of stand, cut into the woods towards trail stand"
+sheets/2019-hunting.csv#26,sheet,2019-11-02,PM,Daniel,Old Trail Stand,Trail Stand,false,0,,,
+sheets/2019-hunting.csv#24,sheet,2019-11-02,PM,Jim,Penny Loafer,Penny Loafer,false,0,,,"Under the feeded, which went off and scared it"
+sheets/2019-hunting.csv#25,sheet,2019-11-02,PM,Joe,Daniel's Stand,Daniel's Stand,false,0,,wounded_not_recovered,Hit but unable to find him
+sheets/2019-hunting.csv#27,sheet,2019-11-03,AM,Daniel,Oak Ridge Stand,Oak Ridge,false,0,,,
+sheets/2019-hunting.csv#28,sheet,2019-11-11,PM,Daniel,Penny Loafer,Penny Loafer,false,0,,,"Scared up by those dogs, kept moving at 50-60yds"
+sheets/2019-hunting.csv#29,sheet,2019-11-13,AM,Daniel,Penny Loafer,Penny Loafer,false,0,,,
+sheets/2019-hunting.csv#30,sheet,2019-11-15,PM,Jim,Penny Loafer,Penny Loafer,false,0,,,Button buck under feeder
+sheets/2019-hunting.csv#31,sheet,2019-11-16,AM,Jim,Shit Stand,Shit Stand,false,0,,,
+sheets/2019-hunting.csv#32,sheet,2019-11-26,AM,Daniel,Shit Stand,Shit Stand,false,0,,,"Baby buck, came from swamp. Barely saw something in that direction at 7:00 too. Saw 2 deer walking in at 5:00"
+sheets/2019-hunting.csv#33,sheet,2019-11-26,PM,Daniel,Penny Loafer,Penny Loafer,false,0,,,
+sheets/2019-hunting.csv#35,sheet,2019-11-26,PM,Daniel,Old Trail Stand,Trail Stand,false,0,,,
+sheets/2019-hunting.csv#34,sheet,2019-11-26,PM,Jim,Tripod,Tripod Stand,true,1,8pt,harvest,
+sheets/2019-hunting.csv#36,sheet,2019-11-27,AM,Daniel,Shit Stand,Shit Stand,false,0,,,
+sheets/2019-hunting.csv#37,sheet,2019-12-06,PM,Jim,Penny Loafer,Penny Loafer,false,0,,,
+sheets/2019-hunting.csv#39,sheet,2019-12-07,AM,Daniel,Tripod,Tripod Stand,false,0,,,
+sheets/2019-hunting.csv#38,sheet,2019-12-07,AM,Jim,Oak Ridge Stand,Oak Ridge,false,0,,,
+sheets/2020-hunting.csv#1,sheet,2020-09-12,AM,Glenn,Penny Loafer,Penny Loafer,false,0,,,
+sheets/2020-hunting.csv#2,sheet,2020-09-12,AM,Jim,Shit Stand,Shit Stand,false,0,,,
+sheets/2020-hunting.csv#3,sheet,2020-09-12,PM,Glenn,Penny Loafer,Penny Loafer,false,0,,,
+sheets/2020-hunting.csv#4,sheet,2020-09-12,PM,Jim,New Trail Stand,(New) Trail Stand,false,0,,,
+sheets/2020-hunting.csv#5,sheet,2020-09-17,AM,John,New Trail Stand,(New) Trail Stand,false,0,,,
+sheets/2020-hunting.csv#7,sheet,2020-09-18,PM,Jim,Penny Loafer,Penny Loafer,true,1,button buck,harvest,got the button buck at 7:15
+sheets/2020-hunting.csv#6,sheet,2020-09-18,PM,John,New Trail Stand,(New) Trail Stand,false,0,,,
+sheets/2020-hunting.csv#9,sheet,2020-09-19,AM,Jim,Penny Loafer,Penny Loafer,false,0,,,
+sheets/2020-hunting.csv#8,sheet,2020-09-19,AM,John,Bale Blind,Bale Blind,false,0,,,
+sheets/2020-hunting.csv#10,sheet,2020-09-26,AM,Daniel,New Trail Stand,(New) Trail Stand,false,0,,,spooked a deer (snorted and ran off) behind the stand
+sheets/2020-hunting.csv#11,sheet,2020-09-26,PM,Daniel,Penny Loafer,Penny Loafer,false,0,,,
+sheets/2020-hunting.csv#12,sheet,2020-09-27,AM,Daniel,Old Trail Stand,(Old) Trail Stand (bottom of field),false,0,,,
+sheets/2020-hunting.csv#13,sheet,2020-10-03,AM,Daniel,Oak Ridge Stand,Oak Ridge,false,0,,,watched a deer too small to shoot walk along treeline on right towards stand
+sheets/2020-hunting.csv#14,sheet,2020-10-03,AM,Jim,Mrs Herrs Ridge Stand,Swamp Road Stand,false,0,,,
+sheets/2020-hunting.csv#16,sheet,2020-10-03,PM,Ben,Penny Loafer,Penny Loafer,false,0,,,
+sheets/2020-hunting.csv#15,sheet,2020-10-03,PM,Daniel,New Trail Stand,(New) Trail Stand,false,0,,,
+sheets/2020-hunting.csv#17,sheet,2020-10-16,PM,Jim,Bale Blind,Bale Blind,false,0,,miss,missed doe at 40yds
+sheets/2020-hunting.csv#18,sheet,2020-10-17,AM,Daniel,Jimmy’s Ridge,Jim's Ridge,false,0,,,
+sheets/2020-hunting.csv#19,sheet,2020-10-17,AM,Jim,New Trail Stand,(New) Trail Stand,false,0,,,
+sheets/2020-hunting.csv#20,sheet,2020-10-17,PM,Daniel,New Trail Stand,(New) Trail Stand,false,0,,,
+sheets/2020-hunting.csv#21,sheet,2020-10-24,AM,Daniel,,,false,0,,,
+sheets/2020-hunting.csv#22,sheet,2020-10-24,PM,Daniel,Shit Stand,Shit Stand,false,0,,,"spooked another one, ran off to the left (if facing the shitstand door from inside)"
+sheets/2020-hunting.csv#23,sheet,2020-10-24,PM,Jim,Popup Blind,Popup - fallen tree,false,0,,,
+sheets/2020-hunting.csv#24,sheet,2020-10-25,AM,Daniel,Penny Loafer,Penny Loafer,false,0,,,
+sheets/2020-hunting.csv#25,sheet,2020-10-25,AM,Jim,Bale Blind,Bale Blind,false,0,,,
+sheets/2020-hunting.csv#26,sheet,2020-10-30,PM,Jim,New Trail Stand,(New) Trail Stand,false,0,,,
+sheets/2020-hunting.csv#27,sheet,2020-10-31,AM,Jim,Tripod,Tripod Stand,false,0,,,
+sheets/2020-hunting.csv#28,sheet,2020-10-31,PM,Jim,Penny Loafer,Penny Loafer,true,1,doe (big),harvest,got a big doe at 6:15
+sheets/2020-hunting.csv#29,sheet,2020-11-06,AM,Daniel,Tripod,Tripod Stand,false,0,,miss,missed the buck
+sheets/2020-hunting.csv#30,sheet,2020-11-06,PM,Daniel,Penny Loafer,Penny Loafer,false,0,,,
+sheets/2020-hunting.csv#31,sheet,2020-11-07,AM,Daniel,Oak Ridge Stand,Oak Ridge,false,0,,,
+sheets/2020-hunting.csv#32,sheet,2020-11-07,PM,Daniel,Penny Loafer,Penny Loafer,false,0,,,
+sheets/2020-hunting.csv#33,sheet,2020-11-08,AM,Daniel,Jimmy’s Ridge,Jim's Ridge,false,0,,,scared one off of top field walking to stand = they're there
+sheets/2020-hunting.csv#34,sheet,2020-11-14,AM,Daniel,Tripod,Tripod Stand,true,1,doe,harvest,(should have been more patient and waited to see if a buck was in tow...)
+sheets/2020-hunting.csv#35,sheet,2020-11-14,PM,Daniel,Shit Stand,Shit Stand,false,0,,,
+sheets/2020-hunting.csv#36,sheet,2020-11-14,PM,Joe,Penny Loafer,Penny Loafer,false,0,,,
+sheets/2020-hunting.csv#37,sheet,2020-11-15,AM,Daniel,Jimmy’s Ridge,Jim's Ridge,false,0,,,very (too) windy so I moved to bail blind after the sun rose and didn't sit long
+sheets/2020-hunting.csv#38,sheet,2020-11-15,PM,Daniel,Mrs Herrs Ridge Stand,Swamp Road Stand,false,0,,,
+sheets/2020-hunting.csv#39,sheet,2020-11-16,AM,Daniel,Penny Loafer,Penny Loafer,false,0,,,
+sheets/2020-hunting.csv#40,sheet,2020-11-16,PM,Daniel,Shit Stand,Shit Stand,true,1,4pt,harvest,"smallish 4 pt (also saw 6 turkeys walking around the field), started off bottom of top field, then moved to shit stand around3pm"
+sheets/2020-hunting.csv#41,sheet,2020-11-17,AM,Daniel,Oak Ridge Stand,Oak Ridge,false,0,,,
+sheets/2020-hunting.csv#42,sheet,2020-11-20,AM,Daniel,Tripod,Tripod Stand,true,1,8pt,harvest,8 pt
+sheets/2020-hunting.csv#43,sheet,2020-12-04,AM,Daniel,Tripod,Tripod Stand,false,0,,,
+sheets/2020-hunting.csv#45,sheet,2020-12-04,PM,Daniel,Shit Stand,Shit Stand,false,0,,,
+sheets/2020-hunting.csv#44,sheet,2020-12-04,PM,Jim,Penny Loafer,Penny Loafer,true,1,doe (big),harvest,big doe
+sheets/2020-hunting.csv#47,sheet,2020-12-05,AM,Daniel,Shit Stand,Shit Stand,false,0,,,"too early to shoot, and good thing because I couldn't see well enough to tell what it was, spooked it"
+sheets/2020-hunting.csv#46,sheet,2020-12-05,AM,Jim,Jimmy’s Ridge,Jim's Ridge,false,0,,,
+sheets/2020-hunting.csv#49,sheet,2020-12-05,PM,Daniel,Penny Loafer,Penny Loafer,false,0,,,
+sheets/2020-hunting.csv#48,sheet,2020-12-05,PM,Jim,Jimmy’s Ridge,Jim's Ridge,false,0,,,
+sheets/2020-hunting.csv#50,sheet,2020-12-06,AM,Daniel,Shit Stand,Shit Stand,false,0,,,
+sheets/2020-hunting.csv#54,sheet,2020-12-29,PM,Jim,Penny Loafer,Penny Loafer,false,0,,,
+sheets/2020-hunting.csv#56,sheet,2020-12-30,AM,Daniel,Tripod,Tripod Stand,false,0,,,"Stayed in the trees on the shit stand side of the alley, trotting away from Tripod out of site"
+sheets/2020-hunting.csv#55,sheet,2020-12-30,AM,Jim,Jimmy’s Ridge,Jim's Ridge,false,0,,,
+sheets/2020-hunting.csv#58,sheet,2020-12-30,PM,Daniel,Mrs Herrs Ridge Stand,Swamp Road Stand,false,0,,,
+sheets/2020-hunting.csv#57,sheet,2020-12-30,PM,Jim,Popup Blind,Popup - fallen tree,false,0,,,
+forms/2021-hunt-observations.csv#9,form,2021-10-23,AM,Daniel,Bale Blind,Bale Blind,false,0,,,Came and left from the creek. Ranged her at 25yds. Got her in my cross hairs and watched her eat for 10 minutes. Too small.
+forms/2021-hunt-observations.csv#10,form,2021-10-23,PM,Daniel,Mrs Herrs Ridge Stand,Swamp Road Stand,false,0,,,"First buck was behind my right shoulder, hugging Finches property line. Never stopped walking towards the swamp.
+17:23-17:49 - The second buck was sizeable. Also came from the left behind me. I heard him rubbing a tree (then saw the tree shaking) well before I saw him. Heard him vocalizing for a long time. Saw him for a while but never got a shot. Est. 8pt...tall and wide but thin.
+18:30 - Saw a doe, perhaps what the buck was vocalizing to?
+18:45 - walked up on the buck in the shit stand field, 5+ minute staring contest, he walked right towards me, eventually spooked. When I walked into the field, there was a big doe in the corner still.  Eventually spooked her too."
+forms/2021-hunt-observations.csv#11,form,2021-10-24,AM,Daniel,Bale Blind,Bale Blind,false,0,,,
+forms/2021-hunt-observations.csv#12,form,2021-10-31,PM,Daniel,Penny Loafer,Penny Loafer,false,0,,,
+forms/2021-hunt-observations.csv#13,form,2021-11-01,AM,Daniel,New Trail Stand,(New) Trail Stand,false,0,,,
+forms/2021-hunt-observations.csv#17,form,2021-11-05,PM,Jim,Shit Stand,Shit Stand,false,0,,,
+forms/2021-hunt-observations.csv#14,form,2021-11-06,AM,Daniel,Tripod,Tripod Stand,false,0,,,
+forms/2021-hunt-observations.csv#18,form,2021-11-06,AM,Jim,Oak Ridge Stand,Oak Ridge,false,0,,,
+forms/2021-hunt-observations.csv#15,form,2021-11-06,PM,Daniel,Shit Stand,Shit Stand,false,0,,,"He came from direction of the lower field, never stopped, and just walked along the edge and ducked back in the woods behind the stand. Looked like 6pt but tall and wide."
+forms/2021-hunt-observations.csv#19,form,2021-11-06,PM,Jim,Penny Loafer,Penny Loafer,false,0,,,
+forms/2021-hunt-observations.csv#16,form,2021-11-07,AM,Daniel,Oak Ridge Stand,Oak Ridge,false,0,,,
+forms/2021-hunt-observations.csv#20,form,2021-11-07,AM,Jim,Penny Loafer,Penny Loafer,false,0,,,
+forms/2021-hunt-observations.csv#21,form,2021-11-10,AM,Daniel,New Trail Stand,(New) Trail Stand,false,0,,,"He came from behind my left shoulder and walked 15yards away from me. Got him in my cross hairs for practice, but passes with the hopes that something bigger would come along."
+forms/2021-hunt-observations.csv#22,form,2021-11-10,PM,Daniel,Shit Stand,Shit Stand,false,0,,,She came from the trail leading to the swamp. She was little and I hoped she'd bring in a buck. She kept looking back down the trail but nothing ever followed. She stayed in the field a long time.
+calendar/harvests.csv#3,calendar,2021-11-11,AM,Daniel,Bale Blind,Bail Blind (lower field),true,1,5pt,harvest,From calendar entry =[ 2021 DSW #1 AM ]=
+forms/2021-hunt-observations.csv#24,form,2021-11-19,AM,Daniel,Tripod,Tripod Stand,false,0,,,
+forms/2021-hunt-observations.csv#23,form,2021-11-19,AM,John,Jimmy’s Ridge,Jim's Ridge,false,0,,,
+forms/2021-hunt-observations.csv#25,form,2021-11-19,PM,Daniel,Shit Stand,Shit Stand,false,0,,,
+forms/2021-hunt-observations.csv#26,form,2021-12-03,PM,Daniel,Bale Blind,Bale Blind,false,0,,,
+forms/2021-hunt-observations.csv#27,form,2021-12-03,PM,Jim,Mrs Herrs Ridge Stand,Swamp Road Stand,false,0,,,
+forms/2021-hunt-observations.csv#28,form,2021-12-04,AM,Daniel,Tripod,Tripod Stand,false,0,,,
+forms/2021-hunt-observations.csv#30,form,2021-12-05,AM,Daniel,Oak Ridge Stand,Oak Ridge,false,0,,,
+forms/2021-hunt-observations.csv#31,form,2021-12-05,AM,Jim,,UNKNOWN,false,0,,,
+forms/2022-hunt-observations.csv#3,form,2022-09-11,PM,Jim,Penny Loafer,Penny Loafer,false,0,,,Saw a 6 point and a 10 pint in velvet. Also saw 5 Tom turkeys
+forms/2022-hunt-observations.csv#4,form,2022-09-12,AM,Jim,Penny Loafer,Penny Loafer,false,0,,,
+forms/2022-hunt-observations.csv#5,form,2022-09-19,AM,Jim,Shit Stand,Shit Stand,false,0,,,
+forms/2023-hunt-observations.csv#1,form,2023-09-10,PM,Daniel,Wild West Stand,New Field Stand,false,0,,,Doe and her fawn came into the field from the path. Far back corner. Ran off and came back at about 7:51.
+forms/2023-hunt-observations.csv#2,form,2023-09-10,PM,Jim,Shit Stand,Shit Stand,false,0,,,
+forms/2023-hunt-observations.csv#3,form,2023-09-11,AM,Daniel,Oak Ridge Stand,Oak Ridge,false,0,,,
+forms/2023-hunt-observations.csv#4,form,2023-09-11,AM,Jim,Tripod,Tripod Stand,false,0,,,
+forms/2023-hunt-observations.csv#6,form,2023-09-16,PM,Jim,Wild West Stand,New Field Stand,false,0,,,
+forms/2023-hunt-observations.csv#7,form,2023-09-23,AM,Daniel,Tripod,Tripod Stand,false,0,,,
+forms/2023-hunt-observations.csv#8,form,2023-09-24,AM,Daniel,Tripod,Tripod Stand,false,0,,,She was around 70yds back in the swamp sort of towards the culvert
+forms/2023-hunt-observations.csv#9,form,2023-09-24,AM,Jim,Jimmy’s Ridge,Jim's Ridge,false,0,,,
+forms/2023-hunt-observations.csv#10,form,2023-09-24,PM,Jim,Shit Stand,Shit Stand,false,0,,,
+forms/2023-hunt-observations.csv#11,form,2023-09-30,PM,Daniel,Creek Stand,Creek Stand,false,0,,,Buck came up from behind left shoulder on same side of the creek as me.  It was less than 10yds and I spooked it trying to get into position.  It ran behind me and circled around and we stared at each other for a while before it ran off directly behind the stand.
+forms/2023-hunt-observations.csv#12,form,2023-09-30,PM,Jim,Jimmy’s Ridge,Jim's Ridge,false,0,,,
+forms/2023-hunt-observations.csv#14,form,2023-10-01,AM,Daniel,New Trail Stand,New Trail Stand,true,1,3pt,harvest,Buck showed up at the corn pile while I had my head down after I had pissed right off of the stand... / He was close (10yds) and we stared at each other a while.  He bobbed his head and stomped.  I eventually got a shot over a limb that was in the way.  3 point rack
+forms/2023-hunt-observations.csv#13,form,2023-10-01,AM,Jim,Tripod,Tripod Stand,false,0,,,
+forms/2023-hunt-observations.csv#15,form,2023-10-07,PM,Jim,Wild West Stand,New Field Stand,false,0,,,"Watched a small buck at 30yds.  Then another buck at dusk.  Shot/hit the buck at dusk.  Broke bolt, no harvest."
+forms/2023-hunt-observations.csv#16,form,2023-10-14,PM,Daniel,Jimmy’s Ridge,Jim's Ridge,false,0,,,
+forms/2023-hunt-observations.csv#17,form,2023-10-15,AM,Daniel,Shit Stand,Shit Stand,false,0,,,Watched a deer around the corn pile but too dark to make out more than a dark body
+forms/2023-hunt-observations.csv#18,form,2023-10-20,PM,Jim,Jimmy’s Ridge,Jim's Ridge,true,1,unknown (recovered after tracking),harvest,"Tracked it for a while, gut shot"
+forms/2023-hunt-observations.csv#19,form,2023-10-20,PM,Joe,Oak Ridge Stand,Oak Ridge,false,0,,,
+forms/2023-hunt-observations.csv#21,form,2023-10-21,AM,Daniel,Tripod,Tripod Stand,false,0,,,
+forms/2023-hunt-observations.csv#20,form,2023-10-21,AM,Joe,New Trail Stand,New Trail Stand,false,0,,,
+forms/2023-hunt-observations.csv#22,form,2023-11-02,AM,Daniel,Jimmy’s Ridge,Jim's Ridge,false,0,,,"Heard deer walking well before sunrise.  Full moon allowed me to see it come up from behind my right shoulder, into top corner of ridge, and down the path.  All before sunrise."
+forms/2023-hunt-observations.csv#23,form,2023-11-02,AM,Jim,Penny Loafer,Penny Loafer,false,0,,,
+forms/2023-hunt-observations.csv#24,form,2023-11-02,PM,Daniel,Shit Stand,Shit Stand,false,0,,,"Saw what I thought was a doe (turned out to be a spike, but low light and tiny antlers) walk from the swamp to the bail blind field.  Could have shot, glad I didn't."
+forms/2023-hunt-observations.csv#25,form,2023-11-03,AM,Daniel,Tripod,Tripod Stand,false,0,,,
+forms/2023-hunt-observations.csv#26,form,2023-11-03,PM,Daniel,Penny Loafer,Penny Loafer,true,1,3pt? cow-horn,harvest,"Buck came up from behind right shoulder (from pond) into the trail I had just walked to the stand on 2 hours earlier. / He did not look interested in entering the field, shot him as he was heading back into the woods behind the stand.  Ran/stumbled down the hill to the pond.  NOTE: I will not hunt up top alone ever again."
+forms/2023-hunt-observations.csv#27,form,2023-11-10,PM,Jim,Wild West Stand,New Field Stand,false,0,,,"Deer came from Daniel's stand, down trail, but did not stop as it went straight towards the gun club property."
+forms/2023-hunt-observations.csv#29,form,2023-11-11,AM,Daniel,Creek Stand,Creek Stand,false,0,,,
+forms/2023-hunt-observations.csv#28,form,2023-11-11,AM,Jim,The Tollbooth,Front Field Blind,false,0,,,
+forms/2023-hunt-observations.csv#30,form,2023-11-11,PM,Daniel,Penny Loafer,Penny Loafer,false,0,,,
+forms/2023-hunt-observations.csv#31,form,2023-11-12,AM,Daniel,Tripod,Tripod Stand,false,0,,,"(orientation: looking towards shit stand) Buck came from behind right shoulder, near the trail, stayed in the woods and walked all the way around (avoiding the trail) and went back to the swamp over left shoulder."
+forms/2023-hunt-observations.csv#32,form,2023-11-18,AM,Daniel,New Trail Stand,New Trail Stand,false,0,,,"Buck with single, largeish antler was passing behind me.  Probably wouldn't have come into the field, busted me trying to get a better look and ran off back towards Oak Ridge stand.
+
+Spike showed up behind me, coming towards me at 9:40am.  Never busted me, but it was windy and he was skittish, ran off back up the hill and towards the Shit Stand."
+forms/2023-hunt-observations.csv#33,form,2023-11-18,PM,Daniel,Creek Stand,Creek Stand,false,0,,,
+forms/2023-hunt-observations.csv#34,form,2023-11-19,AM,Daniel,Shit Stand,Shit Stand,false,0,,,"She walked right in front of the stand, did not stop.  Walking from Bail Blind field towards the swamp.  Passed even though I had her in my sights.  Regretted it."
+forms/2023-hunt-observations.csv#35,form,2023-12-01,PM,Jim,Wild West Stand,New Field Stand,false,0,,,5 does came into field from direction of hunt club and returned the same way
+forms/2023-hunt-observations.csv#37,form,2023-12-02,AM,Daniel,Tripod,Tripod Stand,false,0,,,
+forms/2023-hunt-observations.csv#36,form,2023-12-02,AM,Jim,Penny Loafer,Penny Loafer,false,0,,,
+forms/2023-hunt-observations.csv#39,form,2023-12-02,PM,Daniel,Wild West Stand,New Field Stand,false,0,,,
+forms/2023-hunt-observations.csv#38,form,2023-12-02,PM,Jim,The Tollbooth,Front Field Blind,false,0,,,
+forms/2023-hunt-observations.csv#41,form,2023-12-03,AM,Daniel,Shit Stand,Shit Stand,false,0,,,
+forms/2023-hunt-observations.csv#40,form,2023-12-03,AM,Jim,Jimmy’s Ridge,Jim's Ridge,false,0,,,
+calendar/harvests.csv#14,calendar,2024-12-13,PM,Daniel,Penny Loafer,Penny Loafer Stand,true,1,8pt,harvest,From calendar entry =[ 2024 DSW #1 PM ]=

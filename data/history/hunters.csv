@@ -1,0 +1,9 @@
+old_name,hunter,status,notes
+Daniel,Daniel,member,
+Jim,Jim,member,Jimmy DelPapa (JBD on the calendar)
+John,John,member,
+Joe,Joe,member,
+Graham,Graham,guest_member,already in members as a guest
+Glenn,Glenn,guest_no_account,no site account
+Ben,Ben,guest_no_account,no site account
+Gene,Gene,guest_no_account,only appears in the 2021 form; that row is excluded (see corrections.csv)
