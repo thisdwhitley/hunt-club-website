@@ -61,7 +61,7 @@ npm run cuddeback:test     # Test sync in debug mode
 
 ## MCP Servers
 
-MCP servers are configured per machine, so check with `claude mcp list` (or `/mcp`) at the start of a session. Don't assume both are present. As of 2026-11-15 the workbench container (code-server on the QNAP) has the GitHub MCP but not the Supabase MCP. There, use the service-key Node scripts (see `scripts/history/load-history.js` for the pattern) or `npm run db:*` instead.
+MCP servers are configured per machine, so check with `claude mcp list` (or `/mcp`) at the start of a session. Don't assume both are present. Since 2026-11-18 the workbench (code-server, now on the NUC) has both the GitHub and the Supabase MCP. Where the Supabase MCP is missing, use the service-key Node scripts (see `scripts/history/load-history.js` for the pattern) or `npm run db:*` instead.
 
 ### GitHub MCP
 
@@ -92,6 +92,13 @@ If tools fail with "Bad credentials", the token has expired. Create a new one an
 ### Supabase MCP
 
 Gives Claude direct access to your Supabase project — tables, queries, schema inspection, RLS policies, and more. Uses your account-level access token.
+
+**Setup (workbench):** Supabase's hosted server, user scope, limited to this project and read-only, signed in with OAuth (no token stored):
+```bash
+claude mcp add --transport http --scope user supabase \
+  "https://mcp.supabase.com/mcp?project_ref=gmwrrdkuaqqpjponksnv&read_only=true"
+```
+Then `claude`, `/mcp`, select supabase, Authenticate. Ask Daniel before dropping `read_only=true`.
 
 **Example prompts:**
 ```
